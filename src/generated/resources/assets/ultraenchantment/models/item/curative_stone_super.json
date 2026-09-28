@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "ultraenchantment:item/super_curative_stone"
+  }
+}

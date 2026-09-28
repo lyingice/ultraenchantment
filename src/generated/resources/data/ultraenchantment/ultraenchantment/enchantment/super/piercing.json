@@ -1,0 +1,49 @@
+{
+  "definition": {
+    "anvil_cost": 5,
+    "max_cost": {
+      "base": 75,
+      "per_level_above_first": 25
+    },
+    "max_level": 4,
+    "min_cost": {
+      "base": 26,
+      "per_level_above_first": 35
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/crossbow",
+    "weight": 10
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ],
+    "minecraft:projectile_piercing": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 6.0,
+            "per_level_above_first": 3.0
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/piercing",
+  "required_level": 4,
+  "root": "minecraft:piercing",
+  "tier": "super"
+}

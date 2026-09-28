@@ -1,0 +1,52 @@
+{
+  "definition": {
+    "anvil_cost": 4,
+    "max_cost": {
+      "base": 19,
+      "per_level_above_first": 16
+    },
+    "max_level": 4,
+    "min_cost": {
+      "base": 13,
+      "per_level_above_first": 16
+    },
+    "slots": [
+      "armor"
+    ],
+    "supported_items": "#minecraft:enchantable/armor",
+    "weight": 5
+  },
+  "effects": {
+    "minecraft:damage_protection": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 6.0,
+            "per_level_above_first": 4.0
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:damage_source_properties",
+          "predicate": {
+            "tags": [
+              {
+                "expected": true,
+                "id": "minecraft:is_projectile"
+              },
+              {
+                "expected": false,
+                "id": "minecraft:bypasses_invulnerability"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:super/projectile_protection",
+  "required_level": 5,
+  "root": "minecraft:projectile_protection",
+  "tier": "advanced"
+}

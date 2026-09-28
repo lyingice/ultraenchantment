@@ -1,0 +1,63 @@
+{
+  "definition": {
+    "anvil_cost": 12,
+    "max_cost": {
+      "base": 75,
+      "per_level_above_first": 25
+    },
+    "max_level": 1,
+    "min_cost": {
+      "base": 45,
+      "per_level_above_first": 25
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/bow",
+    "weight": 1
+  },
+  "effects": {
+    "minecraft:ammo_use": [
+      {
+        "effect": {
+          "type": "minecraft:set",
+          "value": 0.0
+        },
+        "requirements": {
+          "condition": "minecraft:match_tool",
+          "predicate": {
+            "items": "minecraft:arrow"
+          }
+        }
+      }
+    ],
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ],
+    "minecraft:knockback": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.25,
+            "per_level_above_first": 0.15
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/infinity",
+  "required_level": 4,
+  "root": "minecraft:infinity",
+  "tier": "super"
+}

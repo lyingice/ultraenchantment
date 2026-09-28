@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "ultraenchantment:item/ultra_enchanted_book",
+    "layer1": "ultraenchantment:item/upgrade"
+  }
+}

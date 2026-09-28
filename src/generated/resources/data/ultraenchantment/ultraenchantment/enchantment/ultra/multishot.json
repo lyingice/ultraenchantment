@@ -1,0 +1,72 @@
+{
+  "definition": {
+    "anvil_cost": 10,
+    "max_cost": {
+      "base": 95,
+      "per_level_above_first": 45
+    },
+    "max_level": 1,
+    "min_cost": {
+      "base": 65,
+      "per_level_above_first": 45
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/crossbow",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ],
+    "minecraft:projectile_count": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 20.0,
+            "per_level_above_first": 10.0
+          }
+        }
+      }
+    ],
+    "minecraft:projectile_piercing": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 1.0,
+            "per_level_above_first": 1.0
+          }
+        }
+      }
+    ],
+    "minecraft:projectile_spread": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 100.0,
+            "per_level_above_first": 50.0
+          }
+        }
+      }
+    ]
+  },
+  "required_level": 3,
+  "root": "minecraft:multishot",
+  "tier": "ultra"
+}

@@ -1,0 +1,82 @@
+{
+  "definition": {
+    "anvil_cost": 12,
+    "max_cost": {
+      "base": 85,
+      "per_level_above_first": 45
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 35,
+      "per_level_above_first": 45
+    },
+    "primary_items": "#minecraft:enchantable/chest_armor",
+    "slots": [
+      "any"
+    ],
+    "supported_items": "#minecraft:enchantable/armor",
+    "weight": 1
+  },
+  "effects": {
+    "minecraft:damage_protection": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.3,
+            "per_level_above_first": 0.15
+          }
+        }
+      }
+    ],
+    "minecraft:knockback": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.25,
+            "per_level_above_first": 0.15
+          }
+        }
+      }
+    ],
+    "minecraft:post_attack": [
+      {
+        "affected": "attacker",
+        "effect": {
+          "type": "minecraft:all_of",
+          "effects": [
+            {
+              "type": "minecraft:damage_entity",
+              "damage_type": "minecraft:thorns",
+              "max_damage": 5.0,
+              "min_damage": 1.0
+            },
+            {
+              "type": "minecraft:damage_item",
+              "amount": 2.0
+            }
+          ]
+        },
+        "enchanted": "victim",
+        "requirements": {
+          "chance": {
+            "type": "minecraft:enchantment_level",
+            "amount": {
+              "type": "minecraft:linear",
+              "base": 0.15,
+              "per_level_above_first": 0.15
+            }
+          },
+          "condition": "minecraft:random_chance"
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/thorns",
+  "required_level": 4,
+  "root": "minecraft:thorns",
+  "tier": "super"
+}

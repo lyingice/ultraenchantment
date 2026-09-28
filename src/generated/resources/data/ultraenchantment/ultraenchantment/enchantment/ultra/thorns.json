@@ -1,0 +1,91 @@
+{
+  "definition": {
+    "anvil_cost": 14,
+    "max_cost": {
+      "base": 105,
+      "per_level_above_first": 65
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 55,
+      "per_level_above_first": 65
+    },
+    "primary_items": "#minecraft:enchantable/chest_armor",
+    "slots": [
+      "any"
+    ],
+    "supported_items": "#minecraft:enchantable/armor",
+    "weight": 1
+  },
+  "effects": {
+    "minecraft:damage_protection": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.3,
+            "per_level_above_first": 0.15
+          }
+        }
+      },
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.6,
+            "per_level_above_first": 0.3
+          }
+        }
+      }
+    ],
+    "minecraft:knockback": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.25,
+            "per_level_above_first": 0.15
+          }
+        }
+      }
+    ],
+    "minecraft:post_attack": [
+      {
+        "affected": "attacker",
+        "effect": {
+          "type": "minecraft:all_of",
+          "effects": [
+            {
+              "type": "minecraft:damage_entity",
+              "damage_type": "minecraft:thorns",
+              "max_damage": 5.0,
+              "min_damage": 1.0
+            },
+            {
+              "type": "minecraft:damage_item",
+              "amount": 2.0
+            }
+          ]
+        },
+        "enchanted": "victim",
+        "requirements": {
+          "chance": {
+            "type": "minecraft:enchantment_level",
+            "amount": {
+              "type": "minecraft:linear",
+              "base": 0.15,
+              "per_level_above_first": 0.15
+            }
+          },
+          "condition": "minecraft:random_chance"
+        }
+      }
+    ]
+  },
+  "required_level": 3,
+  "root": "minecraft:thorns",
+  "tier": "ultra"
+}

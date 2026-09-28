@@ -1,0 +1,45 @@
+{
+  "definition": {
+    "anvil_cost": 8,
+    "max_cost": {
+      "base": 100,
+      "per_level_above_first": 50
+    },
+    "max_level": 1,
+    "min_cost": {
+      "base": 50,
+      "per_level_above_first": 50
+    },
+    "slots": [
+      "any"
+    ],
+    "supported_items": "#minecraft:enchantable/durability",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:repair_with_xp": [
+      {
+        "effect": {
+          "type": "minecraft:multiply",
+          "factor": 2.0
+        }
+      },
+      {
+        "effect": {
+          "type": "minecraft:multiply",
+          "factor": 1.5
+        }
+      },
+      {
+        "effect": {
+          "type": "minecraft:multiply",
+          "factor": 1.5
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/mending",
+  "required_level": 4,
+  "root": "minecraft:mending",
+  "tier": "super"
+}

@@ -1,0 +1,49 @@
+{
+  "definition": {
+    "anvil_cost": 6,
+    "max_cost": {
+      "base": 80,
+      "per_level_above_first": 45
+    },
+    "max_level": 2,
+    "min_cost": {
+      "base": 30,
+      "per_level_above_first": 45
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/sword",
+    "weight": 5
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.25
+          }
+        }
+      }
+    ],
+    "minecraft:knockback": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 6.0,
+            "per_level_above_first": 3.0
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/knockback",
+  "required_level": 4,
+  "root": "minecraft:knockback",
+  "tier": "super"
+}

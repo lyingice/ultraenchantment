@@ -1,0 +1,37 @@
+{
+  "definition": {
+    "anvil_cost": 10,
+    "max_cost": {
+      "base": 85,
+      "per_level_above_first": 35
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 35,
+      "per_level_above_first": 35
+    },
+    "slots": [
+      "legs"
+    ],
+    "supported_items": "#minecraft:enchantable/leg_armor",
+    "weight": 1
+  },
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 0.45000002,
+          "per_level_above_first": 0.3
+        },
+        "attribute": "minecraft:player.sneaking_speed",
+        "id": "minecraft:enchantment.swift_sneak",
+        "operation": "add_value"
+      }
+    ]
+  },
+  "next": "ultraenchantment:super/swift_sneak",
+  "required_level": 5,
+  "root": "minecraft:swift_sneak",
+  "tier": "advanced"
+}

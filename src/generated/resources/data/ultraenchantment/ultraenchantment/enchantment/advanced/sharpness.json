@@ -1,0 +1,38 @@
+{
+  "definition": {
+    "anvil_cost": 3,
+    "max_cost": {
+      "base": 31,
+      "per_level_above_first": 21
+    },
+    "max_level": 5,
+    "min_cost": {
+      "base": 11,
+      "per_level_above_first": 21
+    },
+    "primary_items": "#minecraft:enchantable/sword",
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/sharp_weapon",
+    "weight": 10
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 3.0,
+            "per_level_above_first": 1.0
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:super/sharpness",
+  "required_level": 5,
+  "root": "minecraft:sharpness",
+  "tier": "advanced"
+}

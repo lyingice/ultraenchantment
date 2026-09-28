@@ -1,0 +1,50 @@
+{
+  "definition": {
+    "anvil_cost": 8,
+    "max_cost": {
+      "base": 75,
+      "per_level_above_first": 25
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 42,
+      "per_level_above_first": 32
+    },
+    "slots": [
+      "hand"
+    ],
+    "supported_items": "#minecraft:enchantable/trident",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ],
+    "minecraft:trident_sound": [
+      "minecraft:item.trident.riptide_1",
+      "minecraft:item.trident.riptide_2",
+      "minecraft:item.trident.riptide_3"
+    ],
+    "minecraft:trident_spin_attack_strength": {
+      "type": "minecraft:add",
+      "value": {
+        "type": "minecraft:linear",
+        "base": 2.0,
+        "per_level_above_first": 1.0
+      }
+    }
+  },
+  "next": "ultraenchantment:ultra/riptide",
+  "required_level": 4,
+  "root": "minecraft:riptide",
+  "tier": "super"
+}

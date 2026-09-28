@@ -1,0 +1,57 @@
+{
+  "definition": {
+    "anvil_cost": 6,
+    "max_cost": {
+      "base": 50,
+      "per_level_above_first": 33
+    },
+    "max_level": 5,
+    "min_cost": {
+      "base": 30,
+      "per_level_above_first": 33
+    },
+    "primary_items": "#minecraft:enchantable/sword",
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/weapon",
+    "weight": 5
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 15.0,
+            "per_level_above_first": 7.5
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "type": "#minecraft:sensitive_to_smite"
+          }
+        }
+      }
+    ],
+    "minecraft:mob_experience": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.15,
+            "per_level_above_first": 0.05
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/smite",
+  "required_level": 4,
+  "root": "minecraft:smite",
+  "tier": "super"
+}

@@ -1,0 +1,57 @@
+{
+  "definition": {
+    "anvil_cost": 8,
+    "max_cost": {
+      "base": 90,
+      "per_level_above_first": 34
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 40,
+      "per_level_above_first": 34
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/sword",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:equipment_drops": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.06,
+            "per_level_above_first": 0.03
+          }
+        },
+        "enchanted": "attacker",
+        "requirements": {
+          "condition": "minecraft:entity_properties",
+          "entity": "attacker",
+          "predicate": {
+            "type": "minecraft:player"
+          }
+        }
+      }
+    ],
+    "minecraft:mob_experience": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.15,
+            "per_level_above_first": 0.05
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/looting",
+  "required_level": 4,
+  "root": "minecraft:looting",
+  "tier": "super"
+}

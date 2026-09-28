@@ -1,0 +1,88 @@
+{
+  "definition": {
+    "anvil_cost": 4,
+    "max_cost": {
+      "base": 65,
+      "per_level_above_first": 18
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 15,
+      "per_level_above_first": 18
+    },
+    "slots": [
+      "any"
+    ],
+    "supported_items": "#minecraft:enchantable/durability",
+    "weight": 5
+  },
+  "effects": {
+    "minecraft:item_damage": [
+      {
+        "effect": {
+          "type": "minecraft:remove_binomial",
+          "chance": {
+            "type": "minecraft:fraction",
+            "denominator": {
+              "type": "minecraft:linear",
+              "base": 10.0,
+              "per_level_above_first": 5.0
+            },
+            "numerator": {
+              "type": "minecraft:linear",
+              "base": 2.0,
+              "per_level_above_first": 2.0
+            }
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:match_tool",
+          "predicate": {
+            "items": "#minecraft:enchantable/armor"
+          }
+        }
+      },
+      {
+        "effect": {
+          "type": "minecraft:remove_binomial",
+          "chance": {
+            "type": "minecraft:fraction",
+            "denominator": {
+              "type": "minecraft:linear",
+              "base": 2.0,
+              "per_level_above_first": 1.0
+            },
+            "numerator": {
+              "type": "minecraft:linear",
+              "base": 1.0,
+              "per_level_above_first": 1.0
+            }
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:inverted",
+          "term": {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "items": "#minecraft:enchantable/armor"
+            }
+          }
+        }
+      },
+      {
+        "effect": {
+          "type": "minecraft:remove_binomial",
+          "chance": {
+            "type": "minecraft:linear",
+            "base": 0.1,
+            "per_level_above_first": 0.05
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:super/unbreaking",
+  "required_level": 5,
+  "root": "minecraft:unbreaking",
+  "tier": "advanced"
+}

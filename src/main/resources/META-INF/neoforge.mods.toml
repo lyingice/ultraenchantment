@@ -1,0 +1,27 @@
+# 1.21.1 (NeoForge 21.1.x) REQUIRES explicit modLoader / loaderVersion; license is mandatory.
+# Placeholders are expanded at build time by processResources (values come from gradle.properties).
+modLoader="javafml"
+loaderVersion="[1,)"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="${mod_authors}"
+description="${mod_description}"
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+versionRange="${neo_version_range}"
+mandatory=true
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+versionRange="${minecraft_version_range}"
+mandatory=true
+
+# Mixin 配置（FML 在加载期注册，见 ModFileParser.getMixinConfigs）。
+# config 字段必需，指向本模组 jar 内的 mixin 配置文件路径。
+[[mixins]]
+config="${mod_id}.mixins.json"

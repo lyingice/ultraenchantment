@@ -1,0 +1,39 @@
+{
+  "definition": {
+    "anvil_cost": 6,
+    "max_cost": {
+      "base": 60,
+      "per_level_above_first": 10
+    },
+    "max_level": 1,
+    "min_cost": {
+      "base": 30,
+      "per_level_above_first": 10
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/bow",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:projectile_spawned": [
+      {
+        "effect": {
+          "type": "minecraft:ignite",
+          "duration": 100.0
+        }
+      },
+      {
+        "effect": {
+          "type": "minecraft:ignite",
+          "duration": 60.0
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:super/flame",
+  "required_level": 5,
+  "root": "minecraft:flame",
+  "tier": "advanced"
+}

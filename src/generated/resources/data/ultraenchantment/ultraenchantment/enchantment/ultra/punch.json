@@ -1,0 +1,55 @@
+{
+  "definition": {
+    "anvil_cost": 10,
+    "max_cost": {
+      "base": 82,
+      "per_level_above_first": 65
+    },
+    "max_level": 2,
+    "min_cost": {
+      "base": 57,
+      "per_level_above_first": 65
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/bow",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ],
+    "minecraft:knockback": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 10.0,
+            "per_level_above_first": 5.0
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:entity_properties",
+          "entity": "direct_attacker",
+          "predicate": {
+            "type": "#minecraft:arrows"
+          }
+        }
+      }
+    ]
+  },
+  "required_level": 3,
+  "root": "minecraft:punch",
+  "tier": "ultra"
+}

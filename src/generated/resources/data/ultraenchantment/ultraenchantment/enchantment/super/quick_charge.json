@@ -1,0 +1,53 @@
+{
+  "definition": {
+    "anvil_cost": 6,
+    "max_cost": {
+      "base": 75,
+      "per_level_above_first": 25
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 37,
+      "per_level_above_first": 45
+    },
+    "slots": [
+      "mainhand",
+      "offhand"
+    ],
+    "supported_items": "#minecraft:enchantable/crossbow",
+    "weight": 5
+  },
+  "effects": {
+    "minecraft:crossbow_charge_time": {
+      "type": "minecraft:add",
+      "value": {
+        "type": "minecraft:clamped",
+        "max": 0.0,
+        "min": -0.9,
+        "value": {
+          "type": "minecraft:linear",
+          "base": -0.35,
+          "per_level_above_first": -0.35
+        }
+      }
+    },
+    "minecraft:crossbow_charging_sounds": [
+      {
+        "end": "minecraft:item.crossbow.loading_end",
+        "start": "minecraft:item.crossbow.quick_charge_1"
+      },
+      {
+        "end": "minecraft:item.crossbow.loading_end",
+        "start": "minecraft:item.crossbow.quick_charge_2"
+      },
+      {
+        "end": "minecraft:item.crossbow.loading_end",
+        "start": "minecraft:item.crossbow.quick_charge_3"
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/quick_charge",
+  "required_level": 4,
+  "root": "minecraft:quick_charge",
+  "tier": "super"
+}

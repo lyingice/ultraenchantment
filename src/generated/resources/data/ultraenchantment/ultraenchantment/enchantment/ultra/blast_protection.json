@@ -1,0 +1,63 @@
+{
+  "definition": {
+    "anvil_cost": 10,
+    "max_cost": {
+      "base": 58,
+      "per_level_above_first": 53
+    },
+    "max_level": 4,
+    "min_cost": {
+      "base": 50,
+      "per_level_above_first": 53
+    },
+    "slots": [
+      "armor"
+    ],
+    "supported_items": "#minecraft:enchantable/armor",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 1.5,
+          "per_level_above_first": 0.75
+        },
+        "attribute": "minecraft:generic.explosion_knockback_resistance",
+        "id": "minecraft:enchantment.blast_protection",
+        "operation": "add_value"
+      }
+    ],
+    "minecraft:damage_protection": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 20.0,
+            "per_level_above_first": 10.0
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:damage_source_properties",
+          "predicate": {
+            "tags": [
+              {
+                "expected": true,
+                "id": "minecraft:is_explosion"
+              },
+              {
+                "expected": false,
+                "id": "minecraft:bypasses_invulnerability"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "required_level": 3,
+  "root": "minecraft:blast_protection",
+  "tier": "ultra"
+}

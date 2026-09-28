@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.lyingice.ultraenchantment.ultraenchantment.iml" filepath="$PROJECT_DIR$/.idea/modules/com.lyingice.ultraenchantment.ultraenchantment.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/com.lyingice.ultraenchantment.ultraenchantment.main.iml" filepath="$PROJECT_DIR$/.idea/modules/com.lyingice.ultraenchantment.ultraenchantment.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ultraenchantment.iml" filepath="$PROJECT_DIR$/.idea/modules/ultraenchantment.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ultraenchantment.test.iml" filepath="$PROJECT_DIR$/.idea/modules/ultraenchantment.test.iml" />
+    </modules>
+  </component>
+</project>

@@ -1,0 +1,52 @@
+{
+  "definition": {
+    "anvil_cost": 6,
+    "max_cost": {
+      "base": 36,
+      "per_level_above_first": 31
+    },
+    "max_level": 4,
+    "min_cost": {
+      "base": 30,
+      "per_level_above_first": 31
+    },
+    "slots": [
+      "armor"
+    ],
+    "supported_items": "#minecraft:enchantable/foot_armor",
+    "weight": 5
+  },
+  "effects": {
+    "minecraft:damage_protection": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 18.0,
+            "per_level_above_first": 9.0
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:damage_source_properties",
+          "predicate": {
+            "tags": [
+              {
+                "expected": true,
+                "id": "minecraft:is_fall"
+              },
+              {
+                "expected": false,
+                "id": "minecraft:bypasses_invulnerability"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/feather_falling",
+  "required_level": 4,
+  "root": "minecraft:feather_falling",
+  "tier": "super"
+}

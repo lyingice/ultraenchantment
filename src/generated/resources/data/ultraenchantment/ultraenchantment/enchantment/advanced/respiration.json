@@ -1,0 +1,37 @@
+{
+  "definition": {
+    "anvil_cost": 6,
+    "max_cost": {
+      "base": 50,
+      "per_level_above_first": 20
+    },
+    "max_level": 3,
+    "min_cost": {
+      "base": 20,
+      "per_level_above_first": 20
+    },
+    "slots": [
+      "head"
+    ],
+    "supported_items": "#minecraft:enchantable/head_armor",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:attributes": [
+      {
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 3.0,
+          "per_level_above_first": 2.0
+        },
+        "attribute": "minecraft:generic.oxygen_bonus",
+        "id": "minecraft:enchantment.respiration",
+        "operation": "add_value"
+      }
+    ]
+  },
+  "next": "ultraenchantment:super/respiration",
+  "required_level": 5,
+  "root": "minecraft:respiration",
+  "tier": "advanced"
+}

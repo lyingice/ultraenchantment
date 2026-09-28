@@ -1,0 +1,77 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.144'
+    id 'idea'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    // mods {} 必须先于 runs {} 求值：data run 需要立即 getByName 拿到 ModModel 句柄。
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        data {
+            data()
+            // 1) DatagenModLoader.begin(mods,...) 的 mods 集合来自 dev launch handler 解析的
+            //    --mod 程序参数。缺它时 mods=[]，DataGenerator.shouldExecute=false，
+            //    所有 provider 被静默丢弃（"All providers took: 0 ms"、无任何产出）。
+            programArgument '--mod'
+            programArgument "${mod_id}"
+
+            // 2) 输出目录：data() 默认 --gameDir 指向 run/，产物会落在 run/generated。
+            //    改为项目根，使其落在 src/generated/resources（build.gradle 已挂为资源源集）。
+            programArgument '--output'
+            programArgument file('src/generated/resources').absolutePath
+
+            loadedMods.set([mods.getByName("${mod_id}")])
+        }
+    }
+}
+
+// runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+// 只在 neoforge.mods.toml 上做占位符展开，其它资源文件原样复制。
+// 注意：expand 底层是 Groovy 模板引擎，会把它看到的任何“美元号+花括号”片段
+// 当作表达式求值——资源文件里出现非占位符的该类写法会让构建以模板解析失败报错。
+processResources {
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand project.properties
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : mod_id,
+                "Specification-Vendor"    : mod_authors,
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : mod_authors,
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
