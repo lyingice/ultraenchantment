@@ -1,6 +1,7 @@
 package com.lyingice.ultraenchantment.datagen;
 
 import com.lyingice.ultraenchantment.Ultraenchantment;
+import com.lyingice.ultraenchantment.content.BookView;
 import com.lyingice.ultraenchantment.content.UETier;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
@@ -103,7 +104,7 @@ public class UEModels extends ItemModelProvider {
                     "layer0",
                     modLoc("item/" + tier.id() + BOOK_TEXTURE));
             base.override()
-                    .predicate(CUSTOM_MODEL_DATA, predicateOf("inscription", tier))
+                    .predicate(CUSTOM_MODEL_DATA, BookView.predicateOf("inscription", tier))
                     .model(variant)
                     .end();
         }
@@ -120,30 +121,10 @@ public class UEModels extends ItemModelProvider {
             ItemModelBuilder variant = doubleLayer(
                     variantName(itemName, subject, tier), tier, BOOK_TEXTURE, overlayTexture);
             base.override()
-                    .predicate(CUSTOM_MODEL_DATA, predicateOf(subject, tier))
+                    .predicate(CUSTOM_MODEL_DATA, BookView.predicateOf(subject, tier))
                     .model(variant)
                     .end();
         }
-    }
-
-    /**
-     * 计算模型谓词值。
-     *
-     * <p>编码：科目偏移 × 10 + 阶级档位（1/2/3）。
-     * 与 {@code UETier.modelData()} 的单科目录入共用同一套阶级数值，
-     * 因此按科目查表时只需加偏移。
-     */
-    public static int predicateOf(String subject, UETier tier) {
-        return subjectOffset(subject) + tier.modelData();
-    }
-
-    private static int subjectOffset(String subject) {
-        return switch (subject) {
-            case "inscription" -> 0;
-            case "ascension" -> 10;
-            case "upgrade" -> 20;
-            default -> throw new IllegalArgumentException("未知科目: " + subject);
-        };
     }
 
     /** 单层模型：layer0 随阶级切换。基础模型名即物品名，因此无 {@code custom_model_data} 时显示高阶。 */

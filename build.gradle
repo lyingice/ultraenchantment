@@ -50,6 +50,22 @@ neoForge {
     }
 }
 
+// ── JEI ────────────────────────────────────────────────────────────────
+// 只用于开发与兼容：compileOnly 拿到 API，runtimeOnly 装完整版（跑 client 时可见）。
+// 两者都不进 jar——正式环境里 JEI 可有可无，插件的发现由 JEI 自己扫描 @JeiPlugin。
+repositories {
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+    }
+}
+
+dependencies {
+    compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
+    runtimeOnly "mezz.jei:jei-1.21.1-neoforge:${jei_version}"
+}
+
 // runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 

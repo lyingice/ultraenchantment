@@ -666,6 +666,85 @@ this.inputSlots.setItem(0, ItemStack.EMPTY);   // 84 行 —— 事件之后才�
 3. **解析必须是纯函数**（P0-4 的另一面）——「计算输出时」与「取件重算时」结果必然一致，
    剩菜的判定才不会漂。副作用全部收在 `AnvilTakeEvents` 一个类里。
 
+#### P0-15 · 铁砧跑在**容器包处理链**里：未捕获异常 = 玩家掉线 ⚠️
+
+`AnvilMenu.createResult`（铁砧）与 `AnvilMenu.onTake`（取件）都不是普通的方法调用——
+它们由**容器点击包**的处理链触发。在这里抛出未捕获异常，掀掉的是服务端线程，
+客户端看到的是「**失去世界连接**」：一个数据错误被放大成掉线，而且日志里只有一条网络异常，看不出真凶。
+
+**处理**（两道，缺一不可）：
+
+1. **两个入口都整体兜底**——`AnvilEvents.onAnvilUpdate` 与 `AnvilTakeEvents.onAnvilRepair`
+   各自把实现体抽成私有方法，外层 `catch (RuntimeException | LinkageError)`：
+   降级为「本次不产出 / 这张剩菜书不交付」+ 一条带异常的错误日志。
+   两侧走的是同一条确定性路径，所以两边一起降级，不会出现单边错位。
+2. **写入的值必须落在可序列化范围内**——典型是附魔等级：`ItemEnchantments` 的等级有取值域，
+   数据包把 `max_level` 写得过大时，越界等级会在**网络编码**阶段炸（同样是掉线，
+   不是一条可读的报错）。所以写存储等级前一律
+   `min(该阶上限, 该附魔原版上限, 255)`。
+
+> 判定信号：**任何跑在「包处理链 / tick 链」里的代码，都不允许把异常抛出去。**
+> 这类代码出错的表现不是「功能没生效」，而是「玩家掉线 / 服务器崩」，成本高一个数量级。
+
+#### P0-16 · 运行期代码引用 datagen / 客户端类 = 服务端掉线 ⚠️
+
+**真实事故（v2.2）**：运行期的 `logic/BookFactory`（铁砧产物造书）调用了
+`datagen/UEModels.predicateOf(...)`——而 `UEModels extends ItemModelProvider`，
+那是**客户端**的模型生成器 API。开发环境里客户端/服务端类都在同一个 classpath 上，
+所以怎么测都正常；**只跑服务端的发行版**里加载它就会抛 `NoClassDefFoundError`。
+而这个调用发生在铁砧结果槽的写入路径上——即**包处理链**里，于是玩家直接掉线（P0-15）。
+
+**规矩（依赖方向只有一个）**：`content / logic / event / registry` 这些运行期包
+**不得** import `datagen.*`，也不得 import `net.minecraft.client.*` 与
+`net.neoforged.neoforge.client.*`。共享的纯逻辑要下沉到运行期，**datagen 反过来调它**。
+
+**怎么发现**：`grep "ultraenchantment\.datagen|neoforge\.client|net\.minecraft\.client"`，
+排除 `datagen/` 自身，剩下的每一处都要有理由。
+（`Ultraenchantment → UEDataGen` 是合法的：只是注册 `GatherDataEvent` 监听，
+provider 在事件里才实例化，专用服务器上永不触发。）
+
+> 判定信号：**「dev 里测不出来」+「只在服务端发行版炸」+「一放上去就断线」**——
+> 这三个特征凑齐，先怀疑类加载与依赖方向，而不是数据。
+
+#### P0-17 · 写进物品组件的 Holder 必须来自**生成它的那一侧**注册表 ⚠️
+
+**真实事故（v2.4）**：单机（集成服务器）+ 创造模式，把物品与高阶附魔书放进铁砧 → **立刻掉线**。
+客户端日志里的决定性证据：
+
+```
+Internal Exception: io.netty.handler.codec.EncoderException:
+    Failed to encode packet 'serverbound/minecraft:container_click'
+Caused by: java.lang.IllegalArgumentException:
+    Can't find id for 'Reference{ResourceKey[minecraft:enchantment / minecraft:smite]=Enchantment 亡灵杀手}'
+    in map net.minecraft.core.Registry$1@...
+    at net.minecraft.core.IdMap.getIdOrThrow
+    at net.minecraft.network.codec.ByteBufCodecs$25.encode     // holderRegistry
+    at net.minecraft.core.component.DataComponentPatch.encodeComponent
+```
+
+**机制**：`ByteBufCodecs.registry(...)` 编码 Holder 用的是 `IdMap.getIdOrThrow(holder)`——**按值查 ID**。
+而服务端与客户端的 `Enchantment` 是**两套不同实例**（record 里嵌着各自那一侧的 `HolderSet` / 效果组件），
+跨侧**不相等** → 查不到 ID → 编码失败 → 该包是**客户端发往服务端**的点击包，于是玩家掉线。
+
+**为什么会跨侧**：`CommonHooks.resolveLookup` 的第一优先级是
+`ServerLifecycleHooks.getCurrentServer()`。**单机里那台集成服务器一直在**，
+于是**客户端线程**上它也返回**服务端**注册表；而我们（创造旁路给白装备直上阶级时）
+把这个服务端 Holder 写进了客户端本地生成的铁砧结果栈。客户端一发包 → 上面的异常。
+（纯多人客户端没有集成服务器，回落客户端注册表，所以**只有单机复现**；
+专用服务器两侧同表，也复现不出来——这是它躲过所有服务端自检的原因。）
+
+**处理**：写入物品组件时，注册表必须按「**谁生成这个栈**」来选——
+`UELookups.enchantmentsForItemWrites(clientSide)`：
+逻辑客户端（`level.isClientSide()`）用 `ClientHooks.resolveLookup`，否则用 `CommonHooks.resolveLookup`。
+⚠️ 集成服务器上**两侧线程同时在跑**，所以判据是 `level.isClientSide()` 而**不是** `FMLEnvironment.dist`。
+客户端分支要包在独立嵌套类里，避免专用服务器加载客户端专属类（P0-16）。
+
+**配套**：只写「有注册表 ID」的 Holder——写入前检查 `holder.unwrapKey().isPresent()`，
+把运行时组装的合成 Holder（P0-2）挡在门外。
+
+> 判定信号：**「单机炸、专用服务器不炸、且只在我们新建物品组件时炸」**——
+> 先怀疑「写进去的 Holder 属于另一侧的注册表」，而不是数据本身。
+
 #### P1-14 · Mixin 在 NeoForge 21.x 的配置方式（三处缺一不可）
 
 NeoForge 不用 `@MixinConfig` 注解，也不用 `-Dmixin.config`。配置链路（源码实证）：
@@ -1069,7 +1148,46 @@ for (ResourceLocation root : ReloadEvents.roots()) {
 > 分层不是「给主标签取样」，而是「隐藏维度只上搜索标签」——主标签里
 > **每条谱系、每个阶级都在**，顺序也不串（见 P1-29 的 v2.1 补记）。
 
-#### P1-31 · 取样必须体现维度差异（已被 v2.1 取代）
+#### P1-35 · 分派顺序：左槽是我们的书时，**不能先判合并**
+
+v2.0 的分派是「两本都是我们的书 → 走合并」，而合并只认
+「载体书 + 载体书」与「升级书 + 升级书」。于是规格里写明的
+**「拿进阶书 / 升级书去推一本书」被整条吞掉**——点上去毫无反应，既不报错也不消耗。
+
+**处理**：两本都是我们的书时，先试 `applyBookAdvance`（载体书 + 进阶书 → 阶级 +1、
+载体书 + 升级书 → 条目等级提升），**返回 false 才**落到 `applyBookMerge`。
+
+> 判定信号：**「A 或 B」的分支里，先写的那个条件太宽就会把后一个吃掉。**
+> 判据越具体越先判；或者写成「先试专用规则、不适用再退回通用规则」。
+
+#### P1-36 · JEI 判断「同一种材料」用的是 subtype——**默认完全不认数据组件** ⚠️
+
+**实测（v2.5：同一份代码、同一个存档，只切换「注册 / 不注册」）**：
+
+| 场景 | JEI 材料表里的条数 |
+|---|---|
+| 不注册（JEI 默认） | 进阶附魔书 **1** 条、祛咒石 **1** 条 |
+| 注册 subtype 之后 | 进阶附魔书 **384** 条（进化 93 / 载体 276 / 升级 15）、祛咒石 **3** 条 |
+
+本模组的书与祛咒石都是**单例物品**：几百个变体共用同一个 `Item`，只靠**数据组件**区分。
+JEI 默认把「同一个 Item + 相同 subtype」的材料压成一条 → 整张材料表里只剩一本书。
+原版附魔书能一本本列出来，是因为 JEI 在它的原版插件里**内建注册了同类解释器**；
+我们的物品没人替它注册。
+
+**处理**：`compat/jei/UEJeiPlugin`（`@JeiPlugin`）在 `registerItemSubtypes` 里
+给两个物品各注册一个 `ISubtypeInterpreter<ItemStack>`；键取自**语义载荷**
+（载荷组件走自己的 codec 转成 JSON），而不是整份组件——于是修复费、自定义名字、耐久
+这类无关数据不会把同一变体分裂成多条。
+
+**版本与依赖注意**：
+- 用 **`ISubtypeInterpreter`**（`getSubtypeData` 返回任意可比较数据）；
+  旧的 `IIngredientSubtypeInterpreter` / `NONE` 已标记过时待删，不要再写。
+- 已在 **19.44.0.400（用户实例）** 与 **19.57.0.450（开发依赖）** 上确认接口一致。
+- JEI 只走 `compileOnly` + `runtimeOnly`，**不进 jar**；`@JeiPlugin` 由 JEI 自己扫描，
+  所以专用服务器永不加载本类（P0-16）。
+
+> 判定信号：**「一个 Item + 一堆组件变体」的模组，JEI 那一格大概率只显示一个**。
+> 日志里看到 `[JEI] 材料表：… 1 条`，就是 subtype 没注册。
 
 主标签曾经靠「取样」压缩条目，前后试过三种规则：三档全用锋利（看起来像只支持锋利）、
 每档换一条谱系（覆盖不全）、阶级轮转（把同一附魔的三个阶级拆散，见 P1-29 的补记）。
@@ -1291,6 +1409,11 @@ com.lyingice.ultraenchantment
 - [ ] 事件处理器里没有 `isClientSide` 提前 return，没有世界/背包/随机访问（P0-4）
 - [ ] `RepairItemRecipe` 的 Mixin 生效，且只影响受保护附魔
 - [ ] 没有静态字段缓存 `Holder<Enchantment>` 或阶段定义（P1-6）
+- [ ] **装了 JEI 的客户端里 `[JEI]` 行的条数 = 变体数**（塌成 1 就是 subtype 没注册，P1-36）
+- [ ] **写进物品组件的 Holder 来自「生成它的那一侧」注册表**（`UELookups.enchantmentsForItemWrites`）——
+      单机掉线的头号成因（P0-17）；写完就不会再动它
+- [ ] **运行期包（content / logic / event / registry）没有 import `datagen.*` 或客户端类**
+      （`net.minecraft.client.*` / `neoforge.client.*`）——这是「服务端掉线」的经典成因（P0-16）
 - [ ] 每个阶段的 `definition` 整段取自其根源附魔（supported_items / primary_items / slots 与原版一致），只有 `max_level` 与花费按阶级抬升
 - [ ] 每条谱系的三个增量补丁齐全（`LineageTable` 静态块断言长度）
 - [ ] 同一阶段内没有重复的属性修饰符 id（阶梯累积下低阶 id 在高阶里仍在；`assertUniqueAttributeIds`）
@@ -1333,6 +1456,10 @@ com.lyingice.ultraenchantment
 
 | 日期 | 变更 |
 |---|---|
+| 2026-09 | **接入 JEI 并修掉「几百本书塌成一本」（v2.5）**。装 JEI（`compileOnly` API + `runtimeOnly` 完整版，不进 jar）后实测：不注册 subtype 时 JEI 材料表里进阶附魔书只有 **1** 条、祛咒石 **1** 条；注册后 **384** 条（进化 93 / 载体 276 / 升级 15）、祛咒石 3 条。新增 `compat/jei/UEJeiPlugin`（`@JeiPlugin` + `ISubtypeInterpreter`，键取语义载荷的 JSON），并留下 `[JEI]` 计数日志当可失败的证据。新增 **P1-36** |
+| 2026-09 | **修掉「单机创造模式放铁砧即掉线」（v2.4）**。用工作区里的客户端日志（`run/logs` 轮转归档）定位到真实异常：`Failed to encode packet 'serverbound/container_click'` ← `Can't find id for 'Reference[minecraft:enchantment / minecraft:smite]'`。真凶是**注册表侧别错配**：`CommonHooks.resolveLookup` 在单机的客户端线程上也返回**服务端**注册表，于是创造旁路把服务端 Holder 写进客户端栈，客户端发包时查不到 ID → 掉线。新增 `logic/UELookups.enchantmentsForItemWrites(clientSide)`（按生成侧选表，客户端分支独立成嵌套类以防 P0-16），并在写入前加 `unwrapKey().isPresent()` 守卫。新增 **P0-17** 并写进 §6 清单 |
+| 2026-09 | **修掉「铁砧放入即掉线」（v2.3）**。真凶是**依赖方向**：运行期 `BookFactory` 调了 datagen 的 `UEModels.predicateOf`，而后者继承客户端模型生成器 `ItemModelProvider`——dev 环境两端同 classpath 测不出来，只跑服务端的发行版里在**包处理链**抛 `NoClassDefFoundError`，表现就是玩家立刻掉线。把编码算术下沉到运行期 `content/BookView`，datagen 反过来调它（模型 JSON **逐字未变**，已 diff 验证）。新增 **P0-16**（运行期不得引用 datagen/客户端类）并写进 §6 清单 |
+| 2026-09 | **两条实机 bug 修复 + 三处加固（v2.2）**。① 「进阶书 / 升级书推不动载体书」——分派顺序问题：两本都是我们的书时先走合并，而合并不认「载体书 + 进阶书」，整条路被吞（**P1-35**）；补上 `applyBookAdvance`，双宿主对称终于闭环（定向进阶书对多条目书整本拒绝，因为书的阶级是书级单值）。② 「创造模式用高阶段书贴物品导致掉线」——按 **P0-15** 处理：铁砧入口与取件入口整体兜底（异常降级为「本次不产出」+ 错误日志），存储等级一律夹进 `min(该阶上限, 原版上限, 255)`。复现尝试：90 个阶段条目全谱系全阶级的产物做网络编码往返 + 结算 + tooltip（93 次编码全绿）、创造旁路直接解析 90 例（零异常）——数据与逻辑侧不可复现，故按「包处理链异常」堵死并留日志 |
 | 2026-09 | **创造栏铭刻书排布修正（v2.1）**。两处「看起来像数据乱了」的问题：① 主标签用**阶级轮转**取样（v1.3 起），同一条谱系的三个阶级被拆散成「高阶X / 超级Y / 究极Z」，玩家第一反应是阶级串了行——改为**谱系外层 × 阶级内层**（90 条，同一附魔的高阶/超级/究极相邻递增），覆盖从「每条谱系 1 次」变成 3 次；② v2.0 新增的**多条目「已合并」样本**放错了标签页：它与单条书共用同一材质，摆在主标签里就像「某条附魔的书莫名多了一条别的附魔」（排序后前两条谱系恰好是爆炸保护与引雷，于是三条样本全是「爆炸保护 + 引雷」）——移到搜索标签。顺手把计划表抽成 `CreativeTabEvents.mainTabInscriptions()` 纯函数并自检（8/8） |
 | 2026-09 | **载体书体系（v2.0）**。把「进阶形态」做成有实物载体的东西，一次解掉三个结构性问题：① **原版附魔书被进阶后**不再是「隐形印章」（物品 id 不变、提示框看不见、贴装备时随书蒸发、还会漏进砂轮）——改为**转印**：原版附魔书 + 「基础→高阶」进阶书 → 我们的**载体书**，物品 id 真的变了，条目从曲线 1 起，门槛复用原生阶的 `min(required, 原版上限)`（锋利要一本锋利 V）；② **同名合并升 1 级**在书层面与装备层面同时落地（README §2/§7 早就写了规则，一直没实现）：书同级 → `level+1`（逐谱系夹取）、不同级取 max；装备同级 → `tierLevel+1`；③ 铭刻型载荷由单条改为 **`{tier, entries[]}` 多条目**，`level` 语义 = tierLevel（存储等级升阶后恒为上限，拿它 +1 是空转）。生存与创造分叉：生存只能提**同阶级**的曲线等级，创造可给白装备直上究极（仍受 `supportsEnchantment` 与防降级约束）。新增 **P0-14**（剩菜书 = 唯一第二输出，只能走 `AnvilRepairEvent`），并放开 P1-13 一处例外（装备同名合并必须重写原版合并数学，连带必须照抄重命名，否则是回归）。规格 `docs/book-system-spec.md`，44 项运行时自检全通过 |
 | 2026-09 | **文档重写（v1.0）**。架构从「三附魔分立」翻转为「原地升级 + 独立注册表 + 运行时组装」，与首版完全不相容，旧内容全部作废。记录 P0×10 / P1×6 / P2×7 共 23 个坑（当时值，现已有增补），以及 9 条被否方案 |

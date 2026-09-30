@@ -88,7 +88,8 @@ public final class InscriptionLogic {
             ResourceLocation root = entry.enchantment();
             Holder<Enchantment> ench = enchants.get(ResourceKey.create(Registries.ENCHANTMENT, root))
                     .map(h -> (Holder<Enchantment>) h).orElse(null);
-            if (ench == null || !out.supportsEnchantment(ench)) {
+            // unwrapKey() 为空 = 运行时组装的合成 Holder（没有注册表 ID），写进物品会在编码时炸（P0-2）。
+            if (ench == null || ench.unwrapKey().isEmpty() || !out.supportsEnchantment(ench)) {
                 leftovers.add(entry);
                 continue;
             }
@@ -117,7 +118,12 @@ public final class InscriptionLogic {
                 }
                 // 存储等级设为该阶上限：结算层要求存储等级 > 0 才会注入阶段（EnchantmentLevelEvents），
                 // 而原版机制看到的也应该是「满级附魔」。
-                table.set(ench, cap);
+                //
+                // ⚠️ 但必须夹进「该附魔自己的上限」与 255：ItemEnchantments 的等级有取值域，
+                // 第三方数据包把 max_level 写得过大时，越界等级会在**网络编码**阶段炸——
+                // 而那是包处理线程，表现就是玩家掉线，不是一条可读的报错。
+                int stored = Math.max(1, Math.min(cap, Math.min(ench.value().getMaxLevel(), 255)));
+                table.set(ench, stored);
                 cost += costOf(ench, level);
                 applied.add(entry);
                 continue;
@@ -264,6 +270,84 @@ public final class InscriptionLogic {
         List<BookSpecs.Inscription.Entry> entries = new ArrayList<>();
         result.forEach((id, level) -> entries.add(new BookSpecs.Inscription.Entry(id, level)));
         return Optional.of(new Merged(new BookSpecs.Inscription(left.tier(), entries), Math.max(1, cost)));
+    }
+
+    // ── ④ 载体书进阶 / 提级（双宿主对称，规格 §4） ──────────────────────
+
+    /**
+     * 进阶书作用于<b>载体书</b>：整本书的阶级推进一阶，所有条目的曲线等级归 1。
+     *
+     * <p>与装备侧同构：书也是一种宿主，所以「升阶」在两边的规则必须一致。
+     *
+     * <p><b>为什么任一条目不合格就整本不转</b>：书的阶级是**书级单值**（所有条目同阶级），
+     * 没法把「能走的条目」和「不能走的条目」拆成两本书——那等于凭空造出半个阶级。
+     * 与其静默丢数据，不如整本拒绝。
+     *
+     * @param fromTier 书本当前阶级（必须与书的载荷一致）
+     * @param toTier   目标阶级
+     * @param bypass   创造旁路：跳过该阶级的门槛
+     */
+    public static Optional<BookSpecs.Inscription> advanceTier(
+            HolderLookup.RegistryLookup<StageDefinition> stages,
+            BookSpecs.Inscription book,
+            LineageTier fromTier,
+            AscensionTier toTier,
+            boolean bypass) {
+        if (stages == null || book == null || book.isEmpty() || toTier == null) {
+            return Optional.empty();
+        }
+        if (fromTier != book.tier().asLineageTier()) {
+            return Optional.empty();
+        }
+        List<BookSpecs.Inscription.Entry> advanced = new ArrayList<>();
+        for (BookSpecs.Inscription.Entry entry : book.entries()) {
+            StageDefinition target = StageLookup
+                    .stageOf(stages, entry.enchantment(), toTier.asLineageTier()).orElse(null);
+            if (target == null) {
+                return Optional.empty();   // 数据包没铺这一阶 → 整本不转
+            }
+            if (!bypass) {
+                // 门槛与装备侧同源：min(目标阶 required_level, 来源阶上限)。
+                StageDefinition source = StageLookup
+                        .stageOf(stages, entry.enchantment(), fromTier).orElse(null);
+                int sourceMax = source == null ? 1 : Math.max(1, source.definition().maxLevel());
+                int gate = Math.min(target.requiredLevel(), sourceMax);
+                if (entry.level() < gate) {
+                    return Optional.empty();
+                }
+            }
+            advanced.add(new BookSpecs.Inscription.Entry(entry.enchantment(), 1));
+        }
+        return Optional.of(new BookSpecs.Inscription(toTier, advanced));
+    }
+
+    /**
+     * 升级书作用于<b>载体书</b>：把每条目的曲线等级提到目标值（逐条夹取）。
+     *
+     * <p>全都没变（已达上限）则返回空——不消耗、不产出。
+     */
+    public static Optional<BookSpecs.Inscription> upgradeEntries(
+            HolderLookup.RegistryLookup<StageDefinition> stages,
+            BookSpecs.Inscription book,
+            AscensionTier tier,
+            int targetLevel) {
+        if (stages == null || book == null || book.isEmpty() || tier != book.tier()) {
+            return Optional.empty();
+        }
+        List<BookSpecs.Inscription.Entry> raised = new ArrayList<>();
+        boolean changed = false;
+        for (BookSpecs.Inscription.Entry entry : book.entries()) {
+            int cap = Math.max(1, StageLookup.maxLevelOf(stages, tier.asLineageTier(),
+                    entry.enchantment(), entry.level()));
+            int target = Math.max(1, Math.min(targetLevel, cap));
+            if (target > entry.level()) {
+                changed = true;
+                raised.add(new BookSpecs.Inscription.Entry(entry.enchantment(), target));
+            } else {
+                raised.add(entry);
+            }
+        }
+        return changed ? Optional.of(new BookSpecs.Inscription(book.tier(), raised)) : Optional.empty();
     }
 
     // ── 辅助 ────────────────────────────────────────────────────────────

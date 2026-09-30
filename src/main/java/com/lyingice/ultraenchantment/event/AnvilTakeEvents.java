@@ -1,10 +1,12 @@
 package com.lyingice.ultraenchantment.event;
 
+import com.lyingice.ultraenchantment.Ultraenchantment;
 import com.lyingice.ultraenchantment.content.BookSpecs;
 import com.lyingice.ultraenchantment.content.StageDefinition;
 import com.lyingice.ultraenchantment.logic.BookFactory;
 import com.lyingice.ultraenchantment.logic.InscriptionLogic;
 import com.lyingice.ultraenchantment.logic.StageLookup;
+import com.lyingice.ultraenchantment.logic.UELookups;
 import com.lyingice.ultraenchantment.registry.UEComponents;
 import com.lyingice.ultraenchantment.registry.UEItems;
 import java.util.List;
@@ -14,7 +16,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.common.CommonHooks;
 import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
 
 /**
@@ -48,8 +49,21 @@ public final class AnvilTakeEvents {
     /** 单例监听器，供 game bus 注册。 */
     public static final AnvilTakeEvents INSTANCE = new AnvilTakeEvents();
 
+    /**
+     * ⚠️ 与 {@link AnvilEvents} 同理：本方法也在**容器包处理链**里（{@code AnvilMenu.onTake}）。
+     * 未捕获异常会直接掀掉服务端线程，玩家看到的是「失去世界连接」。
+     * 因此整体兜底：取件时出任何意外，最多是这本剩菜书没交付，并留下一条错误日志。
+     */
     @SubscribeEvent
     public void onAnvilRepair(AnvilRepairEvent event) {
+        try {
+            deliverLeftovers(event);
+        } catch (RuntimeException | LinkageError t) {
+            Ultraenchantment.LOGGER.error("Leftover book delivery failed", t);
+        }
+    }
+
+    private void deliverLeftovers(AnvilRepairEvent event) {
         ItemStack right = event.getRight();
         BookSpecs.Inscription spec = right.get(UEComponents.INSCRIPTION_SPEC.get());
         if (spec == null) {
@@ -67,7 +81,8 @@ public final class AnvilTakeEvents {
         // AnvilRepairEvent 继承 PlayerEvent，取玩家用 getEntity()（21.1 没有 getPlayer）。
         Player player = event.getEntity();
         HolderLookup.RegistryLookup<StageDefinition> stages = StageLookup.lookup();
-        HolderLookup.RegistryLookup<Enchantment> enchants = CommonHooks.resolveLookup(Registries.ENCHANTMENT);
+        // 取件只在服务端发生 → 用服务端注册表。
+        HolderLookup.RegistryLookup<Enchantment> enchants = UELookups.enchantmentsForItemWrites(false);
 
         InscriptionLogic.resolve(stages, enchants, left, spec, player.isCreative()).ifPresent(res -> {
             List<BookSpecs.Inscription.Entry> leftovers = res.leftovers();

@@ -2,8 +2,8 @@ package com.lyingice.ultraenchantment.logic;
 
 import com.lyingice.ultraenchantment.content.BookSpecs;
 import com.lyingice.ultraenchantment.content.BookSubject;
+import com.lyingice.ultraenchantment.content.BookView;
 import com.lyingice.ultraenchantment.content.UETier;
-import com.lyingice.ultraenchantment.datagen.UEModels;
 import com.lyingice.ultraenchantment.registry.UEComponents;
 import com.lyingice.ultraenchantment.registry.UEItems;
 import net.minecraft.core.component.DataComponents;
@@ -27,7 +27,7 @@ public final class BookFactory {
     public static ItemStack create(BookSubject subject, UETier viewTier) {
         ItemStack stack = new ItemStack(UEItems.ADVANCED_ENCHANTED_BOOK.get());
         stack.set(DataComponents.CUSTOM_MODEL_DATA,
-                new CustomModelData(UEModels.predicateOf(subject.id(), viewTier)));
+                new CustomModelData(BookView.predicateOf(subject, viewTier)));
         return stack;
     }
 

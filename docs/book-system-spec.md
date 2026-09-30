@@ -406,4 +406,116 @@ REPAIR_COST 的 calculateIncreasedRepairCost、成本累加。约 60~80 行 + �
 | 9 | 祛咒石与阶级的对应 | 三档石头各解哪一档 |
 | 10 | 名称 | 每条谱系每一阶的本地化键（整合包可整套改名） |
 
+---
+
+## 17. v2.2 修正：两条实机 bug 与三处加固
+
+### 17.1 「进阶书 / 升级书推不动载体书」
+
+- **症状**：拿进阶书（通用或定向）去点一本载体书，毫无反应。
+- **真因**：分派顺序。v2.0 写成「两本都是我们的书 → 走合并」，而合并只认
+  「载体书 + 载体书」与「升级书 + 升级书」——**「拿书去推一本书」这条规格 §4 里写明的路被整条吞掉**。
+- **修法**：两本都是我们的书时，先试 `applyBookAdvance`，返回 false 才落到合并。
+  - 进阶书 → 整本书阶级 +1，所有条目曲线等级归 1；成本取目标阶 `anvil_cost`（多条目取最大）。
+  - 升级书 → 所有条目曲线等级提到目标值（逐条夹取），成本 3。
+  - **定向进阶书遇到多条目书里混了别的附魔 → 整本拒绝**（书的阶级是书级单值，拆不开），提示玩家改用通用书。
+  - 门槛与装备侧同源：每条目都要 ≥ `min(目标阶 required_level, 来源阶上限)`；创造旁路跳过。
+- **至此双宿主（装备 / 载体书）在「升阶、提级」两条规则上完全对称。**
+
+### 17.2 「创造模式用高阶段的书贴物品导致失去世界连接」
+
+- **真因（按可能性最高的机制处理）**：铁砧的处理入口跑在**容器包处理链**里，
+  任何未捕获异常 = 服务端线程中断 = 客户端「失去世界连接」；
+  另一条同类路径是**写入越界值**（附魔等级超出可序列化范围）→ **网络编码阶段**炸，同样是掉线。
+- **修法（三处加固）**：
+  1. `AnvilEvents.onAnvilUpdate` 整体兜底：异常降级为「本次不产出」+ 错误日志；
+  2. `AnvilTakeEvents.onAnvilRepair` 同样兜底（剩菜书交付失败也不许掀线程）；
+  3. 写存储等级前一律夹进 `min(该阶上限, 该附魔原版上限, 255)`。
+- **复现尝试（未成功，已留档）**：90 个阶段条目（30 谱系 × 3 阶级）各造一件产物，
+  做 **网络编码 → 解码往返**（93 次）与**结算 + 单点查询 + tooltip**；
+  另对创造旁路直接解析 90 例（全谱系）。**零异常、零编码失败**——数据与逻辑侧不可复现。
+  因此本次按「包处理链异常」堵死：今后再有此类问题，日志里会留下
+  `Anvil handling failed` / `Leftover book delivery failed` 与完整栈，而不是玩家直接掉线。
+
+### 17.3 顺带修掉的一处架构缺陷（**不是**本次掉线的成因）
+
+拿到更精确的现象后（**在铁砧上放入物品 + 高阶附魔书，一放上去就掉线**），复查出并修掉了一处
+**依赖方向错误**（v2.0 引入，我自己的）：
+
+| 项 | 内容 |
+|---|---|
+| 现场 | 运行期的 `logic/BookFactory`（铁砧产物造书）调用 `datagen/UEModels.predicateOf(...)` |
+| 为何致命 | `UEModels extends ItemModelProvider` —— **客户端**模型生成器 API。只跑服务端的发行版里加载它会抛 `NoClassDefFoundError`；而该调用就在铁砧结果槽的写入路径上（包处理链），所以表现是玩家直接掉线 |
+| 为何 dev 复现不出 | 开发环境客户端/服务端类同处一个 classpath，147 例（物品 × 进阶书 / 升级书）全组合零异常 |
+| 修法 | 编码算术下沉到运行期 `content/BookView`，**datagen 反过来调运行期**；模型 JSON 逐字未变（已 diff 验证），147 例仍全绿 |
+| 防复发 | AGENT.md 新增 **P0-16**（运行期包不得 import datagen / 客户端类）并写进 §6 提交前清单 |
+
+> 这也解释了 §17.2 的压力复现为什么查不出来：我复现的是**数据**，真凶在**类加载**。
+> 教训：dev 里测不出、只在服务端发行版炸的崩溃，先查依赖方向与发行版差异。
+> **但本条不是这次掉线的成因**——它是一处真实、该修的缺陷，属顺带加固。真正成因见下。
+
+---
+
+## 17.4 掉线的真正成因：注册表**侧别**错配（v2.4）
+
+工作区里的客户端日志（`run/logs` 的轮转归档）给出了决定性证据：
+
+    Internal Exception: io.netty.handler.codec.EncoderException:
+        Failed to encode packet 'serverbound/minecraft:container_click'
+    Caused by: java.lang.IllegalArgumentException:
+        Can't find id for 'Reference{ResourceKey[minecraft:enchantment / minecraft:smite]=Enchantment 亡灵杀手}'
+        in map net.minecraft.core.Registry$1@...
+        at net.minecraft.core.IdMap.getIdOrThrow
+        at net.minecraft.network.codec.ByteBufCodecs$25.encode          // holderRegistry
+        at net.minecraft.core.component.DataComponentPatch.encodeComponent
+
+| 项 | 内容 |
+|---|---|
+| 现象 | **单机（集成服务器）+ 创造模式**：物品 + 高阶附魔书放进铁砧 → 立刻掉线 |
+| 失败点 | 客户端要发出的 `serverbound/container_click`（装着客户端本地生成的铁砧结果栈） |
+| 机制 | `ByteBufCodecs.registry(...)` 用 `IdMap.getIdOrThrow(holder)` **按值查 ID**；服务端与客户端的 `Enchantment` 是两套不同实例（record 内嵌各自那一侧的 HolderSet / 效果组件），跨侧不相等 → 查不到 ID → 编码失败 → 连接关闭 |
+| 为何会跨侧 | `CommonHooks.resolveLookup` 的第一优先级是 `ServerLifecycleHooks.getCurrentServer()`；**单机的集成服务器一直存在**，于是**客户端线程**上它也返回**服务端**注册表。而创造旁路「白装备直上阶级」会把 `enchants.get(...)` 拿到的 Holder **写进物品的附魔组件** |
+| 为何此前测不到 | 专用服务器两侧同一张表；纯多人客户端没有集成服务器（回落客户端表）。**只有「单机 + 客户端本地生成栈」**这一种组合会炸 |
+| 修法 | 新增 `logic/UELookups.enchantmentsForItemWrites(clientSide)`：逻辑客户端用 `ClientHooks.resolveLookup`，否则用 `CommonHooks.resolveLookup`；铁砧分派与取件改走它 |
+| 关键细节 | 集成服务器**两侧线程同时在跑**，判据必须是 `level.isClientSide()`，**不能**用 `FMLEnvironment.dist`（否则服务端线程会错用客户端表） |
+| 配套守卫 | 写入前检查 `holder.unwrapKey().isPresent()`，把运行时组装的合成 Holder（P0-2）挡在门外 |
+
+---
+
+## 18. JEI 兼容（v2.5）
+
+### 18.1 问题：单例物品 + 组件变体，在 JEI 里会塌成一条
+
+书与祛咒石都是**单例物品**（几百个变体共用同一个 `Item`，只靠组件区分），
+而 JEI 判断「同一种材料」用的是 **subtype**，**默认不认数据组件**。
+
+**实测证据**（同一份代码、同一个存档，只切换「注册 / 不注册」；数字来自
+`UEJeiPlugin.onRuntimeAvailable` 里的 `[JEI]` 日志）：
+
+| 场景 | 进阶附魔书 | 祛咒石 |
+|---|---|---|
+| 不注册（JEI 默认） | **1** 条 | **1** 条 |
+| 注册 subtype | **384** 条（进化 93 / 载体 276 / 升级 15） | **3** 条 |
+
+原版附魔书能逐本列出，是因为 JEI 的原版插件内建注册了同类解释器。
+
+### 18.2 实现
+
+`compat/jei/UEJeiPlugin`（`@JeiPlugin`，`IModPlugin`）：
+
+- `registerItemSubtypes` 给书与祛咒石各注册一个 `ISubtypeInterpreter<ItemStack>`；
+- 键 = **语义载荷**（载荷组件经自身 codec 转 JSON），而不是整份组件：
+  修复费 / 自定义名字 / 耐久等无关数据不会把同一变体分裂成多条；
+- `onRuntimeAvailable` 打一行 `[JEI] 材料表：…`（**可失败的检查**：
+  把注册注释掉，条数会塌回 1）。
+
+### 18.3 版本与依赖
+
+| 项 | 取值 |
+|---|---|
+| 开发依赖 | `mezz.jei:jei-1.21.1-common-api` + `neoforge-api`（`compileOnly`）、`jei-1.21.1-neoforge`（`runtimeOnly`）；**不进 jar** |
+| 接口选择 | `ISubtypeInterpreter`（新）；`IIngredientSubtypeInterpreter` / `NONE` 已过时待删 |
+| 兼容实测 | JEI **19.44.0.400**（用户实例）与 **19.57.0.450**（开发依赖）接口一致 |
+| 服务端安全 | `@JeiPlugin` 由 JEI 自己扫描；插件类只在装了 JEI 的客户端被加载（P0-16） |
+
 

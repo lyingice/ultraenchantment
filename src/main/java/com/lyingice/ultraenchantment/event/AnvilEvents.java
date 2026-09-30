@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.event;
 
+import com.lyingice.ultraenchantment.Ultraenchantment;
 import com.lyingice.ultraenchantment.content.AscensionData;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.BookSpecs;
@@ -11,8 +12,10 @@ import com.lyingice.ultraenchantment.logic.BookFactory;
 import com.lyingice.ultraenchantment.logic.InscriptionLogic;
 import com.lyingice.ultraenchantment.logic.ItemMergeLogic;
 import com.lyingice.ultraenchantment.logic.StageLookup;
+import com.lyingice.ultraenchantment.logic.UELookups;
 import com.lyingice.ultraenchantment.registry.UEComponents;
 import com.lyingice.ultraenchantment.registry.UEItems;
+import java.util.Optional;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
@@ -74,8 +77,26 @@ public final class AnvilEvents {
 
     private static final int UPGRADE_COST = 3;
 
+    /**
+     * 铁砧入口。
+     *
+     * <p>⚠️ 本方法运行在**容器包处理链**里（{@code AnvilMenu.createResult} 由点击/同步触发）。
+     * 一旦抛出未捕获异常，服务端线程会随之中断，客户端看到的是「失去世界连接」——
+     * 一个数据错误被放大成掉线。因此这里整体兜底：**任何异常都降级为「本次不产出」**，
+     * 并且打一条带异常的错误日志（两侧都会走同一条确定性路径，所以两边都降级、不会错位）。
+     */
     @SubscribeEvent
     public void onAnvilUpdate(AnvilUpdateEvent event) {
+        try {
+            handleAnvilUpdate(event);
+        } catch (RuntimeException | LinkageError t) {
+            event.setOutput(ItemStack.EMPTY);
+            event.setCost(0);
+            Ultraenchantment.LOGGER.error("Anvil handling failed (operation refused)", t);
+        }
+    }
+
+    private void handleAnvilUpdate(AnvilUpdateEvent event) {
         ItemStack left = event.getLeft();
         if (left.isEmpty()) {
             return;
@@ -88,8 +109,13 @@ public final class AnvilEvents {
 
         // ① 两本都是我们的书 → 书 + 书合并。
         //    必须在「右槽是我们的书」之前判：否则会被当成「拿书去作用于一本书」，两边都不生效。
+        //    ⚠️ v2.0 漏了这一步：载体书 + 进阶书 落进 applyBookMerge，而合并只认
+        //    「载体书 + 载体书 / 升级书 + 升级书」，于是规格里写明的「把铭刻书升到下一阶」
+        //    根本没有实现（表现：点上去毫无反应）。
         if (leftIsOurBook && rightIsOurBook) {
-            applyBookMerge(event, left, right);
+            if (!applyBookAdvance(event, left, right)) {
+                applyBookMerge(event, left, right);
+            }
             return;
         }
 
@@ -122,7 +148,10 @@ public final class AnvilEvents {
 
     private void dispatchBySubject(AnvilUpdateEvent event, ItemStack left, ItemStack right) {
         HolderLookup.RegistryLookup<StageDefinition> stages = StageLookup.lookup();
-        HolderLookup.RegistryLookup<Enchantment> enchants = CommonHooks.resolveLookup(Registries.ENCHANTMENT);
+        // ⚠️ 必须按「生成这一侧」取注册表：写进物品的 Holder 要能被这一侧的编码器查到 ID。
+        // 用 CommonHooks.resolveLookup 会在单机的客户端线程上拿到服务端注册表 → 掉线（§17.4）。
+        boolean clientSide = event.getPlayer() != null && event.getPlayer().level().isClientSide();
+        HolderLookup.RegistryLookup<Enchantment> enchants = UELookups.enchantmentsForItemWrites(clientSide);
         if (stages == null || enchants == null) {
             return;
         }
@@ -151,6 +180,77 @@ public final class AnvilEvents {
         if (upgrade != null) {
             applyUpgrade(event, left, upgrade, stages);
         }
+    }
+
+    /**
+     * 载体书 + 进阶书 / 升级书 —— 把<b>书</b>当作宿主来推进（规格 §4「双宿主对称」）。
+     *
+     * <ul>
+     *   <li>进阶书：整本书的阶级推进一阶，所有条目曲线等级归 1；</li>
+     *   <li>升级书：所有条目的曲线等级提到目标值（逐条夹取）。</li>
+     * </ul>
+     *
+     * <p>定向进阶书只认它铭刻的那条附魔：多条目书里混了别的附魔就**整本拒绝**
+     * （书的阶级是书级单值，拆不开），请改用通用进阶书。
+     *
+     * @return {@code true} = 已接管并设置输出（调用方不要再走合并）
+     */
+    private boolean applyBookAdvance(AnvilUpdateEvent event, ItemStack left, ItemStack right) {
+        BookSpecs.Inscription book = left.get(UEComponents.INSCRIPTION_SPEC.get());
+        if (book == null) {
+            return false;
+        }
+        HolderLookup.RegistryLookup<StageDefinition> stages = StageLookup.lookup();
+        if (stages == null) {
+            return false;
+        }
+
+        BookSpecs.Ascension ascension = right.get(UEComponents.ASCENSION_SPEC.get());
+        if (ascension != null) {
+            AscensionTier toTier = AscensionTier.of(ascension.toTier()).orElse(null);
+            if (toTier == null) {
+                return false;
+            }
+            if (ascension.isTargeted()) {
+                ResourceLocation pinned = ascension.applicable().orElseThrow();
+                for (BookSpecs.Inscription.Entry entry : book.entries()) {
+                    if (!entry.enchantment().equals(pinned)) {
+                        return false;
+                    }
+                }
+            }
+            Optional<BookSpecs.Inscription> advanced = InscriptionLogic.advanceTier(
+                    stages, book, ascension.fromTier(), toTier, isCreative(event));
+            if (advanced.isEmpty()) {
+                return false;
+            }
+            int cost = 1;
+            for (BookSpecs.Inscription.Entry entry : advanced.get().entries()) {
+                StageDefinition stage = StageLookup
+                        .stageOf(stages, entry.enchantment(), toTier.asLineageTier()).orElse(null);
+                if (stage != null) {
+                    cost = Math.max(cost, stage.definition().anvilCost());
+                }
+            }
+            event.setOutput(BookFactory.inscription(advanced.get()));
+            event.setCost(cost);
+            event.setMaterialCost(1);
+            return true;
+        }
+
+        BookSpecs.Upgrade upgrade = right.get(UEComponents.UPGRADE_SPEC.get());
+        if (upgrade != null) {
+            Optional<BookSpecs.Inscription> raised = InscriptionLogic.upgradeEntries(
+                    stages, book, upgrade.tier(), upgrade.targetLevel());
+            if (raised.isEmpty()) {
+                return false;
+            }
+            event.setOutput(BookFactory.inscription(raised.get()));
+            event.setCost(UPGRADE_COST);
+            event.setMaterialCost(1);
+            return true;
+        }
+        return false;
     }
 
     /** 创造模式旁路：调试时无视等级/阶级门槛（规格明确允许）。 */
