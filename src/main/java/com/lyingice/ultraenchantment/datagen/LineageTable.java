@@ -76,7 +76,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
  * 全部是字面量、就地可调（AGENT.md §7 把具体数值列为作者人工微调的开放项）。
  * 参数含义统一为 {@code (1 级时的量, 每级递增的量)}——加成同样随存储等级成长。
  *
- * <h2>收录范围：玩家常用核心（30 条）</h2>
+ * <h2>收录范围：玩家常用核心（31 条）</h2>
  *
  * <p>刻意<b>不做</b>长尾附魔。要补一条，在下面表单里加一行即可——三阶补丁 + 中英名，
  * 其余（物品标签、槽位、等级上限、原版效果）全部自动从根源附魔取。
@@ -105,12 +105,15 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
  * <table>
  *   <tr><th>附魔</th><th>理由</th></tr>
  *   <tr><td>{@code bane_of_arthropods} 节肢杀手</td><td>与 {@code smite} 功能重叠，实用度低</td></tr>
- *   <tr><td>{@code impaling} 穿刺</td><td>三叉戟对水生生物，场景极窄</td></tr>
  *   <tr><td>{@code density} / {@code breach} / {@code wind_burst}</td><td>重锤专属，后期内容</td></tr>
  *   <tr><td>{@code soul_speed} 灵魂疾行</td><td>只在灵魂沙/灵魂土上生效</td></tr>
  *   <tr><td>{@code frost_walker} 冰霜行者</td><td>娱乐向，不参与战斗/生产循环</td></tr>
  *   <tr><td>{@code aqua_affinity} 水下速掘</td><td>上限 1 级，场景窄</td></tr>
  * </table>
+ *
+ * <p>{@code impaling} 穿刺曾在此表（理由：三叉戟对水生生物、场景窄），
+ * 2026-10 按作者要求纳入——<b>三档补丁全为 {@code none()}</b>，
+ * 只体现它自己的原版效果，不额外加属性。若以后再想给它加成，在表里补补丁即可。
  *
  * <h2>阶梯命名规则</h2>
  *
@@ -307,6 +310,15 @@ public final class LineageTable {
                     crossbowChargeTime(0.15f)),
 
             // ── 三叉戟 ───────────────────────────────────────────────────
+            //
+            // 穿刺（impaling）：三档补丁**全是 none()**——它只走自己的原版效果
+            // （对水生生物的额外伤害，那个条件写在原版 effects 里，照抄即得），
+            // 阶级成长完全由「阶级曲线对自有属性的缩放」体现，
+            // 不额外挂伤害/击退之类加成（作者 2026-10 的决定；其余加成以后再加）。
+            lineage("impaling", "穿刺", "Impaling",
+                    none(),
+                    none(),
+                    none()),
             lineage("loyalty", "忠诚", "Loyalty",
                     none(),
                     damage(0.5f, 0.5f),

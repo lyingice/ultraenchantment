@@ -1,0 +1,44 @@
+{
+  "definition": {
+    "anvil_cost": 8,
+    "max_cost": {
+      "base": 46,
+      "per_level_above_first": 33
+    },
+    "max_level": 5,
+    "min_cost": {
+      "base": 26,
+      "per_level_above_first": 33
+    },
+    "slots": [
+      "mainhand"
+    ],
+    "supported_items": "#minecraft:enchantable/trident",
+    "weight": 2
+  },
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 15.0,
+            "per_level_above_first": 7.5
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "type": "#minecraft:sensitive_to_impaling"
+          }
+        }
+      }
+    ]
+  },
+  "next": "ultraenchantment:ultra/impaling",
+  "required_level": 4,
+  "root": "minecraft:impaling",
+  "tier": "super"
+}

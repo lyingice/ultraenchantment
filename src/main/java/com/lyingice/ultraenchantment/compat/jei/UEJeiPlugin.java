@@ -12,9 +12,18 @@ import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.ingredients.subtypes.ISubtypeInterpreter;
 import mezz.jei.api.ingredients.subtypes.UidContext;
+import mezz.jei.api.registration.IRecipeCatalystRegistration;
+import mezz.jei.api.registration.IRecipeCategoryRegistration;
+import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
+import io.netty.buffer.Unpooled;
+import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 
@@ -53,6 +62,9 @@ import org.slf4j.Logger;
 public class UEJeiPlugin implements IModPlugin {
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** 最近一次注册的配方（运行时校验用；JEI 配方是客户端数据，不会同步）。 */
+    private static List<AnvilDisplay> LAST_RECIPES = List.of();
+
     private static final ResourceLocation PLUGIN_UID =
             ResourceLocation.fromNamespaceAndPath(Ultraenchantment.MODID, "core");
 
@@ -85,6 +97,41 @@ public class UEJeiPlugin implements IModPlugin {
     @Override
     public ResourceLocation getPluginUid() {
         return PLUGIN_UID;
+    }
+
+    @Override
+    public void registerCategories(IRecipeCategoryRegistration registration) {
+        registration.addRecipeCategories(
+                new AnvilRecipeCategory(registration.getJeiHelpers().getGuiHelper()));
+    }
+
+    @Override
+    public void registerRecipes(IRecipeRegistration registration) {
+        List<AnvilDisplay> recipes = UEJeiRecipes.build();
+        registration.addRecipes(UEJeiRecipeTypes.ANVIL, recipes);
+
+        LAST_RECIPES = recipes;
+
+        int ascend = 0;
+        int merge = 0;
+        int upgrade = 0;
+        for (AnvilDisplay recipe : recipes) {
+            switch (recipe.kind()) {
+                case ASCEND -> ascend++;
+                case MERGE -> merge++;
+                case UPGRADE -> upgrade++;
+            }
+        }
+        LOGGER.info("[JEI] 附魔铁砧配方 {} 条（附魔进阶 {} / 附魔合并 {} / 附魔升级 {}）",
+                recipes.size(), ascend, merge, upgrade);
+    }
+
+    @Override
+    public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
+        // 铁砧是三类操作的共同催化剂；书本身也放上去，方便「拿着书按 R」时能跳到这里。
+        registration.addRecipeCatalysts(UEJeiRecipeTypes.ANVIL,
+                Items.ANVIL, Items.CHIPPED_ANVIL, Items.DAMAGED_ANVIL,
+                UEItems.ADVANCED_ENCHANTED_BOOK.get(), UEItems.CURATIVE_STONE.get());
     }
 
     @Override
@@ -126,9 +173,90 @@ public class UEJeiPlugin implements IModPlugin {
             }
             LOGGER.info("[JEI] 材料表：进阶附魔书 {} 条（进化 {} / 载体 {} / 升级 {} / 空白 {}），祛咒石 {} 条",
                     books, ascension, carrier, upgrade, blank, stones);
+
+            // 创造栏的硬性约定：**载体书一律单条目**（规格：创造栏的轴是「谱系 × 阶级 × 等级」）。
+            // 多条目书只能由玩家在铁砧上合并产生，不该出现在这里。
+            // 这条检查是可以失败的：谁再往创造栏投一本多条目书，它会立刻报出书名与条目。
+            checkNoMultiEntryBooks(runtime);
+
+            // 配方里的展示栈必须能编码：它们是客户端造的、JEI 作弊模式还能直接给到玩家手上，
+            // 一旦有服务端 Holder 混进来（P0-17），玩家点一下就掉线。
+            checkRecipeStacksEncodable();
         } catch (RuntimeException | LinkageError t) {
             LOGGER.warn("[JEI] 统计失败（不影响功能）", t);
         }
+    }
+
+    /**
+     * 把每条配方里的每个展示栈都编码一遍。
+     *
+     * <p>为什么值得单独验：这些栈由客户端构造并交给 JEI 展示（作弊模式还能直接取走），
+     * 编码用的是<b>客户端</b>注册表；只要混进一个服务端 Holder，玩家一点就掉线（P0-17）。
+     *
+     * <p>这条检查能失败：把 {@code UEJeiRecipes} 里的客户端 lookup 换回
+     * {@code CommonHooks.resolveLookup}，在单机上它会立刻报出失败的栈。
+     */
+    private static void checkRecipeStacksEncodable() {
+        var level = Minecraft.getInstance().level;
+        if (level == null) {
+            LOGGER.warn("[JEI] 没有客户端世界，跳过配方栈编码校验");
+            return;
+        }
+        int stacks = 0;
+        int failed = 0;
+        for (AnvilDisplay recipe : LAST_RECIPES) {
+            for (List<ItemStack> slot : List.of(recipe.input(), recipe.book(), recipe.output())) {
+                for (ItemStack stack : slot) {
+                    stacks++;
+                    try {
+                        RegistryFriendlyByteBuf buf =
+                                new RegistryFriendlyByteBuf(Unpooled.buffer(), level.registryAccess());
+                        ItemStack.STREAM_CODEC.encode(buf, stack);
+                    } catch (Throwable t) {
+                        failed++;
+                        LOGGER.error("[JEI] ⚠️ 配方里的展示栈编不出去（{}）：{}",
+                                stack.getItem(), t.toString());
+                    }
+                }
+            }
+        }
+        LOGGER.info("[JEI] 配方展示栈编码校验：{} 个栈，失败 {} 个（约定 0）", stacks, failed);
+    }
+
+    /**
+     * 创造栏的硬性约定：<b>载体书一律单条目</b>。
+     *
+     * <p>多条目书是「玩家在铁砧上合并两本」才该出现的东西（规格 §5.4），不该由创造栏发出来；
+     * 而且它与单条目书共用材质，摆在列表里读起来就是「某条附魔的书莫名多了一条别的附魔」。
+     *
+     * <p>这条检查能失败：谁再把多条目样本投进创造栏，这里会报出阶级与条目（约定值 0）。
+     */
+    private static void checkNoMultiEntryBooks(IJeiRuntime runtime) {
+        int multi = 0;
+        for (ItemStack stack : runtime.getIngredientManager().getAllItemStacks()) {
+            if (!UEItems.isAdvancedBook(stack)) {
+                continue;
+            }
+            BookSpecs.Inscription spec = stack.get(UEComponents.INSCRIPTION_SPEC.get());
+            if (spec == null || spec.entries().size() < 2) {
+                continue;
+            }
+            multi++;
+            LOGGER.error("[JEI] ⚠️ 创造栏出现了多条目载体书：「{}」阶 {} —— 创造栏只放单条目书",
+                    spec.tier().id(), entriesOf(spec));
+        }
+        LOGGER.info("[JEI] 创造栏多条目载体书 {} 本（约定值 0）", multi);
+    }
+
+    private static String entriesOf(BookSpecs.Inscription spec) {
+        StringBuilder sb = new StringBuilder();
+        for (BookSpecs.Inscription.Entry entry : spec.entries()) {
+            if (sb.length() > 0) {
+                sb.append(" + ");
+            }
+            sb.append(entry.enchantment().getPath()).append("(").append(entry.level()).append(")");
+        }
+        return sb.toString();
     }
 
     // ── subtype 键 ──────────────────────────────────────────────────────

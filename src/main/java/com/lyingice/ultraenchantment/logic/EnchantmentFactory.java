@@ -50,6 +50,17 @@ public final class EnchantmentFactory {
             new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
+     * 现场组装出来的 {@link Enchantment} <b>对象本身</b>（按引用判等）。
+     *
+     * <p>给兼容补丁用：第三方模组常把一个 {@code Enchantment} 反查回注册表 key
+     * （{@code registry.getResourceKey(ench)}），遇到我们这些没有注册表条目的对象就会炸
+     * （见 AGENT.md P1-38：试验假人模组 {@code Optional.get()} 崩服）。
+     * {@link #CACHE} 是「阶段 id → Holder」，反查要遍历；这里是 O(1) 的引用集合。
+     */
+    private static final java.util.Set<Enchantment> SYNTHETIC =
+            java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+    /**
      * 把一个阶段定义组装成可注入的 {@link Enchantment}。
      *
      * @param stageId 阶段条目 id，仅用于生成可读的 description
@@ -83,12 +94,17 @@ public final class EnchantmentFactory {
      * 写回 {@code DataComponents.ENCHANTMENTS} 会让存档/网络同步直接崩溃。
      */
     public static Holder<Enchantment> holder(StageDefinition stage, ResourceLocation stageId) {
-        return CACHE.computeIfAbsent(stageId, id -> Holder.direct(build(stage, id)));
+        return CACHE.computeIfAbsent(stageId, id -> {
+            Enchantment assembled = build(stage, id);
+            SYNTHETIC.add(assembled);
+            return Holder.direct(assembled);
+        });
     }
 
     /** 数据包重载时清空缓存（阶段定义已变，旧的组装结果作废）。 */
     public static void invalidate() {
         CACHE.clear();
+        SYNTHETIC.clear();
     }
 
     /**
@@ -105,5 +121,14 @@ public final class EnchantmentFactory {
     /** 判定一个 Holder 是否为我们现场组装的（无注册表 ID）。供调试与防御性断言用。 */
     public static boolean isSynthetic(Holder<Enchantment> holder) {
         return holder.unwrapKey().isEmpty();
+    }
+
+    /**
+     * 判定一个 {@link Enchantment} <b>对象</b>是不是我们现场组装的。
+     *
+     * <p>兼容补丁在别的模组的方法里只拿得到对象、拿不到 Holder，所以需要这个值版判定。
+     */
+    public static boolean isSynthetic(Enchantment enchantment) {
+        return SYNTHETIC.contains(enchantment);
     }
 }

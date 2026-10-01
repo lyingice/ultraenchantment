@@ -2,10 +2,13 @@ package com.lyingice.ultraenchantment.logic;
 
 import javax.annotation.Nullable;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.CommonHooks;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 /**
  * <b>按「谁生成、就用谁的注册表」取附魔注册表</b>——写入物品组件时必须用它。
@@ -51,6 +54,22 @@ public final class UELookups {
             }
         }
         return CommonHooks.resolveLookup(Registries.ENCHANTMENT);
+    }
+
+    /**
+     * 附魔注册表<b>本体</b>（不是 lookup）——需要一个「值 → key」反查时用。
+     *
+     * <p>{@code minecraft:enchantment} 是<b>数据包注册表</b>，不在 {@code BuiltInRegistries} 里，
+     * 必须从对应当前侧的 registry access 取。没有服务器时（标题界面等）返回 {@code null}：
+     * 我们只覆盖服务端那条崩服路径，客户端不做通用判定。
+     */
+    @Nullable
+    public static Registry<Enchantment> enchantmentRegistry() {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            return null;
+        }
+        return server.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
     }
 
     /** 只在逻辑客户端被加载（引用客户端专属的 {@code ClientHooks}）。 */

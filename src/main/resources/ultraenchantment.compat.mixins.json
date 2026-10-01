@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.lyingice.ultraenchantment.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "plugin": "com.lyingice.ultraenchantment.mixin.UECompatMixinPlugin",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "compat.DummyMobTypeCompatMixin"
+  ]
+}

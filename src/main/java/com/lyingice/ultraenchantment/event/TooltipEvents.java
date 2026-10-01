@@ -4,6 +4,7 @@ import com.lyingice.ultraenchantment.Ultraenchantment;
 import com.lyingice.ultraenchantment.content.AscensionData;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.logic.ProtectionLogic;
+import com.lyingice.ultraenchantment.logic.StageLookup;
 import com.lyingice.ultraenchantment.registry.UEComponents;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,7 +109,7 @@ public final class TooltipEvents {
             Component vanillaLine = Enchantment.getFullname(root, level);
 
             toRemove.add(vanillaLine);
-            toAdd.add(renderStagedLine(stageId, data.tierLevelOf(rootId)));
+            toAdd.add(renderStagedLine(stageId, rootId, root, data.tierLevelOf(rootId)));
         });
 
         if (toAdd.isEmpty()) {
@@ -157,17 +158,30 @@ public final class TooltipEvents {
      * <p>存储等级（锋利 5 的 5）不参与显示，也不参与算效果强度——效果按 **tierLevel** 结算，
      * 存储等级只留给原版机制读（铁砧合并、附魔台、村民交易）。
      */
-    private static Component renderStagedLine(ResourceLocation stageId, int tierLevel) {
+    private static Component renderStagedLine(ResourceLocation stageId, ResourceLocation rootId,
+                                              Holder<Enchantment> root, int tierLevel) {
         AscensionTier tier = ProtectionLogic.tierOfStageId(stageId);
 
         // tierLevel 为 0 表示无进阶曲线记录（异常情况），归 1 兜底。
         int shown = Math.max(1, tierLevel);
 
-        return Component.empty()
-                .append(Component.translatable(stageNameKey(stageId)).withStyle(colorOf(tier)))
-                .append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
-                .append(Component.translatable("enchantment.level." + shown)
-                        .withStyle(ChatFormatting.GRAY));
+        MutableComponent line = Component.translatable(stageNameKey(stageId)).withStyle(colorOf(tier));
+
+        // 等级数字的省略规则和原版 Enchantment.getFullname 同源：
+        //     if (level != 1 || enchantment.getMaxLevel() != 1) { 才显示数字 }
+        // 上限取该阶级阶段条目的 max_level（逐谱系，P1-28），查不到退化为原版附魔自身上限；
+        // 判定与铭刻书 tooltip 共用 StageLookup.displayLevelCap，避免两处规则再次漂移。
+        //
+        // 受影响的是那 5 条「原版上限就是 1」的谱系——经验修补 / 引雷 / 火矢 / 无限 / 多重射击：
+        // 它们的 tierLevel 恒为 1，此前被无条件渲染成「高阶经验修补 1」，
+        // 而原版与书 tooltip 都只写「经验修补」。
+        int cap = StageLookup.displayLevelCap(tier.asLineageTier(), rootId, root.value().getMaxLevel());
+        if (shown != 1 || cap != 1) {
+            line.append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
+                    .append(Component.translatable("enchantment.level." + shown)
+                            .withStyle(ChatFormatting.GRAY));
+        }
+        return line;
     }
 
     /**

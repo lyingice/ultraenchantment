@@ -26,3 +26,8 @@ mandatory=true
 # config 字段必需，指向本模组 jar 内的 mixin 配置文件路径。
 [[mixins]]
 config="${mod_id}.mixins.json"
+
+# 兼容补丁单独一份配置：目标类属于**别的模组**，由插件按「对方装没装」门控，
+# 没装就整个跳过（required=false：对方改名/重构时只记日志，不让玩家崩）。
+[[mixins]]
+config="${mod_id}.compat.mixins.json"

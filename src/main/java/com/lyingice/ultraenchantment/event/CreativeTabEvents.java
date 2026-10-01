@@ -49,14 +49,16 @@ import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
  *   <tr><th>科目</th><th>主标签</th><th>搜索标签</th><th>理由</th></tr>
  *   <tr><td><b>进化书 · 通用</b></td><td>3 品质</td><td>3 品质</td>
  *       <td>与谱系无关，本来就只有 3 条</td></tr>
- *   <tr><td><b>进化书 · 定向</b></td><td><b>全部（90）</b></td><td><b>全部（90）</b></td>
- *       <td>矩阵是「谱系 × 阶级」= 30 × 3 = 90，<b>没有「等级」这一维</b>，
+ *   <tr><td><b>进化书 · 定向</b></td><td><b>全部（93）</b></td><td><b>全部（93）</b></td>
+ *       <td>矩阵是「谱系 × 阶级」= 31 × 3 = 93，<b>没有「等级」这一维</b>，
  *           不存在需要靠搜索才查得到的隐藏规格 → 不需要分层</td></tr>
- *   <tr><td><b>铭刻书</b></td><td>谱系 × 阶级（<b>90</b>，各格满级）</td>
- *       <td>谱系 × 阶级 × 等级（273）+ 3 条多条目样本</td>
+ *   <tr><td><b>铭刻书</b></td><td>谱系 × 阶级（<b>93</b>，各格满级）</td>
+ *       <td>谱系 × 阶级 × 等级（288）——<b>只放单条目书</b>，见下</td>
  *       <td>「等级」是隐藏维度 → 主标签只放满级；
  *           <b>顺序必须是谱系外层、阶级内层</b>——否则同一附魔的三个阶级被拆散，
- *           读起来像「高阶X / 超级Y / 究极Z」，会被当成数据串行（见 P1-29 的废弃说明）</td></tr>
+ *           读起来像「高阶X / 超级Y / 究极Z」，会被当成数据串行（见 P1-29 的废弃说明）。
+ *           <b>两个标签都只放单条目书</b>：多条目书与单条目书共用材质（外观只有「科目 × 阶级」），
+ *           摆在列表里只会被读成「数据乱了」；「一本刻多条」是玩家在铁砧上合并才有的结果（P1-37）</td></tr>
  *   <tr><td><b>升级书</b></td><td><b>全部等级</b></td><td><b>全部等级</b></td>
  *       <td>不区分附魔种类，只有「阶级 × 等级」两维，全展开占位可控</td></tr>
  *   <tr><td><b>祛咒石</b></td><td>3 档</td><td>3 档</td>
@@ -189,20 +191,19 @@ public final class CreativeTabEvents {
             acceptParent(event, inscriptionBook(payload));
         }
 
-        // ── 多条目样本：**只进搜索标签**（v2）──
+        // ── 创造栏**只放单条目载体书**（v2.8，作者纠正）──
         //
-        // 载体书从 v2 起可以携带多条附魔、可以两本合并（规格 §5.4）。这个能力要能被发现，
-        // 但它**不能放主标签**：多条目书与单条目书共用同一个材质（区分维度只有「科目 × 阶级」），
-        // 摆在主标签里看上去就是「某条附魔的书莫名多了一条别的附魔」——查不出错，
-        // 只会让人以为数据乱了（实测：排序后前两条谱系是爆炸保护与引雷，于是三条样本
-        // 全是「爆炸保护 + 引雷」，读起来像引雷的书被塞进了爆炸保护）。
-        // 放进搜索标签（全规格区）：搜得到，又不干扰主标签的整齐。
-        for (AscensionTier tier : AscensionTier.values()) {
-            List<BookSpecs.Inscription.Entry> pair = mergedSample(tier);
-            if (pair.size() >= 2) {
-                acceptSearch(event, inscriptionBook(tier, pair));
-            }
-        }
+        // 曾经往搜索标签投过 3 条「多条目样本」（想展示「一本可以刻多条」的能力）。
+        // 这是与最初定夺的投放规则不符的：创造栏的载体书规格就是
+        // 「谱系 × 阶级 × 等级」这条**单条目**的轴，多条目书不在其中。
+        //
+        // 更要紧的是它**读起来就是错的**：多条目书与单条目书共用同一套材质
+        // （外观只有「科目 × 阶级」两个维度），摆在列表里就是「某条附魔的书莫名多了一条
+        // 别的附魔」——玩家第一反应是数据乱了（实测：爆炸保护 + 引雷，两个永远贴不到
+        // 同一件物品上的附魔被刻在了一起）。
+        //
+        // 「一本刻多条」是**玩法能力**，来源应当是玩家在铁砧上把两本合并（规格 §5.4），
+        // 而不是从创造栏里凭空发一本。所以这里一条都不投。
 
         // ── 升级型：三档 × 全部等级，两个标签都进 ──
         //
@@ -244,29 +245,9 @@ public final class CreativeTabEvents {
         return plan;
     }
 
-    /** 多条目样本：该谱系该阶级的载体书（单条目）——由计划表复用。 */
+    /** 单条目载体书——主标签计划表复用它。 */
     private static ItemStack inscriptionBook(BookSpecs.Inscription payload) {
         return BookFactory.inscription(payload);
-    }
-
-    /**
-     * 取两条谱系组成「已合并」样本：该阶级下前两条真的铺了阶段条目的谱系，各自取该阶级满级。
-     *
-     * <p>不做假数据——样本要能真的用出去；数据包把某条谱系从某阶级撤掉时，
-     * 这里也跟着换人（与 {@link #inscriptionSamples()} 同一条原则：数据包是事实源）。
-     */
-    private static List<BookSpecs.Inscription.Entry> mergedSample(AscensionTier tier) {
-        List<BookSpecs.Inscription.Entry> entries = new ArrayList<>();
-        for (ResourceLocation root : ReloadEvents.roots()) {
-            if (!ReloadEvents.hasTier(root, tier)) {
-                continue;
-            }
-            entries.add(new BookSpecs.Inscription.Entry(root, ReloadEvents.maxLevelOf(root, tier, 1)));
-            if (entries.size() == 2) {
-                break;
-            }
-        }
-        return entries;
     }
 
     /**
@@ -340,7 +321,7 @@ public final class CreativeTabEvents {
      * <p>阶级不再是「从附魔 id 反推」——那是错的（铭刻的是原版 id，路径里没有阶级）。
      * 阶级是本书自身的属性，必须写进载荷，tooltip 与铁砧校验都直接读它。
      */
-    /** 多条目载体书——主标签样本与「已合并」样本用它。 */
+    /** 按给定条目构造载体书；创造栏只传单条目（多条目不投放，P1-37）。 */
     private static ItemStack inscriptionBook(AscensionTier tier, List<BookSpecs.Inscription.Entry> entries) {
         return BookFactory.inscription(new BookSpecs.Inscription(tier, entries));
     }

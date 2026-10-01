@@ -126,4 +126,19 @@ public final class StageLookup {
         }
         return fallback;
     }
+
+    /**
+     * <b>显示层</b>的等级上限——tooltip 决定「要不要省略等级数字」时用它。
+     *
+     * <p>规则与原版 {@code Enchantment.getFullname} 同源：
+     * {@code level != 1 || getMaxLevel() != 1} 才显示数字。上限一律取<b>该阶级阶段条目</b>的
+     * {@code max_level}（逐谱系，P1-28），取不到时退化为原版附魔自身上限。
+     *
+     * <p><b>物品 tooltip 与书 tooltip 必须共用这一份判定</b>：曾经两处各写各的，
+     * 于是书那边补了省略规则、物品那边漏了——「经验修补 1」这种原版根本不存在的行
+     * 就是这么冒出来的。一条规则只准有一份实现。
+     */
+    public static int displayLevelCap(LineageTier tier, ResourceLocation root, int vanillaMaxLevel) {
+        return maxLevelOf(lookup(), tier, root, Math.max(1, vanillaMaxLevel));
+    }
 }

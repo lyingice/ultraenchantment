@@ -138,6 +138,21 @@ public class UELang extends LanguageProvider {
             add(tipKey("scope.advanced"), "高阶附魔");
             add(tipKey("scope.super"), "超级附魔");
             add(tipKey("scope.ultra"), "究极附魔");
+
+            // ── JEI：类别标题、三类操作、进阶要求与合并规则（见 compat/jei）──
+            add(jeiKey("category.anvil"), "附魔铁砧");
+            add(jeiKey("action.ascend"), "附魔进阶");
+            add(jeiKey("action.merge"), "附魔合并");
+            add(jeiKey("action.upgrade"), "附魔升级");
+            add(jeiKey("require.max"), "进阶要求：%s 达到满级（%s 级）");
+            add(jeiKey("require.level"), "进阶要求：%s 达到 %s 级（该阶级上限 %s 级）");
+            add(jeiKey("note.ascend"), "进阶后曲线等级归 1，存储等级不变");
+            add(jeiKey("note.upgrade"), "升级书把该阶级的曲线等级提到目标值；已达目标则不产出");
+            add(jeiKey("note.merge.carrier"), "两本同阶级载体书：条目合并，等级相同则 +1（逐谱系夹取上限）");
+            add(jeiKey("note.merge.advance"), "载体书 + 进阶书：整本推进一阶，每个条目都要够门槛");
+            add(jeiKey("note.merge.upgrade"), "载体书 + 升级书：把条目提到该阶级上限");
+            add(jeiKey("note.merge.vanilla"), "原版附魔书 + 进阶书：转印成本模组的载体书（条目从 1 级起）");
+            add(jeiKey("note.merge.upgradebook"), "两本同阶级升级书：等级相同则 +1，否则取高");
         } else {
             add(tipKey("ascension.generic"), "Enchantment Ascension");
             add(tipKey("applies_to"), "Applicable to:");
@@ -154,11 +169,30 @@ public class UELang extends LanguageProvider {
             add(tipKey("scope.advanced"), "Advanced Enchantments");
             add(tipKey("scope.super"), "Super Enchantments");
             add(tipKey("scope.ultra"), "Ultra Enchantments");
+
+            add(jeiKey("category.anvil"), "Ultra Enchantment Anvil");
+            add(jeiKey("action.ascend"), "Enchantment Ascension");
+            add(jeiKey("action.merge"), "Enchantment Merging");
+            add(jeiKey("action.upgrade"), "Enchantment Upgrade");
+            add(jeiKey("require.max"), "Requires: %s at max level (%s)");
+            add(jeiKey("require.level"), "Requires: %s at level %s (tier cap %s)");
+            add(jeiKey("note.ascend"), "Ascending resets the curve level to 1; the stored level is unchanged");
+            add(jeiKey("note.upgrade"), "Raises the curve level to the book's target; no output if already there");
+            add(jeiKey("note.merge.carrier"), "Two carrier books of the same tier: entries merge, equal levels get +1");
+            add(jeiKey("note.merge.advance"), "Carrier book + ascension book: advances the whole book one tier");
+            add(jeiKey("note.merge.upgrade"), "Carrier book + upgrade book: raises entries to the tier cap");
+            add(jeiKey("note.merge.vanilla"), "Vanilla enchanted book + ascension book: transcribes into a carrier book");
+            add(jeiKey("note.merge.upgradebook"), "Two upgrade books of the same tier: equal levels get +1, otherwise the higher");
         }
     }
 
     private static String tipKey(String path) {
         return "tooltip." + Ultraenchantment.MODID + "." + path;
+    }
+
+    /** JEI 用的键：{@code jei.<modid>.<path>}。 */
+    private static String jeiKey(String path) {
+        return "jei." + Ultraenchantment.MODID + "." + path;
     }
 
     private String tierName(AscensionTier tier) {

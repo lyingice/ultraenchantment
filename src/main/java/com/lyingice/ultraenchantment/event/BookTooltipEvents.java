@@ -301,14 +301,12 @@ public final class BookTooltipEvents {
      */
     private static int inscriptionCap(AscensionTier tier, ResourceLocation enchantment,
                                       HolderLookup.RegistryLookup<Enchantment> lookup) {
-        int fromStage = StageLookup.maxLevelOf(
-                StageLookup.lookup(), tier.asLineageTier(), enchantment, -1);
-        if (fromStage > 0) {
-            return fromStage;
-        }
-        return lookup.get(ResourceKey.create(Registries.ENCHANTMENT, enchantment))
+        // 判定与物品 tooltip 共用（StageLookup.displayLevelCap）——这条规则曾经两边各写一份，
+        // 结果物品那边漏掉了省略，见 P1-32 补记。
+        int vanillaMax = lookup.get(ResourceKey.create(Registries.ENCHANTMENT, enchantment))
                 .map(h -> h.value().getMaxLevel())
                 .orElse(1);
+        return StageLookup.displayLevelCap(tier.asLineageTier(), enchantment, vanillaMax);
     }
 
     // ── ④ 升级型 ────────────────────────────────────────────────────────
