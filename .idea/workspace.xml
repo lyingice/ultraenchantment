@@ -4,27 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0e3b9ac5-0f1b-4e6b-aa76-47c235adc229" name="更改" comment="0.1版本第一次修正">
+    <list default="true" id="0e3b9ac5-0f1b-4e6b-aa76-47c235adc229" name="更改" comment="0.1版本第二次修正">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AGENT.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENT.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/book-system-spec.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/book-system-spec.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/enchantment-effects.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/enchantment-effects.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/.cache/313a5a16a306eb7a317efc359f7bb55211425a68" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/.cache/313a5a16a306eb7a317efc359f7bb55211425a68" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/generated/resources/.cache/ae4702a4bf536179b12dc920501f84788ae61794" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/.cache/ae4702a4bf536179b12dc920501f84788ae61794" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/.cache/c5f2da28f9dc1887653a4a4d2229ce3bfa0c3b63" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/.cache/c5f2da28f9dc1887653a4a4d2229ce3bfa0c3b63" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/en_us.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/en_us.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/zh_cn.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/zh_cn.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/compat/jei/UEJeiPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/compat/jei/UEJeiPlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/LineageTable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/LineageTable.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UELang.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UELang.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/BookTooltipEvents.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/BookTooltipEvents.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/CreativeTabEvents.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/CreativeTabEvents.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/TooltipEvents.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/TooltipEvents.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/EnchantmentFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/EnchantmentFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/StageLookup.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/StageLookup.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/UELookups.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/UELookups.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/META-INF/neoforge.mods.toml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/META-INF/neoforge.mods.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/compat/DummyMobTypeCompatMixin.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/compat/DummyMobTypeCompatMixin.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -115,7 +106,7 @@
     &quot;应用程序.runClient.executor&quot;: &quot;Run&quot;
   }
 }</component>
-  <component name="RunManager" selected="Gradle.UltraEnchantment [build]">
+  <component name="RunManager" selected="Gradle.UltraEnchantment [runClient]">
     <configuration name="Client" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="net.neoforged.devlaunch.Main" />
       <option name="PROGRAM_PARAMETERS" value="@D:\\0CreaterMods\\UltraEnchantment\\build\\moddev\\clientRunProgramArgs.txt" />
@@ -240,12 +231,21 @@
       <option name="project" value="LOCAL" />
       <updated>1790778912891</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="0.1版本第二次修正">
+      <option name="closed" value="true" />
+      <created>1790847046867</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1790847046867</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="第一次添加源码" />
     <MESSAGE value="0.1版本第一次修正" />
-    <option name="LAST_COMMIT_MESSAGE" value="0.1版本第一次修正" />
+    <MESSAGE value="0.1版本第二次修正" />
+    <option name="LAST_COMMIT_MESSAGE" value="0.1版本第二次修正" />
   </component>
 </project>

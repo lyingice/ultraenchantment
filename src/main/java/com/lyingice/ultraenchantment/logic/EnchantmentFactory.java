@@ -61,6 +61,16 @@ public final class EnchantmentFactory {
             java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
     /**
+     * 现场组装出来的附魔 → <b>它对应的原版谱系根源</b>（如 {@code minecraft:impaling}）。
+     *
+     * <p>合成附魔没有注册表 key，但它<b>有语义身份</b>：阶级「穿刺」就是原版的穿刺。
+     * 需要跟第三方模组解释「这个附魔属于哪条谱系」时（见 P1-38 试验假人的特攻判定），
+     * 用这张表把根源当 key 交出去。
+     */
+    private static final java.util.Map<Enchantment, ResourceLocation> ROOTS =
+            new java.util.IdentityHashMap<>();
+
+    /**
      * 把一个阶段定义组装成可注入的 {@link Enchantment}。
      *
      * @param stageId 阶段条目 id，仅用于生成可读的 description
@@ -97,6 +107,7 @@ public final class EnchantmentFactory {
         return CACHE.computeIfAbsent(stageId, id -> {
             Enchantment assembled = build(stage, id);
             SYNTHETIC.add(assembled);
+            ROOTS.put(assembled, stage.root());
             return Holder.direct(assembled);
         });
     }
@@ -105,6 +116,7 @@ public final class EnchantmentFactory {
     public static void invalidate() {
         CACHE.clear();
         SYNTHETIC.clear();
+        ROOTS.clear();
     }
 
     /**
@@ -130,5 +142,16 @@ public final class EnchantmentFactory {
      */
     public static boolean isSynthetic(Enchantment enchantment) {
         return SYNTHETIC.contains(enchantment);
+    }
+
+    /**
+     * 合成附魔对应的原版谱系根源；不是我们组装的则返回 {@code null}。
+     *
+     * <p>用途：向第三方解释「阶级穿刺 = 原版穿刺」。返回的是<b>语义身份</b>，
+     * 不是注册表条目——不要拿它去写物品组件。
+     */
+    @javax.annotation.Nullable
+    public static ResourceLocation rootOf(Enchantment enchantment) {
+        return ROOTS.get(enchantment);
     }
 }

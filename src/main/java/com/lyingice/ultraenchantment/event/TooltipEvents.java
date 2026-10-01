@@ -9,6 +9,7 @@ import com.lyingice.ultraenchantment.registry.UEComponents;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -183,6 +184,7 @@ public final class TooltipEvents {
         }
         return line;
     }
+
 
     /**
      * 阶段条目的本地化键。
