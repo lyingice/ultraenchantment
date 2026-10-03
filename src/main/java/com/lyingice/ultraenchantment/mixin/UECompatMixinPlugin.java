@@ -38,8 +38,33 @@ public class UECompatMixinPlugin implements IMixinConfigPlugin {
         return null;
     }
 
+    /**
+     * 门控表：{@code mixin 简名 → 需要安装的 modid}。
+     *
+     * <p>适配传说提示框的两个 mixin 打在 {@code AttributeUtil} / {@code ItemStack}
+     * （原版与 NeoForge 类，永远存在），所以「装没装对方」只能从**是谁的适配**来判断，
+     * 不能像假人补丁那样看目标类。
+     */
+    private static final java.util.Map<String, String> MIXIN_GATES = java.util.Map.of(
+            "DummyMobTypeCompatMixin", "dummmmmmy");
+
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        String simpleName = mixinClassName.substring(mixinClassName.lastIndexOf('.') + 1);
+        String requiredMod = MIXIN_GATES.get(simpleName);
+        if (requiredMod != null) {
+            boolean gated;
+            try {
+                gated = modPresent(requiredMod);
+            } catch (Throwable t) {
+                LOGGER.warn("[UE-compat] 判定 {} 是否安装时出错，按未安装处理", requiredMod, t);
+                return false;
+            }
+            LOGGER.info("[UE-compat] 「{}」兼容补丁：{}", simpleName,
+                    gated ? requiredMod + " 已安装，启用" : requiredMod + " 未安装，跳过");
+            return gated;
+        }
+
         if (!DUMMY_TARGET.equals(targetClassName)) {
             return true;
         }
@@ -72,10 +97,15 @@ public class UECompatMixinPlugin implements IMixinConfigPlugin {
      * 万一那时也拿不到，退回「类在不在」的探测（{@code initialize=false}，不触发静态初始化）。
      */
     private static boolean dummyModPresent() {
+        return modPresent("dummmmmmy");
+    }
+
+    /** 任意 modid 在不在？（加载期清单优先，类探测兜底，绝不抛异常） */
+    private static boolean modPresent(String modId) {
         try {
             var loading = FMLLoader.getLoadingModList();
             if (loading != null) {
-                return loading.getModFileById("dummmmmmy") != null;
+                return loading.getModFileById(modId) != null;
             }
         } catch (Throwable ignored) {
             // 继续走类探测

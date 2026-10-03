@@ -1,11 +1,27 @@
 package com.lyingice.ultraenchantment.datagen;
 
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.armorEffectiveness;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.conditionalPlusUnconditional;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.damageTypeProtection;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.knockbackResistance;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.vanillaStyleProtection;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.burningTime;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.ammoUseUnconditional;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.attackDamageTotal;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.projectileSpreadTotal;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.projectileCountTotal;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.attribute;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.join;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.blockExperience;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.crossbowChargeTime;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.damage;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.clear;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.damageImmunity;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.damageProtection;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.damageProtectionList;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.oxygenBonus;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.repairWithXpTotal;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.unconditionalProtection;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.durabilitySave;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.equipmentDrops;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.fishingLuck;
@@ -20,6 +36,7 @@ import static com.lyingice.ultraenchantment.datagen.UEStageEffects.projectilePie
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.projectileSpawnedIgnite;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.repairWithXp;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.tridentReturnAcceleration;
+import static com.lyingice.ultraenchantment.datagen.UEStageEffects.thorns;
 import static com.lyingice.ultraenchantment.datagen.UEStageEffects.tridentSpinAttackStrength;
 import static net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
 import static net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE;
@@ -29,6 +46,8 @@ import com.lyingice.ultraenchantment.content.LineageTier;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
@@ -148,11 +167,30 @@ public final class LineageTable {
     public record Lineage(ResourceLocation root,
                           String cnName,
                           String enName,
-                          List<UEStageEffects.Patch> ladder) {
+                          List<StageSpec> ladder,
+                          boolean cumulative) {
 
         public Lineage {
             Objects.requireNonNull(root, "root");
             ladder = List.copyOf(ladder);
+            if (ladder.isEmpty() || ladder.size() > STAGES.size()) {
+                throw new IllegalArgumentException("谱系 " + root + " 的阶梯长度应为 1~"
+                        + STAGES.size() + "，实际 " + ladder.size());
+            }
+        }
+
+        /** 本条谱系实际拥有的阶级（阶梯长度的前缀，例如保护只有【高阶】）。 */
+        public List<LineageTier> tiers() {
+            return STAGES.subList(0, this.ladder.size());
+        }
+
+        /** 某阶级的规格（补丁 + 可选的上限/门槛覆盖）。 */
+        public StageSpec specFor(LineageTier tier) {
+            int index = this.tiers().indexOf(tier);
+            if (index < 0) {
+                throw new IllegalArgumentException("谱系 " + this.root + " 没有这一阶：" + tier);
+            }
+            return this.ladder.get(index);
         }
 
         /** 某阶级的阶段条目 id：{@code ultraenchantment:<tier>/<rootPath>}。 */
@@ -181,12 +219,49 @@ public final class LineageTable {
          * @throws IllegalArgumentException 传入 {@link LineageTier#NATIVE}（原生阶没有阶段条目）
          */
         public List<UEStageEffects.Patch> patchesFor(LineageTier tier) {
-            int index = STAGES.indexOf(tier);
+            int index = this.tiers().indexOf(tier);
             if (index < 0) {
                 throw new IllegalArgumentException("原生阶没有阶段条目，不存在阶位加成：" + tier);
             }
-            return List.copyOf(this.ladder.subList(0, index + 1));
+            // 绝对谱系：每阶的补丁**就是该阶的全部数值**（表里每行都是该阶总值）。
+            // 累积谱系（尚未按效果总表 v3 转换的老条目）：仍是「从头叠到本阶」。
+            if (this.cumulative) {
+                return this.ladder.subList(0, index + 1).stream().map(StageSpec::patch).toList();
+            }
+            return List.of(this.ladder.get(index).patch());
         }
+    }
+
+    /**
+     * 一个阶级的规格：<b>该阶级的全部数值</b>（绝对语义）+ 可选的等级上限 / 进阶门槛覆盖。
+     *
+     * <p>效果总表 v3 起，阶级数值是逐阶给定的——表里每一行的「阶级公式」都是该阶的
+     * <b>总值</b>（例如究极亡灵杀手的无条件增伤是 {@code 6 + 1.5/级}，不是「超级再 +3」）。
+     * 所以每条谱系的每阶只写一个补丁，且这个补丁直接写成该阶要的数。
+     *
+     * @param patch         该阶级要写进 {@code effects} 的补丁（整条覆盖式）
+     * @param maxLevel      等级上限覆盖；{@code null} = 沿用原版上限
+     * @param requiredLevel 进阶到该阶级所需的最低等级；{@code null} = 原版上限（即「满级」）
+     */
+    public record StageSpec(UEStageEffects.Patch patch, Integer maxLevel, Integer requiredLevel) {
+        public StageSpec {
+            Objects.requireNonNull(patch, "patch");
+        }
+    }
+
+    /** 只给数值（上限与门槛都按默认：原版上限 / 满级）。 */
+    public static StageSpec stage(UEStageEffects.Patch patch) {
+        return new StageSpec(patch, null, null);
+    }
+
+    /** 数值 + 等级上限覆盖（例如「三系保护超级」上限压到 1）。 */
+    public static StageSpec stage(UEStageEffects.Patch patch, int maxLevel) {
+        return new StageSpec(patch, maxLevel, null);
+    }
+
+    /** 数值 + 上限 + 进阶门槛三件套。 */
+    public static StageSpec stage(UEStageEffects.Patch patch, Integer maxLevel, int requiredLevel) {
+        return new StageSpec(patch, maxLevel, requiredLevel);
     }
 
     // ────────────────────────────────────────────────────────────────────
@@ -200,155 +275,144 @@ public final class LineageTable {
      */
     private static final List<Lineage> ALL = List.of(
             // ── 近战武器 ──────────────────────────────────────────────────
-            lineage("sharpness", "锋利", "Sharpness",
-                    none(),
-                    knockback(0.25f, 0.15f),
-                    armorEffectiveness(-0.05f, -0.02f)),
-            lineage("smite", "亡灵杀手", "Smite",
-                    none(),
-                    mobExperience(0.15f, 0.05f),
-                    knockback(0.25f, 0.15f)),
-            lineage("knockback", "击退", "Knockback",
-                    none(),
-                    damage(0.5f, 0.25f),
-                    // 究极阶给的新效果：命中后让**目标**中缓慢——持续 5 秒起、每级 +5 秒；
-                    // 强度 I 级起、每级 +1 级。走 post_attack → victim，与原版节肢杀手同一条管线。
-                    postAttackMobEffect(MobEffects.MOVEMENT_SLOWDOWN, 5.0f, 5.0f, 0.0f, 1.0f)),
-            lineage("fire_aspect", "火焰附加", "Fire Aspect",
-                    postAttackIgnite(40.0f, 20.0f),
-                    damage(0.5f, 0.25f),
-                    postAttackIgnite(40.0f, 20.0f)),
-            lineage("looting", "抢夺", "Looting",
-                    none(),
-                    mobExperience(0.15f, 0.05f),
-                    none()),
-            lineage("sweeping_edge", "横扫之刃", "Sweeping Edge",
-                    damage(0.5f, 0.25f),
-                    knockback(0.25f, 0.15f),
-                    armorEffectiveness(-0.03f, -0.015f)),
+            ladder("sharpness", "锋利", "Sharpness",
+                    stage(damage(3.0f, 1.0f)),
+                    stage(join(damage(6.0f, 1.5f), attackDamageTotal(0.10f, 0.05f))),
+                    stage(join(damage(10.0f, 2.5f), attackDamageTotal(0.20f, 0.10f),
+                            armorEffectiveness(-0.05f, -0.05f)))),
+            ladder("smite", "亡灵杀手", "Smite",
+                    stage(damage(7.5f, 5.0f)),
+                    stage(conditionalPlusUnconditional(EnchantmentEffectComponents.DAMAGE,
+                            15.0f, 7.5f, 3.0f, 1.0f, "对亡灵 15+7.5/级；另加无条件 3+1/级")),
+                    stage(join(
+                            conditionalPlusUnconditional(EnchantmentEffectComponents.DAMAGE,
+                                    25.0f, 12.5f, 6.0f, 1.5f, "对亡灵 25+12.5/级；另加无条件 6+1.5/级"),
+                            armorEffectiveness(-0.05f, -0.05f)))),
+            ladder("knockback", "击退", "Knockback",
+                    stage(knockback(3.0f, 2.0f)),
+                    stage(join(knockback(6.0f, 3.0f), damage(1.0f, 1.0f))),
+                    stage(join(knockback(10.0f, 5.0f), damage(4.0f, 4.0f),
+                            postAttackMobEffect(MobEffects.MOVEMENT_SLOWDOWN, 5.0f, 5.0f, 0.0f, 1.0f)))),
+            ladder("fire_aspect", "火焰附加", "Fire Aspect",
+                    stage(postAttackIgnite(40.0f, 20.0f)),
+                    stage(join(postAttackIgnite(40.0f, 20.0f), damage(0.5f, 0.25f))),
+                    stage(join(postAttackIgnite(40.0f, 20.0f), postAttackIgnite(40.0f, 20.0f),
+                            damage(0.5f, 0.25f)))),
+            ladder("looting", "抢夺", "Looting",
+                    stage(equipmentDrops(0.03f, 0.02f)),
+                    stage(join(equipmentDrops(0.06f, 0.03f), mobExperience(0.15f, 0.05f))),
+                    stage(join(equipmentDrops(0.10f, 0.05f), mobExperience(0.30f, 0.10f)))),
+            ladder("sweeping_edge", "横扫之刃", "Sweeping Edge",
+                    stage(damage(0.5f, 0.25f)),
+                    stage(join(damage(0.5f, 0.25f), knockback(0.25f, 0.15f))),
+                    stage(join(damage(0.5f, 0.25f), knockback(0.25f, 0.15f),
+                            armorEffectiveness(-0.03f, -0.015f)))),
 
-            // ── 护甲 ─────────────────────────────────────────────────────
-            lineage("protection", "保护", "Protection",
-                    none(),
-                    none(),
-                    none()),
-            lineage("fire_protection", "火焰保护", "Fire Protection",
-                    none(),
-                    none(),
-                    none()),
-            lineage("blast_protection", "爆炸保护", "Blast Protection",
-                    none(),
-                    none(),
-                    none()),
-            lineage("projectile_protection", "弹射物保护", "Projectile Protection",
-                    none(),
-                    none(),
-                    none()),
-            lineage("feather_falling", "摔落缓冲", "Feather Falling",
-                    none(),
-                    none(),
-                    none()),
-            lineage("thorns", "荆棘", "Thorns",
-                    damageProtection(0.3f, 0.15f),
-                    knockback(0.25f, 0.15f),
-                    damageProtection(0.6f, 0.3f)),
-            lineage("respiration", "水下呼吸", "Respiration",
-                    none(),
-                    damageProtection(0.3f, 0.15f),
-                    none()),
-            lineage("depth_strider", "深海探索者", "Depth Strider",
-                    none(),
-                    damageProtection(0.3f, 0.15f),
-                    none()),
-            lineage("swift_sneak", "迅捷潜行", "Swift Sneak",
-                    none(),
-                    damageProtection(0.3f, 0.15f),
-                    none()),
+            // ── 盔甲 ─────────────────────────────────────────────────────
+            ladder("protection", "保护", "Protection",
+                    stage(damageProtectionList("全伤害生效的减免（取消原版的排除清单）",
+                            unconditionalProtection(1.25f, 1.25f)))),
+            ladder("fire_protection", "火焰保护", "Fire Protection",
+                    stage(join(burningTime(-0.25f, -0.20f),
+                            damageProtectionList("火焰减免 2 +1/级；追加原版保护 1 +1/级",
+                                    damageTypeProtection(DamageTypeTags.IS_FIRE, 2.0f, 1.0f),
+                                    vanillaStyleProtection(1.0f, 1.0f)))),
+                    stage(join(damageImmunity(DamageTypeTags.IS_FIRE, "完全免疫火焰伤害（且不再着火）"),
+                            burningTime(-1.0f, 0.0f),
+                            clear(EnchantmentEffectComponents.DAMAGE_PROTECTION, "已改为完全免疫")), 1)),
+            ladder("blast_protection", "爆炸保护", "Blast Protection",
+                    stage(join(knockbackResistance(0.15f, 0.15f),
+                            damageProtectionList("爆炸减免 2 +1/级；追加原版保护 1 +1/级",
+                                    damageTypeProtection(DamageTypeTags.IS_EXPLOSION, 2.0f, 1.0f),
+                                    vanillaStyleProtection(1.0f, 1.0f)))),
+                    stage(join(damageImmunity(DamageTypeTags.IS_EXPLOSION, "完全免疫爆炸伤害"),
+                            knockbackResistance(0.15f, 0.15f),
+                            clear(EnchantmentEffectComponents.DAMAGE_PROTECTION, "已改为完全免疫")), 1)),
+            ladder("projectile_protection", "弹射物保护", "Projectile Protection",
+                    stage(damageProtectionList("弹射物减免 2 +1/级；追加原版保护 1 +1/级",
+                            damageTypeProtection(DamageTypeTags.IS_PROJECTILE, 2.0f, 1.0f),
+                            vanillaStyleProtection(1.0f, 1.0f))),
+                    stage(join(damageImmunity(DamageTypeTags.IS_PROJECTILE, "完全免疫弹射物伤害"),
+                            clear(EnchantmentEffectComponents.DAMAGE_PROTECTION, "已改为完全免疫")), 1)),
+            ladder("feather_falling", "摔落缓冲", "Feather Falling",
+                    stage(join(damageImmunity(DamageTypeTags.IS_FALL, "完全免疫摔落伤害"),
+                            clear(EnchantmentEffectComponents.DAMAGE_PROTECTION,
+                                    "已改为完全免疫，不再需要按点减免")), 1)),
+            // 荆棘（v3）：只留反伤 / 耐久消耗 / 触发概率，不再挂减免与击退。
+            ladder("thorns", "荆棘", "Thorns",
+                    stage(thorns(2.0f, 10.0f, 2.0f, 0.30f, 0.30f)),
+                    stage(thorns(4.0f, 20.0f, 1.0f, 0.45f, 0.45f)),
+                    stage(thorns(8.0f, 40.0f, 0.0f, 0.60f, 0.60f))),
 
-            // ── 通用耐久 / 工具 ───────────────────────────────────────────
-            lineage("unbreaking", "耐久", "Unbreaking",
-                    durabilitySave(0.10f, 0.05f),
-                    durabilitySave(0.10f, 0.05f),
-                    durabilitySave(0.15f, 0.05f)),
-            lineage("mending", "经验修补", "Mending",
-                    repairWithXp(0.5f),
-                    repairWithXp(0.5f),
-                    repairWithXp(1.0f)),
-            lineage("efficiency", "效率", "Efficiency",
-                    attribute("efficiency", Attributes.MINING_EFFICIENCY, 1.0f, 1.0f, ADD_VALUE),
-                    blockExperience(0.05f, 0.05f),
-                    attribute("efficiency/ii", Attributes.MINING_EFFICIENCY, 1.0f, 1.0f, ADD_VALUE)),
+            // ── 通用 / 工具 ───────────────────────────────────────────────
+            ladder("respiration", "水下呼吸", "Respiration",
+                    stage(oxygenBonus(4.0f, 4.0f))),
+            ladder("unbreaking", "耐久", "Unbreaking",
+                    stage(durabilitySave(0.10f, 0.05f))),
+            ladder("mending", "经验修补", "Mending",
+                    stage(repairWithXpTotal(8.0f))),
+            ladder("efficiency", "效率", "Efficiency",
+                    stage(attribute("efficiency", Attributes.MINING_EFFICIENCY, 1.0f, 1.0f, ADD_VALUE)),
+                    stage(join(attribute("efficiency", Attributes.MINING_EFFICIENCY, 1.0f, 1.0f, ADD_VALUE),
+                            blockExperience(0.05f, 0.05f))),
+                    stage(join(attribute("efficiency", Attributes.MINING_EFFICIENCY, 1.0f, 1.0f, ADD_VALUE),
+                            attribute("efficiency/ii", Attributes.MINING_EFFICIENCY, 1.0f, 1.0f, ADD_VALUE),
+                            blockExperience(0.05f, 0.05f)))),
 
             // ── 弓 / 弩 ───────────────────────────────────────────────────
-            lineage("power", "力量", "Power",
-                    none(),
-                    knockback(0.25f, 0.15f),
-                    none()),
-            lineage("punch", "冲击", "Punch",
-                    none(),
-                    damage(0.5f, 0.5f),
-                    none()),
-            lineage("flame", "火矢", "Flame",
-                    projectileSpawnedIgnite(60.0f),
-                    damage(0.5f, 0.5f),
-                    projectileSpawnedIgnite(60.0f)),
-            lineage("infinity", "无限", "Infinity",
-                    damage(0.5f, 0.5f),
-                    knockback(0.25f, 0.15f),
-                    damage(0.5f, 0.5f)),
-            lineage("multishot", "多重射击", "Multishot",
-                    none(),
-                    damage(0.5f, 0.5f),
-                    projectilePiercing(1.0f, 1.0f)),
-            lineage("piercing", "穿透", "Piercing",
-                    none(),
-                    damage(0.5f, 0.5f),
-                    none()),
-            lineage("quick_charge", "快速装填", "Quick Charge",
-                    crossbowChargeTime(0.05f),
-                    crossbowChargeTime(0.10f),
-                    crossbowChargeTime(0.15f)),
+            ladder("power", "力量", "Power",
+                    stage(damage(1.5f, 1.0f)),
+                    stage(join(damage(3.0f, 1.5f), knockback(0.25f, 0.15f))),
+                    stage(join(damage(5.0f, 2.5f), knockback(0.25f, 0.15f)))),
+            ladder("punch", "冲击", "Punch",
+                    stage(join(knockback(3.0f, 2.0f), damage(0.5f, 0.5f)))),
+            ladder("flame", "火矢", "Flame",
+                    stage(projectileSpawnedIgnite(60.0f))),
+            ladder("infinity", "无限", "Infinity",
+                    stage(ammoUseUnconditional())),
+            ladder("multishot", "多重射击", "Multishot",
+                    stage(join(projectileCountTotal(6.0f, 4.0f), projectileSpreadTotal(15.0f, 10.0f))),
+                    stage(join(projectileCountTotal(12.0f, 6.0f), projectileSpreadTotal(30.0f, 15.0f),
+                            damage(0.5f, 0.5f))),
+                    stage(join(projectileCountTotal(20.0f, 10.0f), projectileSpreadTotal(50.0f, 25.0f),
+                            damage(0.5f, 0.5f), projectilePiercing(1.0f, 1.0f)))),
+            ladder("piercing", "穿透", "Piercing",
+                    stage(join(projectilePiercing(3.0f, 2.0f), damage(0.5f, 0.5f))),
+                    stage(join(projectilePiercing(6.0f, 3.0f), damage(1.0f, 1.0f),
+                            knockback(0.25f, 0.15f))),
+                    stage(join(projectilePiercing(10.0f, 5.0f), damage(1.5f, 1.5f),
+                            knockback(0.5f, 0.3f)))),
 
             // ── 三叉戟 ───────────────────────────────────────────────────
-            //
-            // 穿刺（impaling）：三档补丁**全是 none()**——它只走自己的原版效果
-            // （对水生生物的额外伤害，那个条件写在原版 effects 里，照抄即得），
-            // 阶级成长完全由「阶级曲线对自有属性的缩放」体现，
-            // 不额外挂伤害/击退之类加成（作者 2026-10 的决定；其余加成以后再加）。
-            lineage("impaling", "穿刺", "Impaling",
-                    none(),
-                    none(),
-                    none()),
-            lineage("loyalty", "忠诚", "Loyalty",
-                    none(),
-                    damage(0.5f, 0.5f),
-                    none()),
-            lineage("riptide", "激流", "Riptide",
-                    tridentSpinAttackStrength(2.0f, 1.0f),
-                    damage(0.5f, 0.5f),
-                    tridentSpinAttackStrength(2.0f, 1.0f)),
-            lineage("channeling", "引雷", "Channeling",
-                    damage(0.5f, 0.5f),
-                    mobExperience(0.2f, 0.1f),
-                    damage(0.5f, 0.5f)),
+            ladder("impaling", "穿刺", "Impaling",
+                    stage(damage(7.5f, 5.0f)),
+                    stage(damage(15.0f, 7.5f)),
+                    stage(damage(25.0f, 12.5f))),
+            // 激流：三阶上限都是 1，且门槛就是 1（原版上限是 3，所以门槛必须显式给）。
+            ladder("riptide", "激流", "Riptide",
+                    stage(tridentSpinAttackStrength(6.0f, 1.5f), 1, 1),
+                    stage(tridentSpinAttackStrength(12.0f, 3.0f), 1, 1),
+                    stage(tridentSpinAttackStrength(24.0f, 6.0f), 1, 1)),
 
             // ── 钓鱼 ─────────────────────────────────────────────────────
-            lineage("lure", "饵钓", "Lure",
-                    none(),
-                    fishingLuck(0.5f, 0.5f),
-                    none()),
-            lineage("luck_of_the_sea", "海之眷顾", "Luck of the Sea",
-                    none(),
-                    fishingTimeReduction(1.0f, 1.0f),
-                    none())
+            ladder("lure", "饵钓", "Lure",
+                    stage(fishingTimeReduction(15.0f, 10.0f)),
+                    stage(join(fishingTimeReduction(30.0f, 15.0f), fishingLuck(0.5f, 0.5f))),
+                    stage(join(fishingTimeReduction(50.0f, 25.0f), fishingLuck(0.5f, 0.5f)))),
+            ladder("luck_of_the_sea", "海之眷顾", "Luck of the Sea",
+                    stage(fishingLuck(3.0f, 2.0f)),
+                    stage(join(fishingLuck(6.0f, 3.0f), fishingTimeReduction(1.0f, 1.0f))),
+                    stage(join(fishingLuck(10.0f, 5.0f), fishingTimeReduction(1.0f, 1.0f))))
+
     );
 
     static {
         // 阶梯写漏一个补丁，在类加载时就响亮失败——而不是生成出少一阶的静默产物。
         for (Lineage lineage : ALL) {
-            if (lineage.ladder().size() != LADDER_LENGTH) {
-                throw new IllegalStateException("谱系 " + lineage.root() + " 的阶梯长度应为 "
-                        + LADDER_LENGTH + "（高阶/超级/究极），实际 " + lineage.ladder().size());
+            int size = lineage.ladder().size();
+            if (size < 1 || size > LADDER_LENGTH) {
+                throw new IllegalStateException("谱系 " + lineage.root() + " 的阶梯长度应为 1~"
+                        + LADDER_LENGTH + "（高阶/超级/究极），实际 " + size);
             }
         }
     }
@@ -357,12 +421,27 @@ public final class LineageTable {
         return ALL;
     }
 
-    /** 三个增量补丁：高阶 / 超级 / 究极各比上一阶多出来的那一项。 */
+    /**
+     * <b>老式（累积）</b>：三个增量补丁，高阶 / 超级 / 究极各比上一阶多出来的那一项。
+     *
+     * <p>仅用于尚未按效果总表 v3 转换的谱系——转换后请改用 {@link #ladder}。
+     */
     private static Lineage lineage(String path, String cnName, String enName,
                                    UEStageEffects.Patch advanced,
                                    UEStageEffects.Patch superb,
                                    UEStageEffects.Patch ultra) {
         return new Lineage(ResourceLocation.withDefaultNamespace(path), cnName, enName,
-                List.of(advanced, superb, ultra));
+                List.of(stage(advanced), stage(superb), stage(ultra)), true);
+    }
+
+    /**
+     * <b>效果总表 v3（绝对）</b>：逐阶给出该阶的全部数值，阶数可少于三阶。
+     *
+     * <p>例：{@code ladder("protection", "保护", "Protection", stage(unconditionalProtection...))}
+     * ——保护只有高阶，写完一阶即可；没有的阶级既不会生成 JSON，也不会出现在 JEI 与语言文件里。
+     */
+    private static Lineage ladder(String path, String cnName, String enName, StageSpec... stages) {
+        return new Lineage(ResourceLocation.withDefaultNamespace(path), cnName, enName,
+                List.of(stages), false);
     }
 }

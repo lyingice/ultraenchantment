@@ -5,7 +5,7 @@
       "base": 34,
       "per_level_above_first": 31
     },
-    "max_level": 4,
+    "max_level": 1,
     "min_cost": {
       "base": 28,
       "per_level_above_first": 31
@@ -17,16 +17,9 @@
     "weight": 5
   },
   "effects": {
-    "minecraft:damage_protection": [
+    "minecraft:damage_immunity": [
       {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 12.0,
-            "per_level_above_first": 6.0
-          }
-        },
+        "effect": {},
         "requirements": {
           "condition": "minecraft:damage_source_properties",
           "predicate": {
@@ -34,18 +27,14 @@
               {
                 "expected": true,
                 "id": "minecraft:is_projectile"
-              },
-              {
-                "expected": false,
-                "id": "minecraft:bypasses_invulnerability"
               }
             ]
           }
         }
       }
-    ]
+    ],
+    "minecraft:damage_protection": []
   },
-  "next": "ultraenchantment:ultra/projectile_protection",
   "required_level": 4,
   "root": "minecraft:projectile_protection",
   "tier": "super"

@@ -17,6 +17,18 @@
     "weight": 2
   },
   "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ],
     "minecraft:knockback": [
       {
         "effect": {
@@ -37,8 +49,7 @@
       }
     ]
   },
-  "next": "ultraenchantment:super/punch",
-  "required_level": 5,
+  "required_level": 2,
   "root": "minecraft:punch",
   "tier": "advanced"
 }

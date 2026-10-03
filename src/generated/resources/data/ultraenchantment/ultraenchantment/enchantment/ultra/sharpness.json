@@ -25,9 +25,21 @@
           "value": {
             "type": "minecraft:linear",
             "base": -0.05,
-            "per_level_above_first": -0.02
+            "per_level_above_first": -0.05
           }
         }
+      }
+    ],
+    "minecraft:attributes": [
+      {
+        "amount": {
+          "type": "minecraft:linear",
+          "base": 0.2,
+          "per_level_above_first": 0.1
+        },
+        "attribute": "minecraft:generic.attack_damage",
+        "id": "ultraenchantment:ascension/attack_damage_total",
+        "operation": "add_multiplied_total"
       }
     ],
     "minecraft:damage": [
@@ -41,21 +53,9 @@
           }
         }
       }
-    ],
-    "minecraft:knockback": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.25,
-            "per_level_above_first": 0.15
-          }
-        }
-      }
     ]
   },
-  "required_level": 3,
+  "required_level": 5,
   "root": "minecraft:sharpness",
   "tier": "ultra"
 }

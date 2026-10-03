@@ -23,8 +23,8 @@
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 0.5,
-            "per_level_above_first": 0.25
+            "base": 4.0,
+            "per_level_above_first": 4.0
           }
         }
       }
@@ -72,7 +72,7 @@
       }
     ]
   },
-  "required_level": 3,
+  "required_level": 2,
   "root": "minecraft:knockback",
   "tier": "ultra"
 }

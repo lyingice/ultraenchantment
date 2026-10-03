@@ -23,8 +23,20 @@
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
+            "base": 1.5,
+            "per_level_above_first": 1.5
+          }
+        }
+      }
+    ],
+    "minecraft:knockback": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
             "base": 0.5,
-            "per_level_above_first": 0.5
+            "per_level_above_first": 0.3
           }
         }
       }
@@ -42,7 +54,7 @@
       }
     ]
   },
-  "required_level": 3,
+  "required_level": 4,
   "root": "minecraft:piercing",
   "tier": "ultra"
 }

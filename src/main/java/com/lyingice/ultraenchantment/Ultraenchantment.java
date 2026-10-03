@@ -48,6 +48,9 @@ public class Ultraenchantment {
         // 显示层：进阶附魔书自身的四套 tooltip（通用/定向/铭刻/升级）。
         NeoForge.EVENT_BUS.register(BookTooltipEvents.INSTANCE);
 
+        // 可选兼容：提示框渲染栈。未安装时这里什么都不做（不加载对方任何类）。
+        com.lyingice.ultraenchantment.compat.tooltip.TooltipStackCompat.init();
+
         LOGGER.info("Ultra Enchantment loaded ({} items, {} components)",
                 UEItems.ITEMS.getEntries().size(), UEComponents.COMPONENTS.getEntries().size());
     }

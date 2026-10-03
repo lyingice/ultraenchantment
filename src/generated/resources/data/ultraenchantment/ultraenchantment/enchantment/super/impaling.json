@@ -38,7 +38,7 @@
     ]
   },
   "next": "ultraenchantment:ultra/impaling",
-  "required_level": 4,
+  "required_level": 5,
   "root": "minecraft:impaling",
   "tier": "super"
 }

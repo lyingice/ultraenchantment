@@ -18,18 +18,6 @@
     "weight": 1
   },
   "effects": {
-    "minecraft:damage_protection": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.3,
-            "per_level_above_first": 0.15
-          }
-        }
-      }
-    ],
     "minecraft:post_attack": [
       {
         "affected": "attacker",
@@ -39,8 +27,8 @@
             {
               "type": "minecraft:damage_entity",
               "damage_type": "minecraft:thorns",
-              "max_damage": 5.0,
-              "min_damage": 1.0
+              "max_damage": 10.0,
+              "min_damage": 2.0
             },
             {
               "type": "minecraft:damage_item",
@@ -54,8 +42,8 @@
             "type": "minecraft:enchantment_level",
             "amount": {
               "type": "minecraft:linear",
-              "base": 0.15,
-              "per_level_above_first": 0.15
+              "base": 0.3,
+              "per_level_above_first": 0.3
             }
           },
           "condition": "minecraft:random_chance"
@@ -64,7 +52,7 @@
     ]
   },
   "next": "ultraenchantment:super/thorns",
-  "required_level": 5,
+  "required_level": 3,
   "root": "minecraft:thorns",
   "tier": "advanced"
 }

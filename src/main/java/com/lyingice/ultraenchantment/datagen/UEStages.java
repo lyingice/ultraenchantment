@@ -148,7 +148,8 @@ public final class UEStages {
                     .getOrThrow(ResourceKey.create(Registries.ENCHANTMENT, lineage.root()))
                     .value();
 
-            for (LineageTier tier : LineageTable.STAGES) {
+            // 按**谱系自己的**阶梯走：保护只有高阶、三系保护只有高阶+超级……
+            for (LineageTier tier : lineage.tiers()) {
                 generated.add(build(lineage, tier, vanilla));
             }
         }
@@ -163,10 +164,19 @@ public final class UEStages {
         ResourceLocation stageId = lineage.stageId(tier);
 
         Enchantment.EnchantmentDefinition source = vanilla.definition();
+        LineageTable.StageSpec stageSpec = lineage.specFor(tier);
+
+        // 等级上限：默认沿用原版；效果总表 v3 里少数阶段要压到 1
+        // （三系保护超级 = 完全免疫、摔落缓冲高阶 = 完全免疫、激流三阶）。
+        int maxLevel = stageSpec.maxLevel() != null ? stageSpec.maxLevel() : source.maxLevel();
+
+        // 进阶门槛：默认 = 原版上限（即「满级」）。
+        int requiredLevel = stageSpec.requiredLevel() != null
+                ? stageSpec.requiredLevel() : source.maxLevel();
+
         StageDefinition.Definition definition = new StageDefinition.Definition(
                 source.weight(),
-                // 等级上限沿用原版：耐久 3 的高阶 / 超级 / 究极上限全都是 3。
-                source.maxLevel(),
+                maxLevel,
                 raise(source.minCost(), spec.costBonus()),
                 raise(source.maxCost(), spec.costBonus()),
                 source.anvilCost() + spec.anvilBonus(),
@@ -195,13 +205,14 @@ public final class UEStages {
         UEStageEffects.assertUniqueAttributeIds(stageId, effects);
 
         StageDefinition stage = new StageDefinition(lineage.root(), tier, nextStage(lineage, tier),
-                spec.requiredLevel(), definition, effects);
+                requiredLevel, definition, effects);
         return new GeneratedStage(stageId, stage, vanillaEffects, scaled, patches);
     }
 
     /** 谱系链的下一阶；{@link LineageTier#ULTRA} 是终点。 */
     private static Optional<ResourceLocation> nextStage(LineageTable.Lineage lineage, LineageTier tier) {
-        return tier.next().map(lineage::stageId);
+        // 只有本谱系真的拥有下一阶时才写 next——保护没有超级，链就到此为止。
+        return tier.next().filter(lineage.tiers()::contains).map(lineage::stageId);
     }
 
     /** 在根源附魔的花费曲线上整体抬高 {@code bonus}（基值与每级增量同时抬）。 */

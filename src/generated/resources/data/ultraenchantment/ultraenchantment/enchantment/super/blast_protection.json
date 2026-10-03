@@ -5,7 +5,7 @@
       "base": 38,
       "per_level_above_first": 33
     },
-    "max_level": 4,
+    "max_level": 1,
     "min_cost": {
       "base": 30,
       "per_level_above_first": 33
@@ -21,24 +21,17 @@
       {
         "amount": {
           "type": "minecraft:linear",
-          "base": 0.90000004,
-          "per_level_above_first": 0.45000002
+          "base": 0.15,
+          "per_level_above_first": 0.15
         },
-        "attribute": "minecraft:generic.explosion_knockback_resistance",
-        "id": "minecraft:enchantment.blast_protection",
+        "attribute": "minecraft:generic.knockback_resistance",
+        "id": "ultraenchantment:ascension/knockback_resistance",
         "operation": "add_value"
       }
     ],
-    "minecraft:damage_protection": [
+    "minecraft:damage_immunity": [
       {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 12.0,
-            "per_level_above_first": 6.0
-          }
-        },
+        "effect": {},
         "requirements": {
           "condition": "minecraft:damage_source_properties",
           "predicate": {
@@ -46,18 +39,14 @@
               {
                 "expected": true,
                 "id": "minecraft:is_explosion"
-              },
-              {
-                "expected": false,
-                "id": "minecraft:bypasses_invulnerability"
               }
             ]
           }
         }
       }
-    ]
+    ],
+    "minecraft:damage_protection": []
   },
-  "next": "ultraenchantment:ultra/blast_protection",
   "required_level": 4,
   "root": "minecraft:blast_protection",
   "tier": "super"

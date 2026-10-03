@@ -52,7 +52,7 @@
     ]
   },
   "next": "ultraenchantment:ultra/efficiency",
-  "required_level": 4,
+  "required_level": 5,
   "root": "minecraft:efficiency",
   "tier": "super"
 }

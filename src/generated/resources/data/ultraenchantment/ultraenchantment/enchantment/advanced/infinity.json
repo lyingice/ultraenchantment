@@ -22,30 +22,10 @@
         "effect": {
           "type": "minecraft:set",
           "value": 0.0
-        },
-        "requirements": {
-          "condition": "minecraft:match_tool",
-          "predicate": {
-            "items": "minecraft:arrow"
-          }
-        }
-      }
-    ],
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.5,
-            "per_level_above_first": 0.5
-          }
         }
       }
     ]
   },
-  "next": "ultraenchantment:super/infinity",
-  "required_level": 5,
   "root": "minecraft:infinity",
   "tier": "advanced"
 }

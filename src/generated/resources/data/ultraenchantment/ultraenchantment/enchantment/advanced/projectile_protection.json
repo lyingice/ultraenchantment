@@ -23,8 +23,8 @@
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 6.0,
-            "per_level_above_first": 4.0
+            "base": 2.0,
+            "per_level_above_first": 1.0
           }
         },
         "requirements": {
@@ -42,11 +42,32 @@
             ]
           }
         }
+      },
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 1.0,
+            "per_level_above_first": 1.0
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:damage_source_properties",
+          "predicate": {
+            "tags": [
+              {
+                "expected": false,
+                "id": "minecraft:bypasses_invulnerability"
+              }
+            ]
+          }
+        }
       }
     ]
   },
   "next": "ultraenchantment:super/projectile_protection",
-  "required_level": 5,
+  "required_level": 4,
   "root": "minecraft:projectile_protection",
   "tier": "advanced"
 }

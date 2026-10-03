@@ -31,7 +31,7 @@
     ]
   },
   "next": "ultraenchantment:super/knockback",
-  "required_level": 5,
+  "required_level": 2,
   "root": "minecraft:knockback",
   "tier": "advanced"
 }

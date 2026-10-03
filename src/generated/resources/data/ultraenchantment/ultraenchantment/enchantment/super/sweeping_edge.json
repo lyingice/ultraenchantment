@@ -63,7 +63,7 @@
     ]
   },
   "next": "ultraenchantment:ultra/sweeping_edge",
-  "required_level": 4,
+  "required_level": 3,
   "root": "minecraft:sweeping_edge",
   "tier": "super"
 }

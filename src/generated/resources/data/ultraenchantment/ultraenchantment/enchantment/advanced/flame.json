@@ -32,8 +32,6 @@
       }
     ]
   },
-  "next": "ultraenchantment:super/flame",
-  "required_level": 5,
   "root": "minecraft:flame",
   "tier": "advanced"
 }

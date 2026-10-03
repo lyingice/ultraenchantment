@@ -51,7 +51,7 @@
     ]
   },
   "next": "ultraenchantment:ultra/looting",
-  "required_level": 4,
+  "required_level": 3,
   "root": "minecraft:looting",
   "tier": "super"
 }

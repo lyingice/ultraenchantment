@@ -64,7 +64,7 @@
     ]
   },
   "next": "ultraenchantment:ultra/fire_aspect",
-  "required_level": 4,
+  "required_level": 2,
   "root": "minecraft:fire_aspect",
   "tier": "super"
 }

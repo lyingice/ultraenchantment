@@ -43,7 +43,7 @@
     ]
   },
   "next": "ultraenchantment:ultra/lure",
-  "required_level": 4,
+  "required_level": 3,
   "root": "minecraft:lure",
   "tier": "super"
 }

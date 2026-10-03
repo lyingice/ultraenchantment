@@ -21,11 +21,11 @@
       {
         "amount": {
           "type": "minecraft:linear",
-          "base": -0.45000002,
-          "per_level_above_first": -0.3
+          "base": -0.25,
+          "per_level_above_first": -0.2
         },
         "attribute": "minecraft:generic.burning_time",
-        "id": "minecraft:enchantment.fire_protection",
+        "id": "ultraenchantment:ascension/burning_time",
         "operation": "add_multiplied_base"
       }
     ],
@@ -35,35 +35,51 @@
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 6.0,
-            "per_level_above_first": 4.0
+            "base": 2.0,
+            "per_level_above_first": 1.0
           }
         },
         "requirements": {
-          "condition": "minecraft:all_of",
-          "terms": [
-            {
-              "condition": "minecraft:damage_source_properties",
-              "predicate": {
-                "tags": [
-                  {
-                    "expected": true,
-                    "id": "minecraft:is_fire"
-                  },
-                  {
-                    "expected": false,
-                    "id": "minecraft:bypasses_invulnerability"
-                  }
-                ]
+          "condition": "minecraft:damage_source_properties",
+          "predicate": {
+            "tags": [
+              {
+                "expected": true,
+                "id": "minecraft:is_fire"
+              },
+              {
+                "expected": false,
+                "id": "minecraft:bypasses_invulnerability"
               }
-            }
-          ]
+            ]
+          }
+        }
+      },
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 1.0,
+            "per_level_above_first": 1.0
+          }
+        },
+        "requirements": {
+          "condition": "minecraft:damage_source_properties",
+          "predicate": {
+            "tags": [
+              {
+                "expected": false,
+                "id": "minecraft:bypasses_invulnerability"
+              }
+            ]
+          }
         }
       }
     ]
   },
   "next": "ultraenchantment:super/fire_protection",
-  "required_level": 5,
+  "required_level": 4,
   "root": "minecraft:fire_protection",
   "tier": "advanced"
 }

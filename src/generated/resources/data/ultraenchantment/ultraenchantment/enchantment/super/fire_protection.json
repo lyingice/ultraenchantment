@@ -5,7 +5,7 @@
       "base": 43,
       "per_level_above_first": 33
     },
-    "max_level": 4,
+    "max_level": 1,
     "min_cost": {
       "base": 35,
       "per_level_above_first": 33
@@ -21,48 +21,32 @@
       {
         "amount": {
           "type": "minecraft:linear",
-          "base": -0.90000004,
-          "per_level_above_first": -0.45000002
+          "base": -1.0,
+          "per_level_above_first": 0.0
         },
         "attribute": "minecraft:generic.burning_time",
-        "id": "minecraft:enchantment.fire_protection",
+        "id": "ultraenchantment:ascension/burning_time",
         "operation": "add_multiplied_base"
       }
     ],
-    "minecraft:damage_protection": [
+    "minecraft:damage_immunity": [
       {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 12.0,
-            "per_level_above_first": 6.0
-          }
-        },
+        "effect": {},
         "requirements": {
-          "condition": "minecraft:all_of",
-          "terms": [
-            {
-              "condition": "minecraft:damage_source_properties",
-              "predicate": {
-                "tags": [
-                  {
-                    "expected": true,
-                    "id": "minecraft:is_fire"
-                  },
-                  {
-                    "expected": false,
-                    "id": "minecraft:bypasses_invulnerability"
-                  }
-                ]
+          "condition": "minecraft:damage_source_properties",
+          "predicate": {
+            "tags": [
+              {
+                "expected": true,
+                "id": "minecraft:is_fire"
               }
-            }
-          ]
+            ]
+          }
         }
       }
-    ]
+    ],
+    "minecraft:damage_protection": []
   },
-  "next": "ultraenchantment:ultra/fire_protection",
   "required_level": 4,
   "root": "minecraft:fire_protection",
   "tier": "super"

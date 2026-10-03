@@ -18,6 +18,18 @@
     "weight": 5
   },
   "effects": {
+    "minecraft:armor_effectiveness": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": -0.05,
+            "per_level_above_first": -0.05
+          }
+        }
+      }
+    ],
     "minecraft:damage": [
       {
         "effect": {
@@ -35,34 +47,20 @@
             "type": "#minecraft:sensitive_to_smite"
           }
         }
-      }
-    ],
-    "minecraft:knockback": [
+      },
       {
         "effect": {
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 0.25,
-            "per_level_above_first": 0.15
-          }
-        }
-      }
-    ],
-    "minecraft:mob_experience": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.15,
-            "per_level_above_first": 0.05
+            "base": 6.0,
+            "per_level_above_first": 1.5
           }
         }
       }
     ]
   },
-  "required_level": 3,
+  "required_level": 5,
   "root": "minecraft:smite",
   "tier": "ultra"
 }

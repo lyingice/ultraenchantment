@@ -35,23 +35,21 @@
             "type": "#minecraft:sensitive_to_smite"
           }
         }
-      }
-    ],
-    "minecraft:mob_experience": [
+      },
       {
         "effect": {
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 0.15,
-            "per_level_above_first": 0.05
+            "base": 3.0,
+            "per_level_above_first": 1.0
           }
         }
       }
     ]
   },
   "next": "ultraenchantment:ultra/smite",
-  "required_level": 4,
+  "required_level": 5,
   "root": "minecraft:smite",
   "tier": "super"
 }

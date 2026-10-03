@@ -22,6 +22,30 @@ modId="minecraft"
 versionRange="${minecraft_version_range}"
 mandatory=true
 
+# ── 可选依赖：提示框渲染栈（装了就配合，不装完全不影响）───────────────────
+# 必须是 optional：写成 required 会让没装它们的玩家**直接开不了游戏**。
+# ordering="AFTER" 只影响加载顺序，不构成硬依赖；versionRange 下限取我们联调过的版本。
+[[dependencies.${mod_id}]]
+modId="legendarytooltips"
+type="optional"
+versionRange="[1.5,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="iceberg"
+type="optional"
+versionRange="[1.3,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="prism"
+type="optional"
+versionRange="[1.0,)"
+ordering="AFTER"
+side="BOTH"
+
 # Mixin 配置（FML 在加载期注册，见 ModFileParser.getMixinConfigs）。
 # config 字段必需，指向本模组 jar 内的 mixin 配置文件路径。
 [[mixins]]

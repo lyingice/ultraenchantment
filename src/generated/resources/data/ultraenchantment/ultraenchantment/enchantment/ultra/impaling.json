@@ -37,7 +37,7 @@
       }
     ]
   },
-  "required_level": 3,
+  "required_level": 5,
   "root": "minecraft:impaling",
   "tier": "ultra"
 }

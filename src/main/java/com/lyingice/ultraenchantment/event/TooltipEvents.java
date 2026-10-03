@@ -1,6 +1,8 @@
 package com.lyingice.ultraenchantment.event;
 
 import com.lyingice.ultraenchantment.Ultraenchantment;
+import com.lyingice.ultraenchantment.compat.tooltip.PrismRainbow;
+import com.lyingice.ultraenchantment.compat.tooltip.TooltipStackCompat;
 import com.lyingice.ultraenchantment.content.AscensionData;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.logic.ProtectionLogic;
@@ -82,6 +84,15 @@ public final class TooltipEvents {
         }
 
         List<Component> lines = event.getToolTip();
+
+        // 「传说提示框」那条绿色攻击伤害行算的是「玩家基础值 + 原始附魔加伤」，
+        // 而进阶物品的原版附魔已被结算层清零、加伤换成阶级效果——它算出来永远是原版数字。
+        // 这里补正差值；**只在装了它时**才做，没装则 tooltip 一个数字都不动。
+        if (TooltipStackCompat.useLegendaryTooltipsFix()) {
+            com.lyingice.ultraenchantment.compat.legendarytooltips.LegendaryTooltipsFixup
+                    .correctAttackDamageLine(stack, lines);
+        }
+
         ItemEnchantments present = EnchantmentHelper.getEnchantmentsForCrafting(stack);
         if (present.isEmpty()) {
             return;
@@ -181,6 +192,16 @@ public final class TooltipEvents {
             line.append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
                     .append(Component.translatable("enchantment.level." + shown)
                             .withStyle(ChatFormatting.GRAY));
+        }
+
+        // 究极阶 + 装了 Prism → 整行改成渐变彩虹（软联动：没装就保持上面的静态配色）。
+        //
+        // 这里有两条硬约束，都写在 TooltipStackCompat.usePrismGradient 里：
+        //   1) 必须是逻辑客户端（Prism 是客户端库，专用服务端加载它会 NoClassDefFoundError）；
+        //   2) Prism 必须已安装——PrismRainbow 这个类里才有对方的 import，
+        //      它只在本分支被类加载，没装的玩家永远碰不到（AGENT.md P1-40）。
+        if (tier == AscensionTier.ULTRA && TooltipStackCompat.usePrismGradient()) {
+            return PrismRainbow.apply(line);
         }
         return line;
     }

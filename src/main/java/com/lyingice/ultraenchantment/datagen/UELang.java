@@ -73,12 +73,8 @@ public class UELang extends LanguageProvider {
      */
     private void addStageNames() {
         for (LineageTable.Lineage lineage : LineageTable.all()) {
-            for (LineageTier tier : LineageTier.values()) {
-                // 原生阶不是阶段条目——它是「还没进阶」的状态，没有对应 JSON，
-                // 因此也没有独立键（原版附魔名由原版语言文件提供）。
-                if (tier == LineageTier.NATIVE) {
-                    continue;
-                }
+            // 只给**本条谱系真正拥有的阶级**生成名字：没有超级阶的谱系不该留下悬空语言键。
+            for (LineageTier tier : lineage.tiers()) {
                 add(lineage.langKey(tier), stageName(lineage, tier));
             }
         }

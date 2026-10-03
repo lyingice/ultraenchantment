@@ -75,7 +75,7 @@
       }
     ]
   },
-  "required_level": 3,
+  "required_level": 2,
   "root": "minecraft:fire_aspect",
   "tier": "ultra"
 }

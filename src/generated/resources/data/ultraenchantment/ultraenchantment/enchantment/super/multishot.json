@@ -47,15 +47,14 @@
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 60.0,
-            "per_level_above_first": 30.0
+            "base": 30.0,
+            "per_level_above_first": 15.0
           }
         }
       }
     ]
   },
   "next": "ultraenchantment:ultra/multishot",
-  "required_level": 4,
   "root": "minecraft:multishot",
   "tier": "super"
 }

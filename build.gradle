@@ -60,10 +60,28 @@ repositories {
     }
 }
 
+// ── 提示框渲染栈：传说提示框 + Iceberg + Prism ───────────────────────────
+// 三者都不在公共 maven 上（CurseForge / Modrinth 专有），所以放 libs/ 本地 jar：
+//   compileOnly → 编译期拿 API，绝不进 jar；玩家漏装也不构成运行前提
+//   runtimeOnly → 只让开发环境能真正加载它们，方便联调
+// 当前联调版本（1.21.1 / NeoForge）：
+//   legendarytooltips 1.5.5 · iceberg 1.3.2 · prism 1.0.11
+//   ⚠️ libs/ 只是开发用；升级时替换同名前缀的 jar 即可（fileTree 按前缀匹配）。
+// ⚠️ 任何 import 对方类的代码，都必须放在「确认对方已安装」之后才被加载的类里，
+//    否则未安装时 JVM 会抛 NoClassDefFoundError（见 AGENT.md P0-16 / P1-40）。
+def tooltipStack = fileTree(dir: 'libs', include: [
+        'legendarytooltips-*.jar',
+        'iceberg-*.jar',
+        'prism-*.jar',
+])
+
 dependencies {
     compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
     runtimeOnly "mezz.jei:jei-1.21.1-neoforge:${jei_version}"
+
+    compileOnly tooltipStack
+    runtimeOnly tooltipStack
 }
 
 // runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。

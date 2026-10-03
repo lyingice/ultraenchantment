@@ -81,8 +81,7 @@
       }
     ]
   },
-  "next": "ultraenchantment:super/unbreaking",
-  "required_level": 5,
+  "required_level": 3,
   "root": "minecraft:unbreaking",
   "tier": "advanced"
 }

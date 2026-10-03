@@ -8,14 +8,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import net.minecraft.advancements.critereon.DamageSourcePredicate;
+import net.minecraft.advancements.critereon.TagPredicate;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.level.storage.loot.predicates.DamageSourceCondition;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
+import net.minecraft.world.level.storage.loot.providers.number.EnchantmentLevelProvider;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.enchantment.ConditionalEffect;
 import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
 import net.minecraft.world.item.enchantment.EnchantmentTarget;
@@ -28,7 +38,16 @@ import net.minecraft.world.item.enchantment.effects.EnchantmentEntityEffect;
 import net.minecraft.world.item.enchantment.effects.EnchantmentValueEffect;
 import net.minecraft.world.item.enchantment.effects.Ignite;
 import net.minecraft.world.item.enchantment.effects.MultiplyValue;
+import net.minecraft.world.item.enchantment.effects.AllOf;
+import net.minecraft.world.item.enchantment.effects.DamageEntity;
+import net.minecraft.world.item.enchantment.effects.DamageImmunity;
+import net.minecraft.world.item.enchantment.effects.DamageItem;
 import net.minecraft.world.item.enchantment.effects.RemoveBinomial;
+import net.minecraft.world.item.enchantment.effects.SetValue;
+
+import static net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+import static net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+import static net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE;
 
 /**
  * 阶段<b>阶位加成</b>的构造器——把「这一阶比上一阶多给了什么」表达成可组合的补丁。
@@ -132,6 +151,49 @@ public final class UEStageEffects {
         @Override
         public boolean isNoOp() {
             return true;
+        }
+    }
+
+    /**
+     * 把同一阶级要改的多个组件合成一个补丁。
+     *
+     * <p>效果总表 v3 里一阶常常同时改好几件事（例如究极锋利 = 增伤 + 攻击伤害属性 + 穿甲），
+     * 但每阶只声明<b>一个</b>补丁；这里按顺序应用并拼接描述。
+     */
+    public static Patch join(Patch... patches) {
+        return new Composite(List.of(patches));
+    }
+
+    /** 顺序应用多个补丁；效果总表逐条展示（空补丁不占位）。 */
+    record Composite(List<Patch> parts) implements Patch {
+        @Override
+        public DataComponentMap apply(DataComponentMap base) {
+            DataComponentMap result = base;
+            for (Patch part : this.parts) {
+                result = part.apply(result);
+            }
+            return result;
+        }
+
+        @Override
+        public DataComponentType<?> component() {
+            return null;
+        }
+
+        @Override
+        public String describe() {
+            return this.parts.stream().filter(part -> !part.isNoOp()).map(Patch::describe)
+                    .collect(java.util.stream.Collectors.joining("；"));
+        }
+
+        @Override
+        public boolean appends() {
+            return false;
+        }
+
+        @Override
+        public boolean isNoOp() {
+            return this.parts.stream().allMatch(Patch::isNoOp);
         }
     }
 
@@ -480,13 +542,13 @@ public final class UEStageEffects {
 
     /** 额外伤害（命中时结算，与原版锋利同一条管线）。 */
     public static Patch damage(float base, float perLevel) {
-        return value(EnchantmentEffectComponents.DAMAGE, add(base, perLevel),
+        return absoluteValue(EnchantmentEffectComponents.DAMAGE, base, perLevel,
                 "命中时额外造成 " + amount(base, perLevel) + " 点伤害");
     }
 
     /** 额外击退。 */
     public static Patch knockback(float base, float perLevel) {
-        return value(EnchantmentEffectComponents.KNOCKBACK, add(base, perLevel),
+        return absoluteValue(EnchantmentEffectComponents.KNOCKBACK, base, perLevel,
                 "额外击退 " + amount(base, perLevel));
     }
 
@@ -569,11 +631,18 @@ public final class UEStageEffects {
 
     /** 装备掉落加成（原版抢夺用的就是这条）。 */
     public static Patch equipmentDrops(float base, float perLevel) {
-        return new Append<>(EnchantmentEffectComponents.EQUIPMENT_DROPS,
-                new TargetedConditionalEffect<EnchantmentValueEffect>(
-                        EnchantmentTarget.ATTACKER, EnchantmentTarget.VICTIM,
-                        add(base, perLevel), Optional.empty()),
-                "装备掉落率 +" + amount(base, perLevel));
+        // 绝对值版：原版抢夺那条是「攻击者 → 受击者」的目标化条目，
+        // 直接追加会与原版叠加（实测掉落翻倍）。
+        return new Rewrite<>(EnchantmentEffectComponents.EQUIPMENT_DROPS, existing -> {
+            Optional<LootItemCondition> requirements = existing.isEmpty()
+                    ? Optional.empty() : existing.get(0).requirements();
+            EnchantmentTarget enchanted = existing.isEmpty()
+                    ? EnchantmentTarget.ATTACKER : existing.get(0).enchanted();
+            EnchantmentTarget affected = existing.isEmpty()
+                    ? EnchantmentTarget.VICTIM : existing.get(0).affected();
+            return List.of(new TargetedConditionalEffect<>(enchanted, affected,
+                    add(base, perLevel), requirements));
+        }, "装备掉落率 " + amount(base, perLevel));
     }
 
     /** 方块掉落经验加成。 */
@@ -624,8 +693,51 @@ public final class UEStageEffects {
 
     /** 额外穿透数量。 */
     public static Patch projectilePiercing(float base, float perLevel) {
-        return value(EnchantmentEffectComponents.PROJECTILE_PIERCING, add(base, perLevel),
+        return absoluteValue(EnchantmentEffectComponents.PROJECTILE_PIERCING, base, perLevel,
                 "额外穿透 " + amount(base, perLevel) + " 个目标");
+    }
+
+    /**
+     * 弹射物数量的<b>绝对值版</b>（整条替换）。
+     *
+     * <p>为什么不能沿用 {@link #projectileCount}：它在原版条目已被阶级曲线改写过之后
+     * <b>合并不上</b>，结果原版那条与新值同时存在——实测多出了一份（数量 6+4 出现两次）。
+     * 效果总表 v3 的语义是「这一阶就是这些数」，所以这里直接整条替换。
+     */
+    public static Patch projectileCountTotal(float base, float perLevel) {
+        return replaceValue(EnchantmentEffectComponents.PROJECTILE_COUNT, base, perLevel, "弹射物数量 " + amount(base, perLevel));
+    }
+
+    /** 弹射物散射角的<b>绝对值版</b>（整条替换），理由同 {@link #projectileCountTotal}。 */
+    public static Patch projectileSpreadTotal(float base, float perLevel) {
+        return replaceValue(EnchantmentEffectComponents.PROJECTILE_SPREAD, base, perLevel, "散射角 " + amount(base, perLevel));
+    }
+
+    /**
+     * 「无条件线性值」组件的<b>绝对覆盖</b>。
+     *
+     * <p>效果总表 v3 要求每阶写的都是该阶的<b>总值</b>，所以这条必须覆盖而不是追加：
+     * <ul>
+     *   <li>原版已有条目 → 沿用它的 {@code requirements}（条件属于附魔身份，例如
+     *       「对水生生物」的穿刺增伤），只把数值换成我们的；</li>
+     *   <li>原版没有 → 新建一条无条件条目。</li>
+     * </ul>
+     *
+     * <p>⚠️ 老式的 {@code value(...)} 是「能合就合、否则追加」——原版条目带条件时合不上，
+     * 于是原版那条与我们的同时存在，数值直接翻倍（实测：穿刺 7.5+5 出现两次、
+     * 力量 3+1.5 出现两次、穿透与抢夺同理）。所有 v3 谱系一律走本条。
+     */
+    private static Patch absoluteValue(DataComponentType<List<ConditionalEffect<EnchantmentValueEffect>>> type,
+                                       float base, float perLevel, String describe) {
+        return new Rewrite<>(type, existing -> List.of(new ConditionalEffect<>(add(base, perLevel),
+                existing.isEmpty() ? Optional.empty() : existing.get(0).requirements())), describe);
+    }
+
+    /** 整条替换一个「无条件线性值」组件。 */
+    private static Patch replaceValue(DataComponentType<List<ConditionalEffect<EnchantmentValueEffect>>> type,
+                                      float base, float perLevel, String describe) {
+        return new Replace<>(type,
+                List.of(new ConditionalEffect<>(add(base, perLevel), Optional.empty())), describe);
     }
 
     /** 额外散射角度（越大越散）。 */
@@ -667,13 +779,13 @@ public final class UEStageEffects {
 
     /** 缩短咬钩等待时间。 */
     public static Patch fishingTimeReduction(float base, float perLevel) {
-        return value(EnchantmentEffectComponents.FISHING_TIME_REDUCTION, add(base, perLevel),
+        return absoluteValue(EnchantmentEffectComponents.FISHING_TIME_REDUCTION, base, perLevel,
                 "咬钩等待 -" + amount(base, perLevel));
     }
 
     /** 提高钓鱼幸运值。 */
     public static Patch fishingLuck(float base, float perLevel) {
-        return value(EnchantmentEffectComponents.FISHING_LUCK_BONUS, add(base, perLevel),
+        return absoluteValue(EnchantmentEffectComponents.FISHING_LUCK_BONUS, base, perLevel,
                 "钓鱼幸运 +" + amount(base, perLevel));
     }
 
@@ -718,6 +830,225 @@ public final class UEStageEffects {
             case ADD_MULTIPLIED_BASE -> "按基础值乘算";
             case ADD_MULTIPLIED_TOTAL -> "按总值乘算";
         };
+    }
+
+    // ── 完全免疫 / 条件减免（效果总表 v3） ──────────────────────────────
+    //
+    // v3 起，阶级数值是**逐阶给定的绝对值**（不是「原版 × 倍率」），所以这一组
+    // 全是**整条覆盖**：某阶要什么数，就直接写成那个数，不依赖任何缩放。
+
+    /**
+     * 清空一个列表型组件。
+     *
+     * <p>用在「换成完全免疫之后，原来那条按点数减免不再需要」这类地方——
+     * 留着它既不是作者要的数值，也会让效果总表多出一行看不懂的东西。
+     */
+    public static <T> Patch clear(DataComponentType<List<T>> type, String why) {
+        return new Replace<>(type, List.<T>of(), why);
+    }
+
+    /** 伤害来源条件：命中指定伤害类型标签；可选「排除无视无敌的伤害」（原版保护的排除清单）。 */
+    private static LootItemCondition damageTagCondition(TagKey<DamageType> tag, boolean excludeBypass) {
+        DamageSourcePredicate.Builder builder = DamageSourcePredicate.Builder.damageType();
+        builder.tag(TagPredicate.is(tag));
+        if (excludeBypass) {
+            builder.tag(TagPredicate.isNot(DamageTypeTags.BYPASSES_INVULNERABILITY));
+        }
+        return DamageSourceCondition.hasDamageSource(builder).build();
+    }
+
+    /** 一条「按点数减免」条目：{@code base + perLevel×(n-1)}，限定某个伤害类型标签。 */
+    public static ConditionalEffect<EnchantmentValueEffect> damageTypeProtection(
+            TagKey<DamageType> tag, float base, float perLevel) {
+        return new ConditionalEffect<>(add(base, perLevel), Optional.of(damageTagCondition(tag, true)));
+    }
+
+    /** 一条**无条件**减免条目（对应「取消 requirements，全伤害生效」）。 */
+    public static ConditionalEffect<EnchantmentValueEffect> unconditionalProtection(float base, float perLevel) {
+        return new ConditionalEffect<>(add(base, perLevel), Optional.empty());
+    }
+
+    /** 一条「原版保护式」条目：带 {@code bypasses_invulnerability} 排除清单，不限定伤害类型。 */
+    public static ConditionalEffect<EnchantmentValueEffect> vanillaStyleProtection(float base, float perLevel) {
+        DamageSourcePredicate.Builder builder = DamageSourcePredicate.Builder.damageType();
+        builder.tag(TagPredicate.isNot(DamageTypeTags.BYPASSES_INVULNERABILITY));
+        return new ConditionalEffect<>(add(base, perLevel),
+                Optional.of(DamageSourceCondition.hasDamageSource(builder).build()));
+    }
+
+    /**
+     * 同一阶同时给「沿用原版条件的一条」与「无条件的一条」（亡灵杀手用）。
+     *
+     * <p>为什么不能写两次 {@link #damage}：那样第二条会把第一条覆盖掉，条件也会丢。
+     * 这里直接整表替换 {@code DAMAGE}：第一条**沿用原版条目的 requirements**（如「目标属于亡灵」
+     * 是原版附魔身份的一部分，不自己造），第二条无条件。
+     */
+    public static Patch conditionalPlusUnconditional(
+            DataComponentType<List<ConditionalEffect<EnchantmentValueEffect>>> type,
+            float conditionalBase, float conditionalPerLevel,
+            float unconditionalBase, float unconditionalPerLevel,
+            String describe) {
+        return new Rewrite<>(type, existing -> {
+            if (existing.isEmpty()) {
+                throw new IllegalStateException("原版没有可沿用的条件条目，无法构造「条件 + 无条件」");
+            }
+            List<ConditionalEffect<EnchantmentValueEffect>> rebuilt = new ArrayList<>();
+            rebuilt.add(new ConditionalEffect<>(add(conditionalBase, conditionalPerLevel),
+                    existing.get(0).requirements()));
+            rebuilt.add(new ConditionalEffect<>(add(unconditionalBase, unconditionalPerLevel), Optional.empty()));
+            return List.copyOf(rebuilt);
+        }, describe);
+    }
+
+    /** 逐条改写现有列表：保留原版的条件与结构，只换数值。 */
+    public record Rewrite<T>(DataComponentType<List<T>> type,
+                             java.util.function.UnaryOperator<List<T>> editor,
+                             String describe) implements Patch {
+        @Override
+        public DataComponentMap apply(DataComponentMap base) {
+            List<T> existing = base.get(this.type);
+            return DataComponentMap.builder().addAll(base)
+                    .set(this.type, this.editor.apply(existing == null ? List.of() : existing)).build();
+        }
+
+        @Override
+        public DataComponentType<?> component() {
+            return this.type;
+        }
+
+        @Override
+        public boolean appends() {
+            return false;
+        }
+    }
+
+    /**
+     * 荆棘（效果总表 v3）：反伤范围、耐久消耗、触发概率。
+     *
+     * <p><b>必须改写原版那条 {@code post_attack}</b>，不能新建：
+     * <ul>
+     *   <li>反伤的 {@code damageType} 是 {@code Holder<DamageType>}——自己造
+     *       {@code Holder.direct} 会写出无法序列化的数据（P0-2），只能沿用原版那个；</li>
+     *   <li>概率也不是普通随机数：实测原版是
+     *       {@code LootItemRandomChanceCondition(EnchantmentLevelProvider(Linear(0.15, 0.15)))}，
+     *       即「按附魔等级算概率」，结构必须原样保留。</li>
+     * </ul>
+     *
+     * <p>v3 起荆棘<b>不再挂</b>伤害减免与击退——只留反伤、耐久消耗、概率三件事。
+     */
+    public static Patch thorns(float minDamage, float maxDamage, float itemDamage,
+                               float chanceBase, float chancePerLevel) {
+        return new Rewrite<>(EnchantmentEffectComponents.POST_ATTACK, existing -> {
+            if (existing.isEmpty()) {
+                throw new IllegalStateException("原版荆棘没有 post_attack，无法改写");
+            }
+            TargetedConditionalEffect<EnchantmentEntityEffect> vanilla = existing.get(0);
+            Holder<DamageType> damageType = null;
+            if (vanilla.effect() instanceof AllOf.EntityEffects allOf) {
+                for (EnchantmentEntityEffect effect : allOf.effects()) {
+                    if (effect instanceof DamageEntity entity) {
+                        damageType = entity.damageType();
+                        break;
+                    }
+                }
+            }
+            if (damageType == null) {
+                throw new IllegalStateException("原版荆棘里找不到 damage_entity，无法沿用伤害类型");
+            }
+            EnchantmentEntityEffect reflect = new AllOf.EntityEffects(List.of(
+                    new DamageEntity(new LevelBasedValue.Constant(minDamage),
+                            new LevelBasedValue.Constant(maxDamage), damageType),
+                    new DamageItem(new LevelBasedValue.Constant(itemDamage))));
+            LootItemCondition chance = new LootItemRandomChanceCondition(
+                    new EnchantmentLevelProvider(new LevelBasedValue.Linear(chanceBase, chancePerLevel)));
+            return List.of(new TargetedConditionalEffect<>(vanilla.enchanted(), vanilla.affected(),
+                    reflect, Optional.of(chance)));
+        }, "反伤 " + num(minDamage) + "~" + num(maxDamage) + "，每次消耗耐久 " + num(itemDamage)
+                + "，触发概率 " + amount(chanceBase, chancePerLevel));
+    }
+
+    /** 整条替换 {@code damage_protection}（条目顺序即声明顺序）。 */
+    @SafeVarargs
+    public static Patch damageProtectionList(String describe,
+                                             ConditionalEffect<EnchantmentValueEffect>... entries) {
+        return new Replace<>(EnchantmentEffectComponents.DAMAGE_PROTECTION, List.of(entries), describe);
+    }
+
+    /**
+     * 完全免疫某个伤害类型。
+     *
+     * <p>{@code DamageImmunity} 是<b>无字段</b>记录，免疫哪种伤害完全由 {@code requirements} 表达
+     * （原版就是这么设计的），所以这里必须给条件，否则等于免疫一切。
+     */
+    public static Patch damageImmunity(TagKey<DamageType> tag, String describe) {
+        return new Replace<>(EnchantmentEffectComponents.DAMAGE_IMMUNITY,
+                List.of(new ConditionalEffect<>(DamageImmunity.INSTANCE,
+                        Optional.of(damageTagCondition(tag, false)))),
+                describe);
+    }
+
+    // ── 属性（整表替换，避免与原版那条叠加） ─────────────────────────────
+
+    /** 用给定的属性修饰符**整表替换** {@code attributes}。 */
+    public static Patch replaceAttributes(String describe, EnchantmentAttributeEffect... entries) {
+        return new Replace<>(EnchantmentEffectComponents.ATTRIBUTES, List.of(entries), describe);
+    }
+
+    private static EnchantmentAttributeEffect attributeEntry(String id, Holder<Attribute> attribute,
+                                                             float base, float perLevel,
+                                                             AttributeModifier.Operation operation) {
+        return new EnchantmentAttributeEffect(
+                ResourceLocation.fromNamespaceAndPath(Ultraenchantment.MODID, "ascension/" + id),
+                attribute, new LevelBasedValue.Linear(base, perLevel), operation);
+    }
+
+    private static String attributeDescribe(Holder<Attribute> attribute, float base, float perLevel,
+                                            AttributeModifier.Operation operation) {
+        return "属性 " + shortAttributeName(attribute) + " " + operationName(operation)
+                + " " + amount(base, perLevel);
+    }
+
+    /** 燃烧时间（原版火焰保护用同一条属性，这里整表替换成我们的数值）。 */
+    public static Patch burningTime(float base, float perLevel) {
+        return replaceAttributes(attributeDescribe(Attributes.BURNING_TIME, base, perLevel, ADD_MULTIPLIED_BASE),
+                attributeEntry("burning_time", Attributes.BURNING_TIME, base, perLevel, ADD_MULTIPLIED_BASE));
+    }
+
+    /** 爆炸击退抗性（原版爆炸保护用的就是这条）。 */
+    public static Patch knockbackResistance(float base, float perLevel) {
+        return replaceAttributes(attributeDescribe(Attributes.KNOCKBACK_RESISTANCE, base, perLevel, ADD_VALUE),
+                attributeEntry("knockback_resistance", Attributes.KNOCKBACK_RESISTANCE, base, perLevel, ADD_VALUE));
+    }
+
+    /** 攻击伤害百分比（{@code add_multiplied_total}，作用在总值上）。 */
+    public static Patch attackDamageTotal(float base, float perLevel) {
+        return replaceAttributes(attributeDescribe(Attributes.ATTACK_DAMAGE, base, perLevel, ADD_MULTIPLIED_TOTAL),
+                attributeEntry("attack_damage_total", Attributes.ATTACK_DAMAGE, base, perLevel,
+                        ADD_MULTIPLIED_TOTAL));
+    }
+
+    /** 氧气加成（原版水下呼吸用的就是这条）。 */
+    public static Patch oxygenBonus(float base, float perLevel) {
+        return replaceAttributes(attributeDescribe(Attributes.OXYGEN_BONUS, base, perLevel, ADD_VALUE),
+                attributeEntry("oxygen_bonus", Attributes.OXYGEN_BONUS, base, perLevel, ADD_VALUE));
+    }
+
+    // ── 弹药 / 经验修补（整条替换） ──────────────────────────────────────
+
+    /** 弹药消耗归零，且**不限定箭种**（原版无限只对普通箭生效）。 */
+    public static Patch ammoUseUnconditional() {
+        return new Replace<>(EnchantmentEffectComponents.AMMO_USE,
+                List.of(new ConditionalEffect<EnchantmentValueEffect>(
+                        new SetValue(new LevelBasedValue.Constant(0.0f)), Optional.empty())),
+                "弹药不消耗（所有箭种，取消原版的普通箭限制）");
+    }
+
+    /** 经验修补总倍率（整条替换原版的 {@code ×2}）。 */
+    public static Patch repairWithXpTotal(float factor) {
+        return new Replace<>(EnchantmentEffectComponents.REPAIR_WITH_XP,
+                List.of(new ConditionalEffect<EnchantmentValueEffect>(
+                        new MultiplyValue(new LevelBasedValue.Constant(factor)), Optional.empty())),
+                "经验修补效率 ×" + num(factor));
     }
 
     // ── 自检 ─────────────────────────────────────────────────────────────

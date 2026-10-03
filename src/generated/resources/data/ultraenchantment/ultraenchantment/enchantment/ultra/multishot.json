@@ -59,14 +59,13 @@
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 100.0,
-            "per_level_above_first": 50.0
+            "base": 50.0,
+            "per_level_above_first": 25.0
           }
         }
       }
     ]
   },
-  "required_level": 3,
   "root": "minecraft:multishot",
   "tier": "ultra"
 }

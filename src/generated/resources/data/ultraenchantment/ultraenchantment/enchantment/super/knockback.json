@@ -23,8 +23,8 @@
           "type": "minecraft:add",
           "value": {
             "type": "minecraft:linear",
-            "base": 0.5,
-            "per_level_above_first": 0.25
+            "base": 1.0,
+            "per_level_above_first": 1.0
           }
         }
       }
@@ -43,7 +43,7 @@
     ]
   },
   "next": "ultraenchantment:ultra/knockback",
-  "required_level": 4,
+  "required_level": 2,
   "root": "minecraft:knockback",
   "tier": "super"
 }

@@ -17,6 +17,18 @@
     "weight": 10
   },
   "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.5,
+            "per_level_above_first": 0.5
+          }
+        }
+      }
+    ],
     "minecraft:projectile_piercing": [
       {
         "effect": {
@@ -31,7 +43,7 @@
     ]
   },
   "next": "ultraenchantment:super/piercing",
-  "required_level": 5,
+  "required_level": 4,
   "root": "minecraft:piercing",
   "tier": "advanced"
 }

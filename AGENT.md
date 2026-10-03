@@ -849,7 +849,7 @@ ResourceKey<Enchantment> id = Utils.hackyGetRegistry(Registries.ENCHANTMENT)
    `run/mods` 会**加载不到**（依赖模组却报「dummmmmmy is not installed」），重命名成
    `dummmmmmy-1.21-2.1.2-neoforge.jar` 即可。
 
-**根治方向（未做）**：把 93 个阶级附魔改成**真正的数据包附魔**
+**根治方向（未做）**：把 59 个阶级附魔改成**真正的数据包附魔**
 （`data/ultraenchantment/enchantment/<阶>/<附魔>.json`，原版格式），运行时直接取注册表 holder，
 不再 `Holder.direct`。这样所有模组的反查都成立，同时消灭 P0-2 / P0-17 那一类隐患。
 代价：datagen + 结算层改造，且要防止它们出现在附魔台/村民交易里。
@@ -887,6 +887,131 @@ tooltip 回到「阶级附魔行 + 原版属性段」的形态（实测：究极
 > 但玩家看到的总和必须是真相，所以我们把真实增量显式写出来。
 > 判定信号：**「我方数值走效果组件、别人走属性/存储」时，tooltip 一定对不上**——
 > 别指望它们读到结算层。
+
+#### P1-41 · Prism 彩虹行 & 传说提示框数值适配（**软联动**的两种范式）
+
+**需求（作者 2026-10）**：不强制依赖，装了才生效——Prism 让**究极阶**附魔行变成渐变彩虹；
+同时适配传说提示框那两个 mixin，让它们的附魔加伤计算用上我们的数据。
+
+### 一、Prism：究极阶渐变彩虹（已实测 ✅）
+
+| 环节 | 做法 |
+|---|---|
+| 取色 | `DynamicColor.fromRGB(...)`（色相用原版 `Mth.hsvToRgb` 算，避开对方 HSV 单位歧义） |
+| 渐变 | 24 档色带，第 i 档的色环整体旋转 i 格 → 整行逐字渐变，且随时间流动 |
+| 动画 | `DynamicColor` 的相位在**实例里**，tooltip 每帧重建 → **实例必须长期缓存**（每帧 new 会重置动画钟） |
+| 隔离 | `compat/tooltip/PrismRainbow` 只在「逻辑客户端 + Prism 已装」时被类加载（P1-40 铁律） |
+
+实测：究极行颜色档位数 **6**，40 tick 后再采样**颜色已变**（`[LT] ... 动画 = PASS`）。
+
+### 二、传说提示框：把它算错的绿色攻击伤害行补正（已实测 ✅）
+
+**它在做什么**：修原版 MC-271840（附魔加伤不出现在攻击伤害行）。两个 mixin
+（`AttributeUtilMixin` → `@Redirect(method="applyTextFor")`、
+`ItemStackMixin` → `@Redirect(method="addModifierTooltip")`）
+都把「玩家基础攻击力」换成「基础 + 遍历附魔 DAMAGE 效果」。
+**它读的是 `DataComponents.ENCHANTMENTS`（原始组件）**，而我们的阶级附魔只在结算层 →
+它永远算出原版数字（实测：普通锋利 V 与阶级究极锋利 V 都是 **11**）。
+
+**先试的路（失败，记下来别再试）**：在它注入的方法上再注入 `@ModifyExpressionValue`，换掉它读的附魔表。
+- priority 500 与 1500 都报 `failed injection check, (0/1) succeeded. Scanned 0 target(s)`
+  ——我们应用时它注入的指令还没进方法体；**跨模组 mixin 的应用顺序不可依赖**。
+- 另一个坑：把 `require` 从 0 改成 1 做诊断时，**即使配置写了 `required: false` 也直接把客户端崩掉**。
+  所以正式代码一律留 `require = 0`，靠日志与自检发现问题。
+
+**最终做法（不依赖对方内部）**：在我们自己的 `ItemTooltipEvent` 里补正成品行：
+`Δ = 结算表附魔加伤 − 原始表附魔加伤`（两边同一套求和方式，经 `LegendaryTooltipsCompat.settledEnchantments` 取结算表），
+只对进阶物品、只在装了对方且是逻辑客户端时执行；普通物品 Δ=0，**一个数字都不动**。
+
+> **踩坑**：那条行是 `Component.translatable("attribute.modifier.equals.0", 数值, 属性名)`，
+> 数值是**参数**不是 sibling——改 `getSiblings()` 完全改不动（实测 28 改不出来）。
+> 必须用 `Component.visit` 展开带样式的片段后**逐段重建**，既改数字又保住各段颜色。
+
+**实测（客户端，同一份代码）**：
+
+| 物品 | 修正前 | 修正后 | 期望 |
+|---|---|---|---|
+| 原版锋利 V（对照） | 11 | **11** ✅ | 11（不动） |
+| 阶级究极锋利 V | 11 | **28** ✅ | 8 + 20 |
+| 阶级超级锋利 II | 11 | **15.5** ✅ | 8 + 7.5（证明用 tierLevel=2，不是存储等级 5） |
+
+
+### 三、有条件的效果**一律不计入**（v2.16 修正）
+
+第一版把「所有 DAMAGE 效果」都算进去了——**错的**：像亡灵杀手（只对亡灵）、穿刺（只对水生）这类，
+加伤取决于打谁，tooltip 上写死一个数字就是骗人。
+
+反过来看对方的做法（反编译 AttributeUtilMixin 第 173/176 行）：它自己就调了
+ConditionalEffect.requirements() → Optional.isEmpty() 来跳过条件效果。
+所以「两边同口径」也必须跳过——否则差值会凭空多一块。**修正后两边都只算无条件部分。**
+
+实测（客户端）：
+
+| 物品 | 实测 | 期望 |
+|---|---|---|
+| 原版锋利 V（对照） | 11.0 ✅ | 11 |
+| 阶级究极锋利 V（无条件） | 28.0 ✅ | 8 + 20 |
+| 阶级究极亡灵杀手 V（**有条件**） | **8.0** ✅ | 8 + 0（不承诺数字） |
+
+### 四、无前置时不会崩（实测 ✅）
+
+「软联动」的硬要求：玩家没装 Prism / 传说提示框 / 冰山时，绝不能因为我们的代码崩。三道保障：
+
+1. **依赖声明可选**：neoforge.mods.toml 里都是 type="optional"（写 required 会让漏装者开不了游戏）；
+2. **类加载隔离**：引用对方类的 PrismRainbow（还引用客户端类）只在「逻辑客户端 + Prism 已装」时被加载；
+   LegendaryTooltipsFixup / LegendaryTooltipsCompat 引用 Minecraft（客户端专属），
+   只在「逻辑客户端 + 传说提示框已装」时被调用——专用服务端上永远不会加载它们；
+3. **判据只用 modid**：ModList.isLoaded（不触发类加载），且 shouldApplyMixin 绝不抛异常。
+
+实测（专用服务端，**摘掉全部前置**）：
+
+```
+[GUARD] present(LT)=false prismPresent=false usePrismGradient=false useLegendaryTooltipsFix=false
+[GUARD] PASS 未装前置时全部门控关闭，模组正常启动
+```
+
+#### P1-40 · 可选依赖（提示框栈）：**声明为 optional + 类加载隔离**
+
+**需求（作者 2026-10）**：为「传说提示框（Legendary Tooltips）＋冰山（Iceberg）＋Prism」做
+编译/运行期依赖，声明为**可选**，并且**打包后的 jar 在对方未加载时不能崩**。
+
+### 怎么接的
+
+| 环节 | 做法 | 为什么 |
+|---|---|---|
+| 拿 jar | 三个模组都**不在公共 maven**（CurseForge/Modrinth 专有）→ 放 `libs/` 本地 jar | 没有可声明的仓库坐标 |
+| 编译期 | `compileOnly fileTree('libs', ...)` | 只借 API；**绝不进我们的 jar** |
+| 开发运行期 | `runtimeOnly fileTree('libs', ...)` | 让开发客户端真能加载它们做联调 |
+| 发布声明 | `neoforge.mods.toml` 里 `type="optional"` + `ordering="AFTER"` + `side="BOTH"` | 写成 `required` 会让**没装的玩家直接开不了游戏** |
+| 代码接入 | `compat/tooltip/TooltipStackCompat` 门控 + `ModList.isLoaded` | 见下 |
+
+联调版本：`legendarytooltips 1.5.5` · `iceberg 1.3.2` · `prism 1.0.11`（1.21.1 / NeoForge）。
+
+### 铁律：引用对方类的代码只能在「确认装了」之后被加载
+
+`TooltipStackCompat.present()` 用 `ModList.get().isLoaded("legendarytooltips")`——
+**只查模组清单，不触发类加载**，也不会因为对方改名而抛异常。
+任何 `import` 对方类的代码必须写在**只在 `present()` 为真时才被调用**的类里：
+
+```java
+if (TooltipStackCompat.present()) {
+    TooltipStackHooks.something();   // 这个类里才允许出现对方 import
+}
+```
+
+否则 JVM 在链接/校验时抛 `NoClassDefFoundError`——服务端、没装的玩家那里都会炸，
+而且报错跟我们的功能毫无关系（同类分层原则见 P0-16）。
+
+### 实测（同一份代码，只切换有没有装对方）
+
+| 场景 | 结果 |
+|---|---|
+| 开发客户端 + 三个模组在运行期 | 三者均加载（`Iceberg 1.3.2` / `Legendary Tooltips 1.5.5` / `Prism 1.0.11`），门控日志 `[TooltipStack] 检测到传说提示框` ✅ |
+| 开发服务器 + **摘掉运行期依赖**（模拟玩家没装） | `TooltipStackCompat.present() = false`，模组照常启动，无 `NoClassDefFoundError` ✅ |
+| 产物 jar | 不含 `com/anthonyhilyard/...` 任何类 ✅ |
+
+> `libs/` 是**开发专用**：不要把第三方 jar 提交进仓库或发布物；
+> 换版本只需替换 `libs/` 下同前缀的 jar（`fileTree` 按前缀匹配），并同步 `build.gradle` 注释里的版本号。
 
 #### P1-14 · Mixin 在 NeoForge 21.x 的配置方式（三处缺一不可）
 
@@ -1282,11 +1407,12 @@ for (ResourceLocation root : ReloadEvents.roots()) {
 | 科目 | 主标签 | 搜索标签 |
 |---|---|---|
 | 进化书 · 通用 | 3 品质 | 3 品质 |
-| 进化书 · 定向 | 93（谱系 × 阶级，全量） | 93 |
-| 铭刻书 | 93（谱系 × 阶级，各格满级） | 288 |
+| 进化书 · 定向 | 93 → **59**（v3：谱系 × 阶级，全量） | 59 |
+| 铭刻书 | 93 → **59**（谱系 × 阶级，各格满级） | 288 → **181** |
 | 升级书 | 15（全等级） | 15 |
 | 祛咒石 | 3 档 | 3 档 |
-| **合计** | **207** | **402** |
+| **合计（v2.9）** | **207** | **402** |
+| **合计（v3.0 实测）** | **180** | **258** |
 
 > 分层不是「给主标签取样」，而是「隐藏维度只上搜索标签」——主标签里
 > **每条谱系、每个阶级都在**，顺序也不串（见 P1-29 的 v2.1 补记）。
@@ -1312,6 +1438,7 @@ v2.0 的分派是「两本都是我们的书 → 走合并」，而合并只认
 | 不注册（JEI 默认） | 进阶附魔书 **1** 条、祛咒石 **1** 条 |
 | 注册 subtype 之后 | 进阶附魔书 **384** 条（进化 93 / 载体 276 / 升级 15）、祛咒石 **3** 条 |
 | 注册 subtype（v2.7 纳入穿刺后） | 进阶附魔书 **402** 条（进化 96 / 载体 291 / 升级 15）、祛咒石 **3** 条 |
+| 注册 subtype（**v3.0 效果总表落地后**） | 进阶附魔书 **258** 条（进化 **62** / 载体 **181** / 升级 15 / 空白 0）、祛咒石 **3** 条 |
 
 本模组的书与祛咒石都是**单例物品**：几百个变体共用同一个 `Item`，只靠**数据组件**区分。
 JEI 默认把「同一个 Item + 相同 subtype」的材料压成一条 → 整张材料表里只剩一本书。
@@ -1375,6 +1502,7 @@ if (level != 1 || enchantment.getMaxLevel() != 1) { 显示罗马数字 }
 
 实测数据包中有 **15/93 个格子 `cap == 1`**（如无限、经验修补），
 这些格子的 1 级铭刻书会正确省略数字。
+（**v3 后重测：13/59** —— 三系保护超级、摔落缓冲、激流三阶、无限、火矢、多重射击三阶、经验修补。）
 
 > **补记（v2.6）：这条规则最初只落在书 tooltip 上，物品那条路漏了。**
 > `TooltipEvents.renderStagedLine` 当时**无条件**拼数字，于是那 5 条「原版上限就是 1」的
@@ -1518,7 +1646,7 @@ com.lyingice.ultraenchantment
     ├── UEDataGen.java              GatherDataEvent 入口（写出阶段条目用 UEStagePack，见 P0-12）
     ├── UEModels.java               物品模型（谓词 + 双层）
     ├── UELang.java                 中英语言文件（静态键 + 阶梯名同处一个提供器，P1-19）
-    ├── LineageTable.java           ★ 谱系单一事实源：31 条常用谱系 + 三阶加成阶梯（表驱动）
+    ├── LineageTable.java           ★ 谱系单一事实源：26 条常用谱系 + 1~3 阶**绝对数值**（表驱动）
     ├── UEStages.java               阶段条目生成（definition 取自原版 / effects = 原版 + 阶级加成）
     ├── UEStagePack.java            数据包写出器（必须与读取共用同一份 provider，P0-12）
     ├── UEEffectDoc.java            ★ 效果总表（markdown，落仓库 docs/，不进 jar）
@@ -1543,7 +1671,7 @@ com.lyingice.ultraenchantment
 
 - `logic/` 下全部是**纯函数**，不接 `Level` / `Player` 之外的东西，便于两侧复用（见 P0-4）。
 - **所有** `new Enchantment(...)` + `Holder.direct(...)` 只允许出现在 `EnchantmentFactory` —— 把 P0-2 的风险收敛到一个可审计的文件。
-- 阶段 JSON **由 datagen 产出**，不手写。31 条谱系 × 3 阶 = 93 个文件，手写必然出错。
+- 阶段 JSON **由 datagen 产出**，不手写。26 条谱系 × 1~3 阶 = 59 个文件（v3 起阶级数逐条决定），手写必然出错。
 - **不要手抄原版附魔的效果**。`UEStages` 直接读原版 `minecraft:enchantment` 的
   `definition` 与 `effects` 整段搬用，只叠加阶级加成。手抄 `soul_speed` / `frost_walker`
   那种效果树必错，且随版本漂移。
@@ -1632,6 +1760,10 @@ com.lyingice.ultraenchantment
 
 | 日期 | 变更 |
 |---|---|
+| 2026-10 | **有条件加伤的口径修正 + 无前置不崩的实测（v2.16）**。上一版把**有条件**的 DAMAGE 效果也计入了 tooltip 差值，导致阶级亡灵杀手这类会凭空多出数字；实测对方自己也用 ConditionalEffect.requirements() 跳过条件效果，故两边统一为**只算无条件**。实测：原版锋利 V 11 ✅ / 阶级究极锋利 V 28 ✅ / 阶级究极亡灵杀手 V **8**（不承诺数字）✅。另实测专用服务端在**摘掉全部前置**时正常启动、[GUARD] 四项门控全 false ✅ |
+| 2026-10 | **Prism 彩虹行 + 传说提示框数值适配（v2.15）**。① 究极阶附魔行在装了 Prism 时变成逐字渐变彩虹（24 档、色环错相位、`DynamicColor` 实例缓存以保留动画），实测档位数 6 且 40 tick 后颜色变化 ✅。② 传说提示框两个 mixin（修 MC-271840）读的是**原始附魔组件**，导致阶级究极锋利 V 与普通锋利 V 都是 11；先试「在它注入的方法上再注入」——priority 500/1500 都 `Scanned 0 target(s)`，**跨模组 mixin 顺序不可依赖**（且 `require=1` 会让 `required:false` 的配置也崩客户端）；改为在自己的 `ItemTooltipEvent`里按 `Δ = 结算表加伤 − 原始表加伤` 补正成品行，用 `Component.visit`逐段重建（数值是 translatable 的**参数**、不是 sibling）。实测 11 / **28** / **15.5** 全中。新增 **P1-41** |
+| 2026-10 | **提示框栈做成可选依赖（v2.14，为下一步联调铺路）**。为传说提示框 1.5.5 / Iceberg 1.3.2 / Prism 1.0.11 建立依赖：三者都不在公共 maven，故以 `libs/` 本地 jar 走 `compileOnly`（不进 jar）+ `runtimeOnly`（仅开发环境）；`neoforge.mods.toml` 声明 `type="optional"`（写 required 会让漏装者开不了游戏）。新增门控 `compat/tooltip/TooltipStackCompat`（`ModList.isLoaded` 判定 + 「装了才加载对方类」的接入层）。实测：客户端装了 → 三者加载且门控日志正常；摘掉运行期依赖 → `present()=false`、模组照常启动、无 `NoClassDefFoundError`。新增 **P1-40** |
+| 2026-10 | **效果总表 v3 全量落地（v3.0）**。作者给定「进阶附魔效果总表（最终版）」并逐条定稿（荆棘概率 ×2/×3/×4、击退究极=受击方按秒、火焰保护超级连着火一起免、荆棘去掉全部追加、究极锋利攻伤按 60%）。数据包模型随之改造：**数值由「全局倍率」改为逐阶绝对值**（表里每行都是该阶总值）、**阶梯长度 1~3 阶可变**、**逐阶 cap 与门槛可覆盖**（门槛默认 = 原版上限 = 满级）。产物 **93 → 59** 个阶段、**31 → 26** 条谱系（移除深海探索者/迅捷潜行/忠诚/引雷/快速装填）。对账中抓到并修掉一类**静默翻倍**：老式 `value(...)` 在「原版那条带条件/已被改写」时合并不上改为追加，导致穿刺/力量/穿透/抢夺/击退/饵钓/海之眷顾/多重射击数值翻倍、爆炸保护超级残留缩放值——新增绝对覆盖原语 `absoluteValue`（有原版条目则沿用其条件只换数值，没有则新建）后全部消失。荆棘按实测结构改写原版 `post_attack`（`LootItemRandomChanceCondition(EnchantmentLevelProvider(Linear))` + 沿用原版 `Holder<DamageType>`）。数值唯一权威 = [docs/ascension-effects-v3.md](docs/ascension-effects-v3.md)。**JEI 实机重测**（客户端直接进存档跑新包）：铁砧配方 **170** 条（进阶 59 / 合并 65 / 升级 46，v2.9 为 286）、材料表 **258** 条（进化 62 / 载体 181 / 升级 15，v2.9 为 399）、创造栏主/搜索标签 **180 / 258**、多条目载体书 **0** 本、配方展示栈编码校验 **662 栈 0 失败** |
 | 2026-10 | **撤销 tooltip 的加成行（v2.13，作者要求）**。v2.12 曾在进阶附魔行下插一行 `攻击伤害 +N`；作者要求保持 tooltip 原样，已完整回退：删掉 `TooltipEvents.renderDamageBonus` 与其调用、删掉 `tooltip.ultraenchantment.bonus.damage` 两个语言键（生成语言里已归零）。实测回退后：究极锋利 V 的 tooltip = `[Netherite Sword, Ultra Sharpness V, , When in Main Hand:,  7 Attack Damage,  -2.4 Attack Speed]` ✅。**P1-39 保留为「现象解释」**，并注明不要再插行 |
 | 2026-10 | **tooltip 补上真实攻击伤害加成（v2.12）**。作者发现「传说提示框」下阶级究极锋利满级与普通锋利满级的攻击伤害都是 **11**。实测三把下界合金剑：属性段全是 `7 Attack Damage`，真实附魔加伤却是 0 / 3 / **20**——原版属性段只统计 `ATTRIBUTES` 组件（不含 `DAMAGE`），第三方提示框又只按**存储附魔**套原版公式。处理：`TooltipEvents.renderDamageBonus` 在进阶附魔行下自己写 `攻击伤害 +20`（蓝色、属性修正配色，只统计**无条件**加伤；穿刺那种条条件效果不给数字）。新增 **P1-39** |
 | 2026-10 | **假人特攻语义补全（v2.11）**。v2.10 的补丁「查不到注册表 key 就返回 false」只解决了崩溃，却把语义丢了：作者给假人戴海龟壳（`AQUATIC`）后，阶级穿刺吃不到加成（实测伤害 2.0＝零加成，而原版穿刺 V 是 14.5）。改为**按谱系根源回答**：`EnchantmentFactory` 新增「组装对象 → `stage.root()`」身份表（`rootOf`），补丁把根源当 key 交回，再按对方三条规则（smite→UNDEAD / bane→ARTHROPOD / impaling→AQUATIC）回答。复验：四个判定全部正确，海龟壳假人挨阶级穿刺 I = **9.5**（= 2.0 + 2.5×3.0，与阶级表一致）。P1-38 补记「兼容补丁的验收标准是行为一致，不是不崩」 |
