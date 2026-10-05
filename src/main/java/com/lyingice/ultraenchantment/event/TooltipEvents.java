@@ -1,6 +1,7 @@
 package com.lyingice.ultraenchantment.event;
 
 import com.lyingice.ultraenchantment.Ultraenchantment;
+import com.lyingice.ultraenchantment.compat.apotheosis.ApothCaps;
 import com.lyingice.ultraenchantment.compat.tooltip.PrismRainbow;
 import com.lyingice.ultraenchantment.compat.tooltip.TooltipStackCompat;
 import com.lyingice.ultraenchantment.content.AscensionData;
@@ -58,6 +59,40 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
  * </ul>
  *
  * <p>这是刻意的「数据与显示分离」：内部按原等级运算，对外按新曲线呈现。
+ *
+ * <h2>装了神化时会多出「过时原版行」，两种都要删（机制实证）</h2>
+ *
+ * <p>神化的 {@code ItemStackMixin} 接管附魔行渲染时遍历<b>三张表</b>：
+ *
+ * <ol>
+ *   <li>{@code iterationOrder}（原版附魔标签顺序）——里面的 holder 是<b>原版</b>的</li>
+ *   <li>{@code enchants}（物品 nbt 表）——同样是<b>原版</b> holder</li>
+ *   <li>{@code realLevels}（{@code getAllEnchantments()}，即<b>我们的结算表</b>）
+ *       ——里面是我们注入的<b>合成 holder</b></li>
+ * </ol>
+ *
+ * <p>于是同一个谱系被渲染<b>两次</b>，实测（截图，附魔区共 6 行）：
+ *
+ * <pre>
+ *   锋利 0 (V - V)              ← ❌ 第 1/2 张表：原版 holder，等级已被我们清零
+ *   亡灵杀手 0 (V - V)          ←    （nbt=5, real=0 → 神化的「等级差」格式）
+ *   横扫之刃 0 (III - III)      ← ❌
+ *   🌟 究极锋利 IX (0 + IX)     ← ✅ 第 3 张表：名字来自**我们的合成 holder**
+ *   究极亡灵杀手 V (0 + V)       ← ✅   （后缀 (0 + IX) 是神化的调试格式）
+ *   🌟 究极横扫之刃 VIII (0 + VIII) ← ✅
+ * </pre>
+ *
+ * <p><b>关键认识</b>：下面那 3 行<b>本来就是我们的数据</b>——合成 holder 的
+ * {@code description} 就是我们生成的阶级名键
+ * （{@code enchantment.ultraenchantment.<阶级>.<根源>}），神化只是借它的管线渲染出来。
+ * 不是「别人的行」。
+ *
+ * <p>因此本类的做法是：<b>两种行都删，再插入我们自己渲染的那一行</b>——
+ * 于是装了神化与没装神化，最终呈现完全一致（都由我们决定外观：阶级配色 + 究极阶彩虹），
+ * 同时消掉 {@code (0 + IX)} 这种对玩家无意义的调试后缀。
+ *
+ * <p>判据一律按<b>名字本体</b>匹配（原版名 / 阶级名），不硬编码神化的后缀格式——
+ * 那种内部格式改版就失效（P1-18 的老教训）。
  */
 public final class TooltipEvents {
     private TooltipEvents() {}
@@ -114,13 +149,13 @@ public final class TooltipEvents {
                 return;
             }
 
-            // 原版渲染出的那一行（用于定位并移除）。
-            //
-            // 注意：这里用的是与 tooltip 完全相同的 Component 构造方式，
-            // 因此 getString() 在客户端与服务端都一致——不依赖具体语言。
-            Component vanillaLine = Enchantment.getFullname(root, level);
+            // 要删的行有**两种**（装了神化时都会出现，见类文档「三张表」）：
+            //   ① 以【原版附魔名】开头 → 神化用原版 holder 渲染的过时行 '锋利 0 (V - V)'
+            //   ② 以【阶级名】开头     → 神化用我们的合成 holder 渲染的 '究极锋利 IX (0 + IX)'
+            // 两种都要删；②本来就是我们的数据，只是借它的管线渲染出来。
+            toRemove.add(markerFor(root));                        // ① 原版名
+            toRemove.add(Component.translatable(stageNameKey(stageId)));  // ② 阶级名
 
-            toRemove.add(vanillaLine);
             toAdd.add(renderStagedLine(stageId, rootId, root, data.tierLevelOf(rootId)));
         });
 
@@ -129,10 +164,25 @@ public final class TooltipEvents {
         }
 
         // 先删原行，再把改写后的行插回原位置（保持附魔区块的相对顺序）。
+        //
+        // ⚠️ 必须删掉**所有**匹配行，不能只删第一条。实测（客户端日志）：
+        //     装了神化时同一个附魔会出现**两行**——原版/神化渲染的那行，
+        //     以及神化「等级差」形态的那行，二者名字本体相同：
+        //       '🌟 高阶锋利 IX'           ← 我们插的
+        //       '🌟 高阶锋利 IX (0 + IX)'  ← 神化插的
+        //     只删第一条就会把神化那行留在原地，玩家看到双行。
+        //
+        // 先收集行号再倒序删：正序删会让后续下标失效（经典 off-by-one）。
         int insertAt = -1;
         for (Component remove : toRemove) {
-            int idx = indexOfSameText(lines, remove);
-            if (idx >= 0) {
+            List<Integer> hits = new ArrayList<>();
+            for (int i = 0; i < lines.size(); i++) {
+                if (matchesEnchantmentLine(lines.get(i), remove)) {
+                    hits.add(i);
+                }
+            }
+            for (int k = hits.size() - 1; k >= 0; k--) {
+                int idx = hits.get(k);
                 if (insertAt < 0 || idx < insertAt) {
                     insertAt = idx;
                 }
@@ -177,7 +227,8 @@ public final class TooltipEvents {
         // tierLevel 为 0 表示无进阶曲线记录（异常情况），归 1 兜底。
         int shown = Math.max(1, tierLevel);
 
-        MutableComponent line = Component.translatable(stageNameKey(stageId)).withStyle(colorOf(tier));
+        // 类型是 Component 而不是 MutableComponent：下面可能被渐变整体替换。
+        Component line = Component.translatable(stageNameKey(stageId)).withStyle(colorOf(tier));
 
         // 等级数字的省略规则和原版 Enchantment.getFullname 同源：
         //     if (level != 1 || enchantment.getMaxLevel() != 1) { 才显示数字 }
@@ -189,21 +240,64 @@ public final class TooltipEvents {
         // 而原版与书 tooltip 都只写「经验修补」。
         int cap = StageLookup.displayLevelCap(tier.asLineageTier(), rootId, root.value().getMaxLevel());
         if (shown != 1 || cap != 1) {
-            line.append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
+            MutableComponent withLevel = Component.translatable(stageNameKey(stageId)).withStyle(colorOf(tier));
+            withLevel.append(Component.literal(" ").withStyle(ChatFormatting.GRAY))
                     .append(Component.translatable("enchantment.level." + shown)
                             .withStyle(ChatFormatting.GRAY));
+            line = withLevel;
         }
 
-        // 究极阶 + 装了 Prism → 整行改成渐变彩虹（软联动：没装就保持上面的静态配色）。
+        // 「超过数据包定义等级」——超限配色的判据（神化 B1 把上限抬高后才会出现）。
+        boolean aboveCap = StageLookup.isAboveDataPackCap(tier.asLineageTier(), rootId, shown);
+
+        // ── 颜色规则（作者规格 v2.23）────────────────────────────────────
         //
-        // 这里有两条硬约束，都写在 TooltipStackCompat.usePrismGradient 里：
+        // ① 超过数据包定义等级时 → 按阶级走「浅 ⇄ 深」双色**流体渐变**：
+        //      高阶  蓝     ⇄ 深蓝
+        //      超级  淡紫   ⇄ 深紫
+        //      究极  橙     ⇄ 红
+        // ② 未超限时：
+        //      装了神化 → **不用彩虹**，究极保留原色（GOLD，由 colorOf 给）
+        //      没装神化 → 究极阶仍走原本的整行彩虹渐变
+        //
+        // 两条硬约束（写在 TooltipStackCompat.usePrismGradient 里）：
         //   1) 必须是逻辑客户端（Prism 是客户端库，专用服务端加载它会 NoClassDefFoundError）；
         //   2) Prism 必须已安装——PrismRainbow 这个类里才有对方的 import，
         //      它只在本分支被类加载，没装的玩家永远碰不到（AGENT.md P1-40）。
-        if (tier == AscensionTier.ULTRA && TooltipStackCompat.usePrismGradient()) {
+        if (!TooltipStackCompat.usePrismGradient()) {
+            return line;
+        }
+
+        if (aboveCap) {
+            int[] pair = overCapColors(tier);
+            return PrismRainbow.applyFlow(line, pair[0], pair[1]);
+        }
+        if (tier == AscensionTier.ULTRA && !ApothCaps.present()) {
             return PrismRainbow.apply(line);
         }
         return line;
+    }
+
+    /**
+     * 超限阶级的「浅色 / 深色」配色对。
+     *
+     * <pre>
+     *   高阶  0x5555FF (BLUE)          ⇄ 0x0000AA (DARK_BLUE)
+     *   超级  0xFF55FF (LIGHT_PURPLE)  ⇄ 0xAA00AA (DARK_PURPLE)
+     *   究极  0xFFAA00 (GOLD/橙)       ⇄ 0xFF5555 (RED/红)
+     * </pre>
+     *
+     * <p>取值与原版 {@code ChatFormatting} 的对应色一致，保证「未超限用 ChatFormatting、
+     * 超限用同一族的渐变」时色调连贯。
+     *
+     * @return {@code [浅色, 深色]}
+     */
+    private static int[] overCapColors(AscensionTier tier) {
+        return switch (tier) {
+            case ADVANCED -> new int[] { 0x5555FF, 0x0000AA };   // BLUE ⇄ DARK_BLUE
+            case SUPER    -> new int[] { 0xFF55FF, 0xAA00AA };   // LIGHT_PURPLE ⇄ DARK_PURPLE
+            case ULTRA    -> new int[] { 0xFFAA00, 0xFF5555 };   // 橙 ⇄ 红（试验）
+        };
     }
 
 
@@ -227,14 +321,86 @@ public final class TooltipEvents {
         };
     }
 
-    /** 按文本内容定位行（tooltip 行是 Component，按纯文本比较最稳）。 */
-    private static int indexOfSameText(List<Component> lines, Component target) {
-        String want = target.getString();
+    /**
+     * 造一个「行标记」——只承载<b>附魔名字本体</b>，用于在 tooltip 里定位它的行。
+     *
+     * <p>{@code Enchantment} 是 record，它的 {@code description} 组件就是<b>名字本体</b>
+     * （源码 {@code Enchantment.java} 第 61 行）——原版 {@code getFullname} 正是拿它
+     * {@code copy()} 之后拼等级的（第 190-191 行），所以它是所有形态的共同前缀。
+     */
+    private static Component markerFor(Holder<Enchantment> root) {
+        return root.value().description();
+    }
+
+    /**
+     * 定位某条附魔在 tooltip 里的行。
+     *
+     * <h2>为什么不能用「固定文本精确比对」（原实现，已废弃）</h2>
+     *
+     * <p>原实现找的是 {@code Enchantment.getFullname(root, level).getString()}，
+     * 即 {@code "Sharpness V"} 这种精确文本。装了 <b>Apothic Enchanting</b> 后它会失效，
+     * 因为对方<b>两处</b>改写了附魔行的形态（都是源码实证）：
+     *
+     * <ol>
+     *   <li><b>{@code ItemStackMixin}（priority 500）</b>在
+     *       {@code ItemStack.addToTooltip(ENCHANTMENTS)} 的 HEAD 处 {@code cancel}，
+     *       自己渲染。当「物品上的等级」与「结算层给出的等级」不一致时，
+     *       它渲染成<b>等级差</b>形态：{@code "Sharpness 0 (- 5)"}。</li>
+     *   <li><b>{@code EnchantmentMixin}（priority 1500）</b>改写 {@code getFullname} 本身：
+     *       等级超过神化配置上限时，返回 {@code "🌟 " + 原名}。</li>
+     * </ol>
+     *
+     * <p>而我们的结算层<b>必然</b>让两者不一致——进阶后原生附魔被清零、注入的是合成 holder，
+     * 于是实测得到 {@code nbtLevel=5 / realLevel=0} → 走等级差分支。
+     *
+     * <h2>现在的判据</h2>
+     *
+     * <p>不比对完整文本，而是比对<b>名字本体是否出现在行首附近</b>：
+     * <ul>
+     *   <li>原版形态 {@code "Sharpness V"} → 直接以名字开头</li>
+     *   <li>神化超限形态 {@code "🌟 Sharpness V"} → 前面多了个星标</li>
+     *   <li>神化等级差形态 {@code "Sharpness 0 (- 5)"} → 仍以名字开头</li>
+     * </ul>
+     *
+     * <p>为兼顾星标前缀，比较前先剥掉行首的<b>非字母数字</b>字符（星标、空格、符号）。
+     * 这样对「不同语言的名字本体」也成立——判据全部来自附魔自身的
+     * {@code descriptionId}，不硬编码任何语言字符串（与 P1-18 一致）。
+     *
+     * <p>⚠️ 边界：若两条附魔的名字互为前缀（如 {@code Sharpness} 与 {@code Sharpness II}），
+     * 可能误匹配。原版附魔名不存在这种关系；真出现时也是「显示成同一条」而非崩溃，
+     * 且我们只在<b>已进阶的谱系</b>上做替换，影响面受控。
+     *
+     * @param marker {@link #markerFor} 造出的名字本体
+     */
+    private static int indexOfEnchantmentLine(List<Component> lines, Component marker) {
         for (int i = 0; i < lines.size(); i++) {
-            if (lines.get(i).getString().equals(want)) {
+            if (matchesEnchantmentLine(lines.get(i), marker)) {
                 return i;
             }
         }
         return -1;
+    }
+
+    /**
+     * 这一行是不是「某条附魔的附魔行」？
+     *
+     * <p>与 {@link #indexOfEnchantmentLine} 同一判据，只是返回布尔——
+     * 调用方需要「删掉**全部**匹配行」时用这个（见 {@code onItemTooltip} 里的注释）。
+     */
+    private static boolean matchesEnchantmentLine(Component line, Component marker) {
+        String name = marker.getString();
+        if (name.isEmpty()) {
+            return false;
+        }
+        return stripLeadingSymbols(line.getString()).startsWith(name);
+    }
+
+    /** 剥掉行首的非字母数字字符（神化的 🌟 星标、空格等）。 */
+    private static String stripLeadingSymbols(String text) {
+        int i = 0;
+        while (i < text.length() && !Character.isLetterOrDigit(text.charAt(i))) {
+            i++;
+        }
+        return text.substring(i);
     }
 }

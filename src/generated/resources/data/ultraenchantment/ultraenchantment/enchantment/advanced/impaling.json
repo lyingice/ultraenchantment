@@ -1,44 +1,44 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 31,
-      "per_level_above_first": 18
-    },
-    "max_level": 5,
-    "min_cost": {
-      "base": 11,
-      "per_level_above_first": 18
-    },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/trident",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 7.5,
-            "per_level_above_first": 5.0
-          }
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 31,
+            "per_level_above_first": 18
         },
-        "requirements": {
-          "condition": "minecraft:entity_properties",
-          "entity": "this",
-          "predicate": {
-            "type": "#minecraft:sensitive_to_impaling"
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/impaling",
-  "required_level": 5,
-  "root": "minecraft:impaling",
-  "tier": "advanced"
+        "max_level": 5,
+        "min_cost": {
+            "base": 11,
+            "per_level_above_first": 18
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/trident",
+        "weight": 2
+    },
+    "effects": {
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 7.5,
+                        "per_level_above_first": 5.0
+                    }
+                },
+                "requirements": {
+                    "condition": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                        "type": "#minecraft:sensitive_to_impaling"
+                    }
+                }
+            }
+        ]
+    },
+    "next": "ultraenchantment:super/impaling",
+    "required_level": 5,
+    "root": "minecraft:impaling",
+    "tier": "advanced"
 }

@@ -682,6 +682,56 @@ v3 新增**绝对覆盖**原语 `absoluteValue(...)`：有原版条目则**沿�
 沿用它的 `enchanted/affected` 与伤害类型，重建 `AllOf(DamageEntity(min,max), DamageItem(amount))`
 与概率条件。三阶实测：`2~10/耐久2/0.30`、`4~20/耐久1/0.45`、`8~40/耐久0/0.60`；
 **不再挂** `damage_protection` 与 `knockback`。
+---
+
+## 23. v3.1：对外 API 契约
+
+**面向模组作者的完整文档**：[api.md](api.md)。本节只记录**契约要点**与实现落点。
+
+### 23.1 公开面
+
+`com.lyingice.ultraenchantment.api` 包（其余包不保证兼容）：
+
+| 类型 | 内容 |
+|---|---|
+| `UltraEnchantmentApi` | 查询：`getTierLevel` / `getCurveLevel` / `isUltraEnchant` / `getMaxAllowedTier` / `isEnchantLocked` / `getStageId` / `getImcAttribute`；修改：`setTierLevel` / `setCurveLevel` / `unlockEnchant` / `removeUltraEnchant` |
+| `api.event.UltraEnchantTierUpgradeEvent` | 可取消；`source` = ANVIL_BOOK / UPGRADE_BOOK / MERGE / API |
+| `api.event.UltraEnchantLockChangeEvent` | **不可取消**（解锁已扣祛咒石耐久，取消会造成不一致） |
+| `api.UltraEnchantImc` | 三通道：`register_enchant` / `tier_attributes` / `upgrade_cost`，载荷 String |
+
+### 23.2 两个「等级」的对外命名（**必读**）
+
+| 概念 | 内部叫法 | 对外叫法 | 取值 |
+|---|---|---|---|
+| 阶级 | `stage`（`LineageTier`） | `tier` | 0=原生 1=高阶 2=超级 3=究极 |
+| 该阶曲线等级 | `tierLevel`（组件字段 `tier_level`） | `curveLevel` | 1..该阶上限 |
+
+内部字段名**不改**（已进存档与网络格式），公开层做映射。效果强度按 `curveLevel` 结算。
+
+### 23.3 行为约定
+
+- 查询双端可用、无副作用；未进阶/不支持一律返回 `0`，不抛异常；
+- 修改**只在逻辑服务端主线程**生效，否则 `false` + WARN；
+- `setTierLevel` 越界**不夹取**（拒绝），`setCurveLevel` 夹取 + WARN（与升级书一致）；
+- `setTierLevel(tier==0)` 等价 `unlockEnchant`；升阶时 `curveLevel` 归 1；
+- 事件取消 = **整次操作作废**（不落盘、不扣材料）；所有写入路径统一经 `logic/UEEvents` 发事件。
+
+### 23.4 落点（实现）
+
+| 文件 | 职责 |
+|---|---|
+| `api/UltraEnchantmentApi.java` | 门面：校验 → 发事件 → 写组件 |
+| `api/event/*.java` | 两个事件（纯数据，无内部依赖） |
+| `api/UltraEnchantImc.java` | 通道名与键名常量 |
+| `logic/UERoots.java` | 「附魔 → 谱系根源」**唯一实现**（合成附魔走 `EnchantmentFactory.rootOf`，普通走注册表；客户端退回 side-aware lookup）。dummy 兼容补丁已改为调用它 |
+| `logic/UEEnchantRegistry.java` | IMC 调参表（上限收紧 / 自定义键值 / 升级花费），**与数据包分开存**、查询时合并 |
+| `logic/UEEvents.java` | 事件唯一发射点 |
+
+### 23.5 回归
+
+`runServer` 自检 **43 项断言全绿**：查询（含「财富/忠诚 不支持」「保护上限=1」）、写入、
+越界拒绝、**事件取消后零副作用**、IMC 合法/坏格式/越界值/收紧后 API 可见。
+
 
 
 

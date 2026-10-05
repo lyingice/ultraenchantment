@@ -1,49 +1,49 @@
 {
-  "definition": {
-    "anvil_cost": 3,
-    "max_cost": {
-      "base": 60,
-      "per_level_above_first": 10
+    "definition": {
+        "anvil_cost": 3,
+        "max_cost": {
+            "base": 60,
+            "per_level_above_first": 10
+        },
+        "max_level": 4,
+        "min_cost": {
+            "base": 11,
+            "per_level_above_first": 20
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/crossbow",
+        "weight": 10
     },
-    "max_level": 4,
-    "min_cost": {
-      "base": 11,
-      "per_level_above_first": 20
+    "effects": {
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.5,
+                        "per_level_above_first": 0.5
+                    }
+                }
+            }
+        ],
+        "minecraft:projectile_piercing": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 3.0,
+                        "per_level_above_first": 2.0
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/crossbow",
-    "weight": 10
-  },
-  "effects": {
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.5,
-            "per_level_above_first": 0.5
-          }
-        }
-      }
-    ],
-    "minecraft:projectile_piercing": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 3.0,
-            "per_level_above_first": 2.0
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/piercing",
-  "required_level": 4,
-  "root": "minecraft:piercing",
-  "tier": "advanced"
+    "next": "ultraenchantment:super/piercing",
+    "required_level": 4,
+    "root": "minecraft:piercing",
+    "tier": "advanced"
 }

@@ -141,4 +141,31 @@ public final class StageLookup {
     public static int displayLevelCap(LineageTier tier, ResourceLocation root, int vanillaMaxLevel) {
         return maxLevelOf(lookup(), tier, root, Math.max(1, vanillaMaxLevel));
     }
+
+    /**
+     * 该阶级「超过数据包定义等级」了吗？——<b>超限配色的判据</b>。
+     *
+     * <p>口径：拿 {@code tierLevel} 与<b>数据包</b>给该阶的 {@code max_level} 比。
+     * 神化把原版上限抬高后（B1），玩家可以把 {@code tierLevel} 升到超过数据包定义的值，
+     * 那种情况就是「超限」——tooltip 据此切换到深浅双色流体渐变。
+     *
+     * <p>数据包没定义这条谱系的该阶级时返回 {@code false}（无从谈起超限）。
+     *
+     * @param tierLevel 该谱系当前的进阶曲线等级
+     */
+    public static boolean isAboveDataPackCap(LineageTier tier, ResourceLocation root, int tierLevel) {
+        HolderLookup.RegistryLookup<StageDefinition> lookup = lookup();
+        if (lookup == null) {
+            return false;
+        }
+        for (Holder.Reference<StageDefinition> holder : lookup.listElements().toList()) {
+            StageDefinition stage = holder.value();
+            if (stage.tier() == tier && stage.root().equals(root)) {
+                return tierLevel > stage.definition().maxLevel();
+            }
+        }
+        return false;
+    }
+
+
 }

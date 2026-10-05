@@ -1,58 +1,58 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 70,
-      "per_level_above_first": 30
-    },
-    "max_level": 2,
-    "min_cost": {
-      "base": 20,
-      "per_level_above_first": 30
-    },
-    "primary_items": "#minecraft:enchantable/sword",
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/fire_aspect",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:post_attack": [
-      {
-        "affected": "victim",
-        "effect": {
-          "type": "minecraft:ignite",
-          "duration": {
-            "type": "minecraft:linear",
-            "base": 4.0,
-            "per_level_above_first": 4.0
-          }
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 70,
+            "per_level_above_first": 30
         },
-        "enchanted": "attacker",
-        "requirements": {
-          "condition": "minecraft:damage_source_properties",
-          "predicate": {
-            "is_direct": true
-          }
-        }
-      },
-      {
-        "affected": "victim",
-        "effect": {
-          "type": "minecraft:ignite",
-          "duration": {
-            "type": "minecraft:linear",
-            "base": 40.0,
-            "per_level_above_first": 20.0
-          }
+        "max_level": 2,
+        "min_cost": {
+            "base": 20,
+            "per_level_above_first": 30
         },
-        "enchanted": "attacker"
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/fire_aspect",
-  "required_level": 2,
-  "root": "minecraft:fire_aspect",
-  "tier": "advanced"
+        "primary_items": "#minecraft:enchantable/sword",
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/fire_aspect",
+        "weight": 2
+    },
+    "effects": {
+        "minecraft:post_attack": [
+            {
+                "affected": "victim",
+                "effect": {
+                    "type": "minecraft:ignite",
+                    "duration": {
+                        "type": "minecraft:linear",
+                        "base": 4.0,
+                        "per_level_above_first": 4.0
+                    }
+                },
+                "enchanted": "attacker",
+                "requirements": {
+                    "condition": "minecraft:damage_source_properties",
+                    "predicate": {
+                        "is_direct": true
+                    }
+                }
+            },
+            {
+                "affected": "victim",
+                "effect": {
+                    "type": "minecraft:ignite",
+                    "duration": {
+                        "type": "minecraft:linear",
+                        "base": 40.0,
+                        "per_level_above_first": 20.0
+                    }
+                },
+                "enchanted": "attacker"
+            }
+        ]
+    },
+    "next": "ultraenchantment:super/fire_aspect",
+    "required_level": 2,
+    "root": "minecraft:fire_aspect",
+    "tier": "advanced"
 }

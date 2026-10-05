@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.logic;
 
+import com.lyingice.ultraenchantment.api.event.UltraEnchantLockChangeEvent;
 import com.lyingice.ultraenchantment.content.AscensionData;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.LineageTier;
@@ -122,6 +123,7 @@ public final class ProtectionLogic {
         AscensionData data = UEComponents.ascensionOf(out);
         for (ResourceLocation root : toRemove.keySet()) {
             data = data.without(root);
+            UEEvents.fireLockChange(out, root, null, false, UltraEnchantLockChangeEvent.Cause.CURSE_STONE);
         }
         UEComponents.setAscension(out, data);
 

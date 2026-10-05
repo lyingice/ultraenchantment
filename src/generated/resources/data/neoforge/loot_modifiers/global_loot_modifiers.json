@@ -1,0 +1,22 @@
+{
+    "entries": [
+        "ultraenchantment:common_0_chests_simple_dungeon",
+        "ultraenchantment:common_1_chests_abandoned_mineshaft",
+        "ultraenchantment:common_2_chests_stronghold_corridor",
+        "ultraenchantment:common_3_chests_stronghold_crossing",
+        "ultraenchantment:common_4_chests_stronghold_library",
+        "ultraenchantment:common_5_chests_village_village_armorer",
+        "ultraenchantment:common_6_chests_village_village_toolsmith",
+        "ultraenchantment:common_7_chests_village_village_weaponsmith",
+        "ultraenchantment:common_8_chests_village_village_temple",
+        "ultraenchantment:common_9_chests_village_village_cartographer",
+        "ultraenchantment:rare_0_chests_end_city_treasure",
+        "ultraenchantment:rare_1_chests_woodland_mansion",
+        "ultraenchantment:rare_2_chests_bastion_treasure",
+        "ultraenchantment:rare_3_chests_bastion_other",
+        "ultraenchantment:rare_4_chests_ancient_city",
+        "ultraenchantment:boss_0_entities_ender_dragon",
+        "ultraenchantment:boss_1_entities_wither"
+    ],
+    "replace": false
+}

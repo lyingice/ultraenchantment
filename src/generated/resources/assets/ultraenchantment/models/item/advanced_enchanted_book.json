@@ -1,56 +1,56 @@
 {
-  "parent": "minecraft:item/generated",
-  "overrides": [
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_inscription_super",
-      "predicate": {
-        "minecraft:custom_model_data": 2.0
-      }
-    },
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_inscription_ultra",
-      "predicate": {
-        "minecraft:custom_model_data": 3.0
-      }
-    },
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_ascension_advanced",
-      "predicate": {
-        "minecraft:custom_model_data": 11.0
-      }
-    },
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_ascension_super",
-      "predicate": {
-        "minecraft:custom_model_data": 12.0
-      }
-    },
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_ascension_ultra",
-      "predicate": {
-        "minecraft:custom_model_data": 13.0
-      }
-    },
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_upgrade_advanced",
-      "predicate": {
-        "minecraft:custom_model_data": 21.0
-      }
-    },
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_upgrade_super",
-      "predicate": {
-        "minecraft:custom_model_data": 22.0
-      }
-    },
-    {
-      "model": "ultraenchantment:item/advanced_enchanted_book_upgrade_ultra",
-      "predicate": {
-        "minecraft:custom_model_data": 23.0
-      }
+    "parent": "minecraft:item/generated",
+    "overrides": [
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_inscription_super",
+            "predicate": {
+                "minecraft:custom_model_data": 2.0
+            }
+        },
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_inscription_ultra",
+            "predicate": {
+                "minecraft:custom_model_data": 3.0
+            }
+        },
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_ascension_advanced",
+            "predicate": {
+                "minecraft:custom_model_data": 11.0
+            }
+        },
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_ascension_super",
+            "predicate": {
+                "minecraft:custom_model_data": 12.0
+            }
+        },
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_ascension_ultra",
+            "predicate": {
+                "minecraft:custom_model_data": 13.0
+            }
+        },
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_upgrade_advanced",
+            "predicate": {
+                "minecraft:custom_model_data": 21.0
+            }
+        },
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_upgrade_super",
+            "predicate": {
+                "minecraft:custom_model_data": 22.0
+            }
+        },
+        {
+            "model": "ultraenchantment:item/advanced_enchanted_book_upgrade_ultra",
+            "predicate": {
+                "minecraft:custom_model_data": 23.0
+            }
+        }
+    ],
+    "textures": {
+        "layer0": "ultraenchantment:item/advanced_enchanted_book"
     }
-  ],
-  "textures": {
-    "layer0": "ultraenchantment:item/advanced_enchanted_book"
-  }
 }

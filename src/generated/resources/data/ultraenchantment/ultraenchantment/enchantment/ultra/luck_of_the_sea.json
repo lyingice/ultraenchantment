@@ -1,48 +1,48 @@
 {
-  "definition": {
-    "anvil_cost": 10,
-    "max_cost": {
-      "base": 110,
-      "per_level_above_first": 54
+    "definition": {
+        "anvil_cost": 10,
+        "max_cost": {
+            "base": 110,
+            "per_level_above_first": 54
+        },
+        "max_level": 3,
+        "min_cost": {
+            "base": 60,
+            "per_level_above_first": 54
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/fishing",
+        "weight": 2
     },
-    "max_level": 3,
-    "min_cost": {
-      "base": 60,
-      "per_level_above_first": 54
+    "effects": {
+        "minecraft:fishing_luck_bonus": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 10.0,
+                        "per_level_above_first": 5.0
+                    }
+                }
+            }
+        ],
+        "minecraft:fishing_time_reduction": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 1.0,
+                        "per_level_above_first": 1.0
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/fishing",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:fishing_luck_bonus": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 10.0,
-            "per_level_above_first": 5.0
-          }
-        }
-      }
-    ],
-    "minecraft:fishing_time_reduction": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 1.0,
-            "per_level_above_first": 1.0
-          }
-        }
-      }
-    ]
-  },
-  "required_level": 3,
-  "root": "minecraft:luck_of_the_sea",
-  "tier": "ultra"
+    "required_level": 3,
+    "root": "minecraft:luck_of_the_sea",
+    "tier": "ultra"
 }

@@ -50,13 +50,36 @@ neoForge {
     }
 }
 
-// ── JEI ────────────────────────────────────────────────────────────────
-// 只用于开发与兼容：compileOnly 拿到 API，runtimeOnly 装完整版（跑 client 时可见）。
-// 两者都不进 jar——正式环境里 JEI 可有可无，插件的发现由 JEI 自己扫描 @JeiPlugin。
+// ── 仓库 ──────────────────────────────────────────────────────────────
+// BlameJared  → JEI
+// Shadows'    → 神化全家桶（Apotheosis / Apothic Enchanting / Placebo / Apothic Attributes / Apothic Spawners）
+// Modrinth    → 通用兜底（神化的前置 Curios / Patchouli 只在这里）
 repositories {
     maven {
         name = 'BlameJared'
         url = 'https://maven.blamejared.com'
+    }
+    maven {
+        // 神化官方文档给出的地址（注意结尾的 /releases，缺了它整个仓库 404）
+        name = 'ShadowsOfFire'
+        url = 'https://maven.shadowsoffire.dev/releases'
+    }
+    maven {
+        // Modrinth Maven：用 project slug 反查，覆盖 Curios / Patchouli 这类前置
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+    }
+    maven {
+        name = "Illusive Soulworks maven"
+        url = "https://maven.theillusivec4.top/"
+    }
+    exclusiveContent {
+        // 只从 Modrinth 取一组固定坐标，避免它参与其它依赖的解析
+        // （该仓库对未知路径一律 404，混进通用解析会显著拖慢构建）
+        forRepository { maven { name = 'ModrinthExclusive'; url = 'https://api.modrinth.com/maven' } }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
     }
 }
 
@@ -75,6 +98,27 @@ def tooltipStack = fileTree(dir: 'libs', include: [
         'prism-*.jar',
 ])
 
+// ── 神化（Apotheosis）兼容 ──────────────────────────────────────────────
+// 坐标来自神化官方文档：group 固定 dev.shadowsoffire，artifact 首字母大写，
+// 版本形如 "<mcVersion>-<modVersion>"。五个 artifact 已用 Gradle 实测全部可解析。
+//
+// 用 compileOnly：神化**不是**运行前提，玩家不装也能跑，代码里通过 isLoaded 判断后才碰它的类
+// （AGENT.md P0-16 / P1-40：任何 import 对方类的代码都必须放在确认对方已安装之后才加载的类里）。
+def apotheosis = [
+        "dev.shadowsoffire:Placebo:${placebo_version}",
+        "dev.shadowsoffire:ApothicAttributes:${apothic_attributes_version}",
+        "dev.shadowsoffire:ApothicSpawners:${apothic_spawners_version}",
+        "dev.shadowsoffire:ApothicEnchanting:${apothic_enchanting_version}",
+        "dev.shadowsoffire:Apotheosis:${apotheosis_version}",
+        // 前置：只在 Modrinth Maven 上（group = maven.modrinth，artifact = 项目 slug）
+        "maven.modrinth:patchouli:${patchouli_version}",
+        "maven.modrinth:curios:${curios_version}",
+        // Gateways to Eternity：神化声明它为 optional，但缺了它神化的 datagen 会崩
+        // （NoClassDefFoundError: dev/shadowsoffire/gateways/gate/Reward）。
+        // 只在开发环境需要——玩家侧不装它也能正常玩神化。
+        "maven.modrinth:gateways-to-eternity:${gateways_version}",
+]
+
 dependencies {
     compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
@@ -82,6 +126,15 @@ dependencies {
 
     compileOnly tooltipStack
     runtimeOnly tooltipStack
+
+    // 神化：编译期拿 API。传递依赖（Curios / Patchouli）不在 Shadows' Maven，
+    // 因而不随它进来——如果兼容代码需要引用它们的类型，单独补 compileOnly。
+    compileOnly apotheosis
+
+    // 开发期让神化真正加载（跑 client/server 时可见）。
+    // ⚠️ 需要玩家侧也装好神化及其前置，否则此处会因缺前置而加载失败；
+    //    这也是它只进 runtimeOnly、不进 jar 的原因。
+    runtimeOnly apotheosis
 }
 
 // runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。

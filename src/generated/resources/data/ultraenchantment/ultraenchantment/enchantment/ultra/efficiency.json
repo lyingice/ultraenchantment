@@ -1,67 +1,67 @@
 {
-  "definition": {
-    "anvil_cost": 7,
-    "max_cost": {
-      "base": 96,
-      "per_level_above_first": 55
+    "definition": {
+        "anvil_cost": 7,
+        "max_cost": {
+            "base": 96,
+            "per_level_above_first": 55
+        },
+        "max_level": 5,
+        "min_cost": {
+            "base": 46,
+            "per_level_above_first": 55
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/mining",
+        "weight": 10
     },
-    "max_level": 5,
-    "min_cost": {
-      "base": 46,
-      "per_level_above_first": 55
+    "effects": {
+        "minecraft:attributes": [
+            {
+                "amount": {
+                    "type": "minecraft:levels_squared",
+                    "added": 1.0
+                },
+                "attribute": "minecraft:player.mining_efficiency",
+                "id": "minecraft:enchantment.efficiency",
+                "operation": "add_value"
+            },
+            {
+                "amount": {
+                    "type": "minecraft:linear",
+                    "base": 1.0,
+                    "per_level_above_first": 1.0
+                },
+                "attribute": "minecraft:player.mining_efficiency",
+                "id": "ultraenchantment:ascension/efficiency",
+                "operation": "add_value"
+            },
+            {
+                "amount": {
+                    "type": "minecraft:linear",
+                    "base": 1.0,
+                    "per_level_above_first": 1.0
+                },
+                "attribute": "minecraft:player.mining_efficiency",
+                "id": "ultraenchantment:ascension/efficiency/ii",
+                "operation": "add_value"
+            }
+        ],
+        "minecraft:block_experience": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.05,
+                        "per_level_above_first": 0.05
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/mining",
-    "weight": 10
-  },
-  "effects": {
-    "minecraft:attributes": [
-      {
-        "amount": {
-          "type": "minecraft:levels_squared",
-          "added": 1.0
-        },
-        "attribute": "minecraft:player.mining_efficiency",
-        "id": "minecraft:enchantment.efficiency",
-        "operation": "add_value"
-      },
-      {
-        "amount": {
-          "type": "minecraft:linear",
-          "base": 1.0,
-          "per_level_above_first": 1.0
-        },
-        "attribute": "minecraft:player.mining_efficiency",
-        "id": "ultraenchantment:ascension/efficiency",
-        "operation": "add_value"
-      },
-      {
-        "amount": {
-          "type": "minecraft:linear",
-          "base": 1.0,
-          "per_level_above_first": 1.0
-        },
-        "attribute": "minecraft:player.mining_efficiency",
-        "id": "ultraenchantment:ascension/efficiency/ii",
-        "operation": "add_value"
-      }
-    ],
-    "minecraft:block_experience": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.05,
-            "per_level_above_first": 0.05
-          }
-        }
-      }
-    ]
-  },
-  "required_level": 5,
-  "root": "minecraft:efficiency",
-  "tier": "ultra"
+    "required_level": 5,
+    "root": "minecraft:efficiency",
+    "tier": "ultra"
 }

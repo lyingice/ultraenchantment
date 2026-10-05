@@ -36,6 +36,15 @@ public final class PrismRainbow {
     /** 走完一整圈彩虹所需的秒数。 */
     private static final float DURATION_SECONDS = 4.0f;
 
+    /**
+     * 走完一整圈<b>超限流体渐变</b>所需的秒数。
+     *
+     * <p>比彩虹快——作者反馈超限那几行的流动「太慢」，看着像静止的。
+     * 单独一个常量而不是改 {@link #DURATION_SECONDS}：那个还管着
+     * 「没装神化时究极阶的彩虹」，不该一起变。
+     */
+    private static final float FLOW_DURATION_SECONDS = 1.0f;
+
     /** 饱和度 / 明度：亮而不刺眼，白色 tooltip 背景上也读得清。 */
     private static final float SATURATION = 0.85f;
     private static final float VALUE = 1.0f;
@@ -52,15 +61,7 @@ public final class PrismRainbow {
      * @param source 已经构建好的附魔行（文本为本地化后的最终文字）
      */
     public static Component apply(Component source) {
-        String text = source.getString();
-        List<DynamicColor> colors = palette();
-        MutableComponent out = Component.empty();
-        for (int i = 0; i < text.length(); i++) {
-            TextColor color = colors.get(i % colors.size());
-            out.append(Component.literal(String.valueOf(text.charAt(i)))
-                    .withStyle(source.getStyle().withColor(color)));
-        }
-        return out;
+        return colorize(source, palette());
     }
 
     /** 第 index 档颜色（取模循环），供自检与将来的其它接入点使用。 */
@@ -68,6 +69,104 @@ public final class PrismRainbow {
         List<DynamicColor> colors = palette();
         return colors.get(Math.floorMod(index, colors.size()));
     }
+
+    // ── 深浅双色「流体渐变」（超限阶级配色） ────────────────────────────
+
+    /** 每条色带的档数。 */
+    private static final int DUAL_STEPS = 24;
+
+    /** 双色色带缓存：{@code (浅色, 深色) → 色带}。必须缓存——见 {@link #colorize} 上方说明。 */
+    private static final java.util.Map<Long, List<DynamicColor>> DUAL_CACHE = new java.util.HashMap<>();
+
+    /**
+     * 把整行渲染成「浅色 ⇄ 深色」的<b>流体渐变</b>。
+     *
+     * <p>用于<b>超过数据包定义等级</b>的阶级配色（作者规格）：
+     * <pre>
+     *   高阶  蓝       ⇄ 深蓝
+     *   超级  淡紫     ⇄ 深紫
+     *   究极  橙       ⇄ 红
+     * </pre>
+     *
+     * <p>「流体」= 每一档的色带整体平移一格的经典做法（本类主色环同款），
+     * 整行呈逐字渐变并随时间流动。
+     *
+     * <p>色带做成<b>去-回闭合环</b>（浅→深→浅），循环播放时颜色不会跳变。
+     */
+    public static Component applyFlow(Component source, int lightRgb, int darkRgb) {
+        return colorize(source, dualPalette(lightRgb, darkRgb));
+    }
+
+    private static List<DynamicColor> dualPalette(int lightRgb, int darkRgb) {
+        long key = ((long) lightRgb << 32) | (darkRgb & 0xFFFFFFFFL);
+        return DUAL_CACHE.computeIfAbsent(key, k -> {
+            // 去-回闭合环：浅 → 深 → 浅
+            int half = DUAL_STEPS / 2;
+            final List<IColor> ring = new ArrayList<>(DUAL_STEPS);
+            for (int j = 0; j < half; j++) {
+                ring.add(lerp(lightRgb, darkRgb, (float) j / (half - 1)));
+            }
+            for (int j = half - 2; j >= 1; j--) {
+                ring.add(lerp(lightRgb, darkRgb, (float) j / (half - 1)));
+            }
+
+            // 第 step 档整体平移 step 格 → 整行逐字渐变且随时间流动（「流体」）。
+            //
+            // ⚠️ 取模必须用 ring.size()，不能用 DUAL_STEPS：
+            //    去-回闭合环的元素数是 half + (half - 2) = DUAL_STEPS - 2（24 档时为 22），
+            //    按 DUAL_STEPS 取模会 IndexOutOfBounds——实测崩在
+            //    「Index 22 out of bounds for length 22」（客户端渲染 tooltip 时整屏崩掉）。
+            int ringSize = ring.size();
+            List<DynamicColor> built = new ArrayList<>(DUAL_STEPS);
+            for (int step = 0; step < DUAL_STEPS; step++) {
+                List<IColor> shifted = new ArrayList<>(ringSize);
+                for (int j = 0; j < ringSize; j++) {
+                    shifted.add(ring.get((step + j) % ringSize));
+                }
+                built.add(new DynamicColor(shifted, FLOW_DURATION_SECONDS));
+            }
+            return List.copyOf(built);
+        });
+    }
+
+    /** 两个 RGB 之间线性插值。 */
+    private static IColor lerp(int from, int to, float t) {
+        int r = (int) (((from >> 16) & 0xFF) + ((((to >> 16) & 0xFF) - ((from >> 16) & 0xFF)) * t));
+        int g = (int) (((from >> 8) & 0xFF) + ((((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)) * t));
+        int b = (int) ((from & 0xFF) + (((to & 0xFF) - (from & 0xFF)) * t));
+        return DynamicColor.fromRGB(Mth.clamp(r, 0, 255), Mth.clamp(g, 0, 255), Mth.clamp(b, 0, 255));
+    }
+
+    /**
+     * 按<b>码点</b>逐「字」染色——<b>不能用 {@code charAt} 遍历</b>。
+     *
+     * <h2>⚠️ 代理对必须整体处理（实测踩到）</h2>
+     *
+     * <p>神化的超限星标是 {@code 🌟 U+1F31F}，在 UTF-16 里是<b>代理对</b>
+     * （两个 {@code char}：{@code U+D83C} + {@code U+DF1F}）。
+     * 早先这里按 {@code charAt(i)} 逐字拆分，于是星标被<b>劈成两半</b>，
+     * 两个孤立代理各自渲染成无效字形——实机看起来就是
+     * 「<b>两个不知名的字符</b>」，而神化自己渲染的那行（没走渐变）星标正常。
+     *
+     * <p>改用 {@link String#codePoints()}：一个码点 = 一个「字」，
+     * 代理对天然整体保留，emoji 与 CJK 都不会被拆。
+     */
+    private static Component colorize(Component source, List<DynamicColor> colors) {
+        String text = source.getString();
+        MutableComponent out = Component.empty();
+        int index = 0;
+        for (int offset = 0; offset < text.length(); ) {
+            int cp = text.codePointAt(offset);
+            offset += Character.charCount(cp);
+            TextColor color = colors.get(index % colors.size());
+            index++;
+            out.append(Component.literal(new String(Character.toChars(cp)))
+                    .withStyle(source.getStyle().withColor(color)));
+        }
+        return out;
+    }
+
+
 
     private static List<DynamicColor> palette() {
         if (palette == null) {

@@ -1,55 +1,55 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 50,
-      "per_level_above_first": 33
-    },
-    "max_level": 5,
-    "min_cost": {
-      "base": 30,
-      "per_level_above_first": 33
-    },
-    "primary_items": "#minecraft:enchantable/sword",
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/weapon",
-    "weight": 5
-  },
-  "effects": {
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 15.0,
-            "per_level_above_first": 7.5
-          }
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 50,
+            "per_level_above_first": 33
         },
-        "requirements": {
-          "condition": "minecraft:entity_properties",
-          "entity": "this",
-          "predicate": {
-            "type": "#minecraft:sensitive_to_smite"
-          }
-        }
-      },
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 3.0,
-            "per_level_above_first": 1.0
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:ultra/smite",
-  "required_level": 5,
-  "root": "minecraft:smite",
-  "tier": "super"
+        "max_level": 5,
+        "min_cost": {
+            "base": 30,
+            "per_level_above_first": 33
+        },
+        "primary_items": "#minecraft:enchantable/sword",
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/weapon",
+        "weight": 5
+    },
+    "effects": {
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 15.0,
+                        "per_level_above_first": 7.5
+                    }
+                },
+                "requirements": {
+                    "condition": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                        "type": "#minecraft:sensitive_to_smite"
+                    }
+                }
+            },
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 3.0,
+                        "per_level_above_first": 1.0
+                    }
+                }
+            }
+        ]
+    },
+    "next": "ultraenchantment:ultra/smite",
+    "required_level": 5,
+    "root": "minecraft:smite",
+    "tier": "super"
 }

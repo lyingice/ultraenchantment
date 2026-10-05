@@ -1,80 +1,80 @@
 {
-  "definition": {
-    "anvil_cost": 10,
-    "max_cost": {
-      "base": 65,
-      "per_level_above_first": 54
-    },
-    "max_level": 3,
-    "min_cost": {
-      "base": 50,
-      "per_level_above_first": 54
-    },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/sword",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:armor_effectiveness": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": -0.03,
-            "per_level_above_first": -0.015
-          }
-        }
-      }
-    ],
-    "minecraft:attributes": [
-      {
-        "amount": {
-          "type": "minecraft:fraction",
-          "denominator": {
-            "type": "minecraft:linear",
-            "base": 2.0,
-            "per_level_above_first": 1.0
-          },
-          "numerator": {
-            "type": "minecraft:linear",
-            "base": 1.0,
-            "per_level_above_first": 1.0
-          }
+    "definition": {
+        "anvil_cost": 10,
+        "max_cost": {
+            "base": 65,
+            "per_level_above_first": 54
         },
-        "attribute": "minecraft:player.sweeping_damage_ratio",
-        "id": "minecraft:enchantment.sweeping_edge",
-        "operation": "add_value"
-      }
-    ],
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.5,
-            "per_level_above_first": 0.25
-          }
-        }
-      }
-    ],
-    "minecraft:knockback": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.25,
-            "per_level_above_first": 0.15
-          }
-        }
-      }
-    ]
-  },
-  "required_level": 3,
-  "root": "minecraft:sweeping_edge",
-  "tier": "ultra"
+        "max_level": 3,
+        "min_cost": {
+            "base": 50,
+            "per_level_above_first": 54
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/sword",
+        "weight": 2
+    },
+    "effects": {
+        "minecraft:armor_effectiveness": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": -0.03,
+                        "per_level_above_first": -0.015
+                    }
+                }
+            }
+        ],
+        "minecraft:attributes": [
+            {
+                "amount": {
+                    "type": "minecraft:fraction",
+                    "denominator": {
+                        "type": "minecraft:linear",
+                        "base": 2.0,
+                        "per_level_above_first": 1.0
+                    },
+                    "numerator": {
+                        "type": "minecraft:linear",
+                        "base": 1.0,
+                        "per_level_above_first": 1.0
+                    }
+                },
+                "attribute": "minecraft:player.sweeping_damage_ratio",
+                "id": "minecraft:enchantment.sweeping_edge",
+                "operation": "add_value"
+            }
+        ],
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.5,
+                        "per_level_above_first": 0.25
+                    }
+                }
+            }
+        ],
+        "minecraft:knockback": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.25,
+                        "per_level_above_first": 0.15
+                    }
+                }
+            }
+        ]
+    },
+    "required_level": 3,
+    "root": "minecraft:sweeping_edge",
+    "tier": "ultra"
 }

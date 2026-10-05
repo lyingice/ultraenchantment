@@ -1,45 +1,45 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 75,
-      "per_level_above_first": 19
-    },
-    "max_level": 3,
-    "min_cost": {
-      "base": 25,
-      "per_level_above_first": 19
-    },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/sword",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:equipment_drops": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.03,
-            "per_level_above_first": 0.02
-          }
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 75,
+            "per_level_above_first": 19
         },
-        "enchanted": "attacker",
-        "requirements": {
-          "condition": "minecraft:entity_properties",
-          "entity": "attacker",
-          "predicate": {
-            "type": "minecraft:player"
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/looting",
-  "required_level": 3,
-  "root": "minecraft:looting",
-  "tier": "advanced"
+        "max_level": 3,
+        "min_cost": {
+            "base": 25,
+            "per_level_above_first": 19
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/sword",
+        "weight": 2
+    },
+    "effects": {
+        "minecraft:equipment_drops": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.03,
+                        "per_level_above_first": 0.02
+                    }
+                },
+                "enchanted": "attacker",
+                "requirements": {
+                    "condition": "minecraft:entity_properties",
+                    "entity": "attacker",
+                    "predicate": {
+                        "type": "minecraft:player"
+                    }
+                }
+            }
+        ]
+    },
+    "next": "ultraenchantment:super/looting",
+    "required_level": 3,
+    "root": "minecraft:looting",
+    "tier": "advanced"
 }

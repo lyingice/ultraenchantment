@@ -1,36 +1,36 @@
 {
-  "definition": {
-    "anvil_cost": 3,
-    "max_cost": {
-      "base": 22,
-      "per_level_above_first": 21
+    "definition": {
+        "anvil_cost": 3,
+        "max_cost": {
+            "base": 22,
+            "per_level_above_first": 21
+        },
+        "max_level": 4,
+        "min_cost": {
+            "base": 11,
+            "per_level_above_first": 21
+        },
+        "slots": [
+            "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/armor",
+        "weight": 10
     },
-    "max_level": 4,
-    "min_cost": {
-      "base": 11,
-      "per_level_above_first": 21
+    "effects": {
+        "minecraft:damage_protection": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 1.25,
+                        "per_level_above_first": 1.25
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "armor"
-    ],
-    "supported_items": "#minecraft:enchantable/armor",
-    "weight": 10
-  },
-  "effects": {
-    "minecraft:damage_protection": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 1.25,
-            "per_level_above_first": 1.25
-          }
-        }
-      }
-    ]
-  },
-  "required_level": 4,
-  "root": "minecraft:protection",
-  "tier": "advanced"
+    "required_level": 4,
+    "root": "minecraft:protection",
+    "tier": "advanced"
 }

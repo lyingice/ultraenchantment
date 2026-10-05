@@ -1,37 +1,37 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 75,
-      "per_level_above_first": 19
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 75,
+            "per_level_above_first": 19
+        },
+        "max_level": 3,
+        "min_cost": {
+            "base": 25,
+            "per_level_above_first": 19
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/fishing",
+        "weight": 2
     },
-    "max_level": 3,
-    "min_cost": {
-      "base": 25,
-      "per_level_above_first": 19
+    "effects": {
+        "minecraft:fishing_luck_bonus": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 3.0,
+                        "per_level_above_first": 2.0
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/fishing",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:fishing_luck_bonus": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 3.0,
-            "per_level_above_first": 2.0
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/luck_of_the_sea",
-  "required_level": 3,
-  "root": "minecraft:luck_of_the_sea",
-  "tier": "advanced"
+    "next": "ultraenchantment:super/luck_of_the_sea",
+    "required_level": 3,
+    "root": "minecraft:luck_of_the_sea",
+    "tier": "advanced"
 }

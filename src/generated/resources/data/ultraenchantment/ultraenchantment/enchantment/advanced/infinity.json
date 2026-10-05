@@ -1,31 +1,31 @@
 {
-  "definition": {
-    "anvil_cost": 10,
-    "max_cost": {
-      "base": 60,
-      "per_level_above_first": 10
+    "definition": {
+        "anvil_cost": 10,
+        "max_cost": {
+            "base": 60,
+            "per_level_above_first": 10
+        },
+        "max_level": 1,
+        "min_cost": {
+            "base": 30,
+            "per_level_above_first": 10
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/bow",
+        "weight": 1
     },
-    "max_level": 1,
-    "min_cost": {
-      "base": 30,
-      "per_level_above_first": 10
+    "effects": {
+        "minecraft:ammo_use": [
+            {
+                "effect": {
+                    "type": "minecraft:set",
+                    "value": 0.0
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/bow",
-    "weight": 1
-  },
-  "effects": {
-    "minecraft:ammo_use": [
-      {
-        "effect": {
-          "type": "minecraft:set",
-          "value": 0.0
-        }
-      }
-    ]
-  },
-  "root": "minecraft:infinity",
-  "tier": "advanced"
+    "root": "minecraft:infinity",
+    "tier": "advanced"
 }

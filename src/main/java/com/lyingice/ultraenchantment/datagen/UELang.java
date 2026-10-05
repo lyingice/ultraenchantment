@@ -34,6 +34,28 @@ public class UELang extends LanguageProvider {
         add(itemKey("advanced_enchanted_book"), this.chinese ? "进阶附魔书" : "Advanced Enchanted Book");
         add(itemKey("curative_stone"), this.chinese ? "祛咒石" : "Curative Stone");
 
+        // ── 村民职业名 ──
+        //
+        // ⚠️ 键的形态要看 Villager.getTypeName()（源码 744-749 行）怎么拼，别按直觉写：
+        //
+        //   Component.translatable(
+        //       getType().getDescriptionId() + '.'                    // "entity.minecraft.villager"
+        //       + (非 minecraft 命名空间 ? ns + '.' : "")            // "ultraenchantment."
+        //       + profName.getPath());                               // "advanced_enchanter"
+        //
+        // 注意 {@code getDescriptionId()} 是【实体类型】给的——村民类型的命名空间是 minecraft，
+        // 所以它自带 "minecraft" 段：{@code entity.minecraft.villager}。
+        // 而职业自己的命名空间（ultraenchantment）被插在 {@code villager} <b>之后</b>。
+        //
+        // ⇒ 正确键：{@code entity.minecraft.villager.ultraenchantment.advanced_enchanter}
+        //
+        // 曾经写成 {@code entity.ultraenchantment.villager.advanced_enchanter}（把 ns 放在 villager 前），
+        // 结果游戏按上面的规则查不到 → 界面直接显示未翻译的键名。
+        // 原版 {@code entity.minecraft.villager.armorer} 里 minecraft 只出现一次，
+        // 是因为实体类型与职业恰好同命名空间；不同命名空间时两段都要在。
+        add("entity.minecraft.villager." + Ultraenchantment.MODID + ".advanced_enchanter",
+                this.chinese ? "附魔进阶师" : "Advanced Enchanter");
+
         // ── 阶级词缀（tooltip 中附在附魔名之前）──
         for (AscensionTier tier : AscensionTier.values()) {
             add(tierKey(tier), tierName(tier));
@@ -122,6 +144,7 @@ public class UELang extends LanguageProvider {
             // ② 定向进阶
             add(tipKey("ascension.targeted"), "定向进阶");
 
+
             // ③ 铭刻型
             add(tipKey("inscription.header"), "%s附魔");
 
@@ -155,6 +178,7 @@ public class UELang extends LanguageProvider {
             add(tipKey("advances_to"), "Advances to:");
 
             add(tipKey("ascension.targeted"), "Targeted Ascension");
+
 
             add(tipKey("inscription.header"), "%s Enchantment");
 

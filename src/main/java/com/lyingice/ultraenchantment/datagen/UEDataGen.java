@@ -43,5 +43,9 @@ public final class UEDataGen {
         // 它是开发资料，不进 jar（不在 src/generated/resources 里），但必须是生成物——
         // 「原版基础效果」只有从注册表读才知道，手写必然与原版漂移。
         event.addProvider(new UEEffectDoc(event.getGenerator().getPackOutput(), event.getLookupProvider()));
+
+        // 战利品：进阶附魔书的全局掉落挂载。
+        // 与其它数据包提供器同处一个 DataGenerator 事件里（P0-12 的约束）。
+        event.addProvider(new UEGlobalLootModifiers(event.getGenerator().getPackOutput(), event.getLookupProvider()));
     }
 }

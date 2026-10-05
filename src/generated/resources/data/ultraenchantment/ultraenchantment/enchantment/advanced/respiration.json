@@ -1,36 +1,36 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 50,
-      "per_level_above_first": 20
-    },
-    "max_level": 3,
-    "min_cost": {
-      "base": 20,
-      "per_level_above_first": 20
-    },
-    "slots": [
-      "head"
-    ],
-    "supported_items": "#minecraft:enchantable/head_armor",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:attributes": [
-      {
-        "amount": {
-          "type": "minecraft:linear",
-          "base": 4.0,
-          "per_level_above_first": 4.0
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 50,
+            "per_level_above_first": 20
         },
-        "attribute": "minecraft:generic.oxygen_bonus",
-        "id": "ultraenchantment:ascension/oxygen_bonus",
-        "operation": "add_value"
-      }
-    ]
-  },
-  "required_level": 3,
-  "root": "minecraft:respiration",
-  "tier": "advanced"
+        "max_level": 3,
+        "min_cost": {
+            "base": 20,
+            "per_level_above_first": 20
+        },
+        "slots": [
+            "head"
+        ],
+        "supported_items": "#minecraft:enchantable/head_armor",
+        "weight": 2
+    },
+    "effects": {
+        "minecraft:attributes": [
+            {
+                "amount": {
+                    "type": "minecraft:linear",
+                    "base": 4.0,
+                    "per_level_above_first": 4.0
+                },
+                "attribute": "minecraft:generic.oxygen_bonus",
+                "id": "ultraenchantment:ascension/oxygen_bonus",
+                "operation": "add_value"
+            }
+        ]
+    },
+    "required_level": 3,
+    "root": "minecraft:respiration",
+    "tier": "advanced"
 }

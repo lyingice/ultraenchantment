@@ -1,56 +1,56 @@
 {
-  "definition": {
-    "anvil_cost": 10,
-    "max_cost": {
-      "base": 110,
-      "per_level_above_first": 54
-    },
-    "max_level": 3,
-    "min_cost": {
-      "base": 60,
-      "per_level_above_first": 54
-    },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/sword",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:equipment_drops": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.1,
-            "per_level_above_first": 0.05
-          }
+    "definition": {
+        "anvil_cost": 10,
+        "max_cost": {
+            "base": 110,
+            "per_level_above_first": 54
         },
-        "enchanted": "attacker",
-        "requirements": {
-          "condition": "minecraft:entity_properties",
-          "entity": "attacker",
-          "predicate": {
-            "type": "minecraft:player"
-          }
-        }
-      }
-    ],
-    "minecraft:mob_experience": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.3,
-            "per_level_above_first": 0.1
-          }
-        }
-      }
-    ]
-  },
-  "required_level": 3,
-  "root": "minecraft:looting",
-  "tier": "ultra"
+        "max_level": 3,
+        "min_cost": {
+            "base": 60,
+            "per_level_above_first": 54
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/sword",
+        "weight": 2
+    },
+    "effects": {
+        "minecraft:equipment_drops": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.1,
+                        "per_level_above_first": 0.05
+                    }
+                },
+                "enchanted": "attacker",
+                "requirements": {
+                    "condition": "minecraft:entity_properties",
+                    "entity": "attacker",
+                    "predicate": {
+                        "type": "minecraft:player"
+                    }
+                }
+            }
+        ],
+        "minecraft:mob_experience": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.3,
+                        "per_level_above_first": 0.1
+                    }
+                }
+            }
+        ]
+    },
+    "required_level": 3,
+    "root": "minecraft:looting",
+    "tier": "ultra"
 }

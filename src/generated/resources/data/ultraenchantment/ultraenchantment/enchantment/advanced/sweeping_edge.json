@@ -1,57 +1,57 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 30,
-      "per_level_above_first": 19
-    },
-    "max_level": 3,
-    "min_cost": {
-      "base": 15,
-      "per_level_above_first": 19
-    },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/sword",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:attributes": [
-      {
-        "amount": {
-          "type": "minecraft:fraction",
-          "denominator": {
-            "type": "minecraft:linear",
-            "base": 2.0,
-            "per_level_above_first": 1.0
-          },
-          "numerator": {
-            "type": "minecraft:linear",
-            "base": 1.0,
-            "per_level_above_first": 1.0
-          }
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 30,
+            "per_level_above_first": 19
         },
-        "attribute": "minecraft:player.sweeping_damage_ratio",
-        "id": "minecraft:enchantment.sweeping_edge",
-        "operation": "add_value"
-      }
-    ],
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.5,
-            "per_level_above_first": 0.25
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/sweeping_edge",
-  "required_level": 3,
-  "root": "minecraft:sweeping_edge",
-  "tier": "advanced"
+        "max_level": 3,
+        "min_cost": {
+            "base": 15,
+            "per_level_above_first": 19
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/sword",
+        "weight": 2
+    },
+    "effects": {
+        "minecraft:attributes": [
+            {
+                "amount": {
+                    "type": "minecraft:fraction",
+                    "denominator": {
+                        "type": "minecraft:linear",
+                        "base": 2.0,
+                        "per_level_above_first": 1.0
+                    },
+                    "numerator": {
+                        "type": "minecraft:linear",
+                        "base": 1.0,
+                        "per_level_above_first": 1.0
+                    }
+                },
+                "attribute": "minecraft:player.sweeping_damage_ratio",
+                "id": "minecraft:enchantment.sweeping_edge",
+                "operation": "add_value"
+            }
+        ],
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.5,
+                        "per_level_above_first": 0.25
+                    }
+                }
+            }
+        ]
+    },
+    "next": "ultraenchantment:super/sweeping_edge",
+    "required_level": 3,
+    "root": "minecraft:sweeping_edge",
+    "tier": "advanced"
 }

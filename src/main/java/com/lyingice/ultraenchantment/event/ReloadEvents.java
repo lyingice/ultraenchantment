@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.event;
 
+import com.lyingice.ultraenchantment.Ultraenchantment;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.StageDefinition;
 import com.lyingice.ultraenchantment.logic.EnchantmentFactory;
@@ -11,7 +12,10 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.TagsUpdatedEvent;
 
@@ -61,6 +65,13 @@ public final class ReloadEvents {
     private static volatile int globalMaxLevel = DEFAULT_MAX_LEVEL;
 
     /**
+     * 神化把附魔上限抬到了多少（0 = 神化缺席或不参与）。
+     *
+     * <p>在 {@link #onTagsUpdated} 里算好存下来，供 {@link #globalMaxLevel()} 取较大值。
+     */
+    private static volatile int apothMaxLevel = 0;
+
+    /**
      * 数据包里实际存在的阶段条目矩阵：
      * {@code root（原版附魔）→ { 阶级 → 该条目的等级上限 }}。
      *
@@ -92,7 +103,52 @@ public final class ReloadEvents {
     @SubscribeEvent
     public void onTagsUpdated(TagsUpdatedEvent event) {
         EnchantmentFactory.invalidate();
+
+        // 神化联动（B1）：它把原版附魔上限抬高后，升级书要有「能升到那么高」的档位可用，
+        // 否则创造栏根本铺不出超过数据包上限的升级书。
+        //
+        // 必须在**这里**算：{@link #refresh} 只拿到阶段注册表，解析不了附魔；
+        // 而事件自带的 RegistryAccess 两样都有（同 P0-13 的教训——用事件给的那份）。
+        //
+        // 语义边界：数据包仍是数值曲线的权威，这里只放宽「可到达的等级」。
+        apothMaxLevel = resolveApothMaxLevel(event.getRegistryAccess());
+
         refresh(event.getRegistryAccess().lookup(UERegistries.STAGE).orElse(null));
+    }
+
+    /**
+     * 神化把「附魔上限」抬到了多少？——取所有已定义谱系里的最大值。
+     *
+     * <p>神化缺席、或解析失败时返回 0（表示「不参与」，{@link #globalMaxLevel()} 会忽略它）。
+     *
+     * <p>为什么要遍历谱系而不是问一次全局：神化的上限是**逐附魔**配置的
+     * （{@code ApothicEnchanting.ENCHANTMENT_INFO} 一附魔一条），没有单一的全局值。
+     */
+    private static int resolveApothMaxLevel(net.minecraft.core.RegistryAccess registries) {
+        if (!com.lyingice.ultraenchantment.compat.apotheosis.ApothCaps.present()) {
+            return 0;
+        }
+        try {
+            var enchantments = registries.lookup(Registries.ENCHANTMENT).orElse(null);
+            var stages = registries.lookup(UERegistries.STAGE).orElse(null);
+            if (enchantments == null || stages == null) {
+                return 0;
+            }
+            int best = 0;
+            for (Holder.Reference<StageDefinition> holder : stages.listElements().toList()) {
+                var rootId = holder.value().root();
+                var ench = enchantments.get(ResourceKey.create(Registries.ENCHANTMENT, rootId)).orElse(null);
+                if (ench == null) {
+                    continue;
+                }
+                best = Math.max(best, com.lyingice.ultraenchantment.compat.apotheosis.ApothCaps
+                        .vanillaCapOf((Holder<Enchantment>) ench, holder.value().definition().maxLevel()));
+            }
+            return best;
+        } catch (Throwable t) {
+            Ultraenchantment.LOGGER.debug("[Apoth] 解析附魔上限失败，按不参与处理：{}", t.toString());
+            return 0;
+        }
     }
 
     /**
@@ -141,7 +197,9 @@ public final class ReloadEvents {
 
     /** 当前全局等级上限（≥1）。这是所有谱系中的最大值，仅供兜底用。 */
     public static int globalMaxLevel() {
-        return Math.max(1, globalMaxLevel);
+        // 与神化取较大值：它把上限抬高后，升级书要有能升到那么高的档位。
+        // 神化缺席时 apothMaxLevel = 0，结果与从前完全一致。
+        return Math.max(1, Math.max(globalMaxLevel, apothMaxLevel));
     }
 
     /**

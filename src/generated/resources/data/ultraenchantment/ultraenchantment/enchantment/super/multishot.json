@@ -1,60 +1,60 @@
 {
-  "definition": {
-    "anvil_cost": 8,
-    "max_cost": {
-      "base": 75,
-      "per_level_above_first": 25
+    "definition": {
+        "anvil_cost": 8,
+        "max_cost": {
+            "base": 75,
+            "per_level_above_first": 25
+        },
+        "max_level": 1,
+        "min_cost": {
+            "base": 45,
+            "per_level_above_first": 25
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/crossbow",
+        "weight": 2
     },
-    "max_level": 1,
-    "min_cost": {
-      "base": 45,
-      "per_level_above_first": 25
+    "effects": {
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 0.5,
+                        "per_level_above_first": 0.5
+                    }
+                }
+            }
+        ],
+        "minecraft:projectile_count": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 12.0,
+                        "per_level_above_first": 6.0
+                    }
+                }
+            }
+        ],
+        "minecraft:projectile_spread": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 30.0,
+                        "per_level_above_first": 15.0
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/crossbow",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 0.5,
-            "per_level_above_first": 0.5
-          }
-        }
-      }
-    ],
-    "minecraft:projectile_count": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 12.0,
-            "per_level_above_first": 6.0
-          }
-        }
-      }
-    ],
-    "minecraft:projectile_spread": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 30.0,
-            "per_level_above_first": 15.0
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:ultra/multishot",
-  "root": "minecraft:multishot",
-  "tier": "super"
+    "next": "ultraenchantment:ultra/multishot",
+    "root": "minecraft:multishot",
+    "tier": "super"
 }

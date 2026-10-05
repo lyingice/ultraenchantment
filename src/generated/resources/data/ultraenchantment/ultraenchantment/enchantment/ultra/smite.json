@@ -1,66 +1,66 @@
 {
-  "definition": {
-    "anvil_cost": 8,
-    "max_cost": {
-      "base": 70,
-      "per_level_above_first": 53
-    },
-    "max_level": 5,
-    "min_cost": {
-      "base": 50,
-      "per_level_above_first": 53
-    },
-    "primary_items": "#minecraft:enchantable/sword",
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/weapon",
-    "weight": 5
-  },
-  "effects": {
-    "minecraft:armor_effectiveness": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": -0.05,
-            "per_level_above_first": -0.05
-          }
-        }
-      }
-    ],
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 25.0,
-            "per_level_above_first": 12.5
-          }
+    "definition": {
+        "anvil_cost": 8,
+        "max_cost": {
+            "base": 70,
+            "per_level_above_first": 53
         },
-        "requirements": {
-          "condition": "minecraft:entity_properties",
-          "entity": "this",
-          "predicate": {
-            "type": "#minecraft:sensitive_to_smite"
-          }
-        }
-      },
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 6.0,
-            "per_level_above_first": 1.5
-          }
-        }
-      }
-    ]
-  },
-  "required_level": 5,
-  "root": "minecraft:smite",
-  "tier": "ultra"
+        "max_level": 5,
+        "min_cost": {
+            "base": 50,
+            "per_level_above_first": 53
+        },
+        "primary_items": "#minecraft:enchantable/sword",
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/weapon",
+        "weight": 5
+    },
+    "effects": {
+        "minecraft:armor_effectiveness": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": -0.05,
+                        "per_level_above_first": -0.05
+                    }
+                }
+            }
+        ],
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 25.0,
+                        "per_level_above_first": 12.5
+                    }
+                },
+                "requirements": {
+                    "condition": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                        "type": "#minecraft:sensitive_to_smite"
+                    }
+                }
+            },
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 6.0,
+                        "per_level_above_first": 1.5
+                    }
+                }
+            }
+        ]
+    },
+    "required_level": 5,
+    "root": "minecraft:smite",
+    "tier": "ultra"
 }

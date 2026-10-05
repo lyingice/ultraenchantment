@@ -1,0 +1,11 @@
+{
+    "type": "ultraenchantment:ultra_book",
+    "chance": 0.15,
+    "conditions": [
+        {
+            "condition": "neoforge:loot_table_id",
+            "loot_table_id": "minecraft:entities/ender_dragon"
+        }
+    ],
+    "source": "BOSS"
+}

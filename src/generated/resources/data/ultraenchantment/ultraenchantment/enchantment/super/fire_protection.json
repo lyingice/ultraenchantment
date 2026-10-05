@@ -1,53 +1,53 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 43,
-      "per_level_above_first": 33
-    },
-    "max_level": 1,
-    "min_cost": {
-      "base": 35,
-      "per_level_above_first": 33
-    },
-    "slots": [
-      "armor"
-    ],
-    "supported_items": "#minecraft:enchantable/armor",
-    "weight": 5
-  },
-  "effects": {
-    "minecraft:attributes": [
-      {
-        "amount": {
-          "type": "minecraft:linear",
-          "base": -1.0,
-          "per_level_above_first": 0.0
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 43,
+            "per_level_above_first": 33
         },
-        "attribute": "minecraft:generic.burning_time",
-        "id": "ultraenchantment:ascension/burning_time",
-        "operation": "add_multiplied_base"
-      }
-    ],
-    "minecraft:damage_immunity": [
-      {
-        "effect": {},
-        "requirements": {
-          "condition": "minecraft:damage_source_properties",
-          "predicate": {
-            "tags": [
-              {
-                "expected": true,
-                "id": "minecraft:is_fire"
-              }
-            ]
-          }
-        }
-      }
-    ],
-    "minecraft:damage_protection": []
-  },
-  "required_level": 4,
-  "root": "minecraft:fire_protection",
-  "tier": "super"
+        "max_level": 1,
+        "min_cost": {
+            "base": 35,
+            "per_level_above_first": 33
+        },
+        "slots": [
+            "armor"
+        ],
+        "supported_items": "#minecraft:enchantable/armor",
+        "weight": 5
+    },
+    "effects": {
+        "minecraft:attributes": [
+            {
+                "amount": {
+                    "type": "minecraft:linear",
+                    "base": -1.0,
+                    "per_level_above_first": 0.0
+                },
+                "attribute": "minecraft:generic.burning_time",
+                "id": "ultraenchantment:ascension/burning_time",
+                "operation": "add_multiplied_base"
+            }
+        ],
+        "minecraft:damage_immunity": [
+            {
+                "effect": {},
+                "requirements": {
+                    "condition": "minecraft:damage_source_properties",
+                    "predicate": {
+                        "tags": [
+                            {
+                                "expected": true,
+                                "id": "minecraft:is_fire"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "minecraft:damage_protection": []
+    },
+    "required_level": 4,
+    "root": "minecraft:fire_protection",
+    "tier": "super"
 }

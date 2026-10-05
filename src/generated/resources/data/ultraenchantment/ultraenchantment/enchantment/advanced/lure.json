@@ -1,37 +1,37 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 75,
-      "per_level_above_first": 19
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 75,
+            "per_level_above_first": 19
+        },
+        "max_level": 3,
+        "min_cost": {
+            "base": 25,
+            "per_level_above_first": 19
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/fishing",
+        "weight": 2
     },
-    "max_level": 3,
-    "min_cost": {
-      "base": 25,
-      "per_level_above_first": 19
+    "effects": {
+        "minecraft:fishing_time_reduction": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 15.0,
+                        "per_level_above_first": 10.0
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/fishing",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:fishing_time_reduction": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 15.0,
-            "per_level_above_first": 10.0
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/lure",
-  "required_level": 3,
-  "root": "minecraft:lure",
-  "tier": "advanced"
+    "next": "ultraenchantment:super/lure",
+    "required_level": 3,
+    "root": "minecraft:lure",
+    "tier": "advanced"
 }

@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.logic;
 
+import com.lyingice.ultraenchantment.api.event.UltraEnchantTierUpgradeEvent;
 import com.lyingice.ultraenchantment.content.AscensionData;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.LineageTier;
@@ -140,6 +141,11 @@ public final class ItemMergeLogic {
                     : Math.max(current.tierLevel(), fromRight.tierLevel());
             if (target == current.tierLevel()) {
                 continue;   // 没有提升就不算变化
+            }
+            // 对外事件（可取消）：取消 = 本条谱系不参与本次合并（其余谱系照常）。
+            if (!UEEvents.fireTierUpgrade(out, root, null, tier.ordinal() + 1, tier.ordinal() + 1,
+                    current.tierLevel(), target, UltraEnchantTierUpgradeEvent.Source.MERGE)) {
+                continue;
             }
             mergedData = mergedData.withTierLevel(root, target);
             ResourceLocation stageId = StageLookup.stageIdOf(stages, root, tier).orElse(null);

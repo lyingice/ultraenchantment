@@ -1,6 +1,8 @@
 package com.lyingice.ultraenchantment.event;
 
 import com.lyingice.ultraenchantment.Ultraenchantment;
+import com.lyingice.ultraenchantment.api.event.UltraEnchantLockChangeEvent;
+import com.lyingice.ultraenchantment.api.event.UltraEnchantTierUpgradeEvent;
 import com.lyingice.ultraenchantment.content.AscensionData;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.BookSpecs;
@@ -8,6 +10,9 @@ import com.lyingice.ultraenchantment.content.BookSubject;
 import com.lyingice.ultraenchantment.content.LineageTier;
 import com.lyingice.ultraenchantment.content.StageDefinition;
 import com.lyingice.ultraenchantment.logic.AscensionLogic;
+import com.lyingice.ultraenchantment.logic.UEEnchantRegistry;
+import com.lyingice.ultraenchantment.logic.UEEvents;
+import com.lyingice.ultraenchantment.logic.UERoots;
 import com.lyingice.ultraenchantment.logic.BookFactory;
 import com.lyingice.ultraenchantment.logic.InscriptionLogic;
 import com.lyingice.ultraenchantment.logic.ItemMergeLogic;
@@ -292,6 +297,8 @@ public final class AnvilEvents {
         BookSpecs.Upgrade rightUp = right.get(UEComponents.UPGRADE_SPEC.get());
         if (leftUp != null && rightUp != null && leftUp.tier() == rightUp.tier()) {
             int current = Math.max(leftUp.targetLevel(), rightUp.targetLevel());
+            // 升级书不绑定具体谱系（载荷里没有 root），所以这里只能按全局上限走。
+            // 神化把附魔上限抬高后，全局上限跟着放宽（见 ReloadEvents.refresh 的注释）。
             int target = leftUp.targetLevel() == rightUp.targetLevel()
                     ? Math.min(current + 1, ReloadEvents.globalMaxLevel())
                     : current;
@@ -349,8 +356,21 @@ public final class AnvilEvents {
 
         // 存储层：原版附魔身份不变，只更新「现在处于哪一阶」。
         // with(root, stage) 的 tierLevel 默认归 1——升阶即重算曲线。
-        AscensionData data = UEComponents.ascensionOf(out).with(rootId, a.stageId());
+        AscensionData before = UEComponents.ascensionOf(out);
+        int oldTier = before.stageOf(rootId).map(UERoots::tierOfStage).orElse(0);
+        int newTier = UERoots.tierOfStage(a.stageId());
+
+        // 对外事件（可取消）：取消 = 整次操作作废，物品与材料都不动。
+        if (!UEEvents.fireTierUpgrade(out, rootId, a.root(), oldTier, newTier,
+                before.tierLevelOf(rootId), 1, UltraEnchantTierUpgradeEvent.Source.ANVIL_BOOK)) {
+            return;
+        }
+
+        AscensionData data = before.with(rootId, a.stageId());
         UEComponents.setAscension(out, data);
+        if (oldTier == 0) {
+            UEEvents.fireLockChange(out, rootId, a.root(), true, UltraEnchantLockChangeEvent.Cause.API);
+        }
 
         // 存储等级原样写回 —— 进阶改变的是效果定义，不是原版等级。
         ItemEnchantments.Mutable table = new ItemEnchantments.Mutable(
@@ -484,8 +504,22 @@ public final class AnvilEvents {
             // 而阶段条目只按自己的 max_level 写了曲线，等于让数据被外推到没有定义的位置。
             // 夹住之后，已达上限时这本书自然无效（tierLevel >= target 分支），不浪费书。
             int cap = StageLookup.maxLevelOf(stages, currentTier.get().asLineageTier(), rootId, spec.targetLevel());
+
+            // 神化联动（B1）：它把原版附魔上限抬高后，进阶曲线等级也允许提到数据包 max_level 之上。
+            // 数值曲线不变——超出部分按数据包里的 Linear 自然外推。
+            // 神化缺席或读取失败时 vanillaCapOf 原样返回 fallback，行为与从前一字不差。
+            cap = Math.max(cap, com.lyingice.ultraenchantment.compat.apotheosis.ApothCaps
+                    .vanillaCapOf(ench, cap));
+
             int target = Math.min(spec.targetLevel(), cap);
             if (tierLevel >= target) {
+                continue;
+            }
+
+            // 对外事件（可取消）：取消 = 本次提级不生效，也不消耗书。
+            int tier = currentTier.get().ordinal() + 1;   // ADVANCED=1 / SUPER=2 / ULTRA=3
+            if (!UEEvents.fireTierUpgrade(out, rootId, ench, tier, tier, tierLevel, target,
+                    UltraEnchantTierUpgradeEvent.Source.UPGRADE_BOOK)) {
                 continue;
             }
 
@@ -493,7 +527,8 @@ public final class AnvilEvents {
             UEComponents.setAscension(out, data.withTierLevel(rootId, target));
 
             event.setOutput(out);
-            event.setCost(UPGRADE_COST);
+            // IMC 可覆盖升级花费（base + per_tier × (目标等级 - 1)），未注册则沿用默认值。
+            event.setCost(UEEnchantRegistry.upgradeCost(rootId, UPGRADE_COST, target));
             event.setMaterialCost(1);
             return;
         }

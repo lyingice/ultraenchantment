@@ -1,61 +1,61 @@
 {
-  "definition": {
-    "anvil_cost": 7,
-    "max_cost": {
-      "base": 66,
-      "per_level_above_first": 56
-    },
-    "max_level": 5,
-    "min_cost": {
-      "base": 46,
-      "per_level_above_first": 56
-    },
-    "primary_items": "#minecraft:enchantable/sword",
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/sharp_weapon",
-    "weight": 10
-  },
-  "effects": {
-    "minecraft:armor_effectiveness": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": -0.05,
-            "per_level_above_first": -0.05
-          }
-        }
-      }
-    ],
-    "minecraft:attributes": [
-      {
-        "amount": {
-          "type": "minecraft:linear",
-          "base": 0.2,
-          "per_level_above_first": 0.1
+    "definition": {
+        "anvil_cost": 7,
+        "max_cost": {
+            "base": 66,
+            "per_level_above_first": 56
         },
-        "attribute": "minecraft:generic.attack_damage",
-        "id": "ultraenchantment:ascension/attack_damage_total",
-        "operation": "add_multiplied_total"
-      }
-    ],
-    "minecraft:damage": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 10.0,
-            "per_level_above_first": 2.5
-          }
-        }
-      }
-    ]
-  },
-  "required_level": 5,
-  "root": "minecraft:sharpness",
-  "tier": "ultra"
+        "max_level": 5,
+        "min_cost": {
+            "base": 46,
+            "per_level_above_first": 56
+        },
+        "primary_items": "#minecraft:enchantable/sword",
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/sharp_weapon",
+        "weight": 10
+    },
+    "effects": {
+        "minecraft:armor_effectiveness": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": -0.05,
+                        "per_level_above_first": -0.05
+                    }
+                }
+            }
+        ],
+        "minecraft:attributes": [
+            {
+                "amount": {
+                    "type": "minecraft:linear",
+                    "base": 0.2,
+                    "per_level_above_first": 0.1
+                },
+                "attribute": "minecraft:generic.attack_damage",
+                "id": "ultraenchantment:ascension/attack_damage_total",
+                "operation": "add_multiplied_total"
+            }
+        ],
+        "minecraft:damage": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 10.0,
+                        "per_level_above_first": 2.5
+                    }
+                }
+            }
+        ]
+    },
+    "required_level": 5,
+    "root": "minecraft:sharpness",
+    "tier": "ultra"
 }

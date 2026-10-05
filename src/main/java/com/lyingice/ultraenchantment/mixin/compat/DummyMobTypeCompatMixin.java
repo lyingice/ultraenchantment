@@ -1,6 +1,6 @@
 package com.lyingice.ultraenchantment.mixin.compat;
 
-import com.lyingice.ultraenchantment.logic.EnchantmentFactory;
+import com.lyingice.ultraenchantment.logic.UERoots;
 import com.lyingice.ultraenchantment.logic.UELookups;
 import javax.annotation.Nullable;
 import net.minecraft.core.Registry;
@@ -82,14 +82,7 @@ public abstract class DummyMobTypeCompatMixin {
      */
     @Nullable
     private static ResourceKey<Enchantment> keyOf(Enchantment enchantment) {
-        ResourceLocation root = EnchantmentFactory.rootOf(enchantment);
-        if (root != null) {
-            return ResourceKey.create(Registries.ENCHANTMENT, root);
-        }
-        if (EnchantmentFactory.isSynthetic(enchantment)) {
-            return null;   // 我们的组装对象但查不到根源（异常情况）
-        }
-        Registry<Enchantment> registry = UELookups.enchantmentRegistry();
-        return registry == null ? null : registry.getResourceKey(enchantment).orElse(null);
+        // 「这个附魔属于哪条谱系」全模组唯一实现（UERoots），别在这里再抄一份。
+        return UERoots.keyOf(enchantment).orElse(null);
     }
 }

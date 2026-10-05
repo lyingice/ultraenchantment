@@ -1,48 +1,48 @@
 {
-  "definition": {
-    "anvil_cost": 6,
-    "max_cost": {
-      "base": 60,
-      "per_level_above_first": 10
+    "definition": {
+        "anvil_cost": 6,
+        "max_cost": {
+            "base": 60,
+            "per_level_above_first": 10
+        },
+        "max_level": 1,
+        "min_cost": {
+            "base": 30,
+            "per_level_above_first": 10
+        },
+        "slots": [
+            "mainhand"
+        ],
+        "supported_items": "#minecraft:enchantable/crossbow",
+        "weight": 2
     },
-    "max_level": 1,
-    "min_cost": {
-      "base": 30,
-      "per_level_above_first": 10
+    "effects": {
+        "minecraft:projectile_count": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 6.0,
+                        "per_level_above_first": 4.0
+                    }
+                }
+            }
+        ],
+        "minecraft:projectile_spread": [
+            {
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": 15.0,
+                        "per_level_above_first": 10.0
+                    }
+                }
+            }
+        ]
     },
-    "slots": [
-      "mainhand"
-    ],
-    "supported_items": "#minecraft:enchantable/crossbow",
-    "weight": 2
-  },
-  "effects": {
-    "minecraft:projectile_count": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 6.0,
-            "per_level_above_first": 4.0
-          }
-        }
-      }
-    ],
-    "minecraft:projectile_spread": [
-      {
-        "effect": {
-          "type": "minecraft:add",
-          "value": {
-            "type": "minecraft:linear",
-            "base": 15.0,
-            "per_level_above_first": 10.0
-          }
-        }
-      }
-    ]
-  },
-  "next": "ultraenchantment:super/multishot",
-  "root": "minecraft:multishot",
-  "tier": "advanced"
+    "next": "ultraenchantment:super/multishot",
+    "root": "minecraft:multishot",
+    "tier": "advanced"
 }
