@@ -10,9 +10,13 @@ import com.lyingice.ultraenchantment.event.GrindstoneEvents;
 import com.lyingice.ultraenchantment.event.ReloadEvents;
 import com.lyingice.ultraenchantment.event.TooltipEvents;
 import com.lyingice.ultraenchantment.event.VillagerTradeEvents;
+import com.lyingice.ultraenchantment.registry.UEAttachments;
+import com.lyingice.ultraenchantment.registry.UEBlockEntities;
+import com.lyingice.ultraenchantment.registry.UEBlocks;
 import com.lyingice.ultraenchantment.registry.UEComponents;
 import com.lyingice.ultraenchantment.registry.UEDataPackRegistries;
 import com.lyingice.ultraenchantment.registry.UEItems;
+import com.lyingice.ultraenchantment.registry.UEMenus;
 import com.lyingice.ultraenchantment.registry.UELootModifiers;
 import com.lyingice.ultraenchantment.registry.UEProfessions;
 import com.mojang.logging.LogUtils;
@@ -30,6 +34,14 @@ public class Ultraenchantment {
         // ── mod bus：注册与数据生成 ──
         UEItems.ITEMS.register(modEventBus);
         UEComponents.COMPONENTS.register(modEventBus);
+        // 方块与方块实体（v3.4：附魔图书馆 + 附魔进阶台）。
+        // ⚠️ 方块**永远注册**，不做条件注册——见 UEBlocks 类文档（存档安全）。
+        UEBlocks.BLOCKS.register(modEventBus);
+        UEBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        // 容器菜单类型（图书馆界面）。
+        UEMenus.MENUS.register(modEventBus);
+        // 玩家数据附件（图鉴：玩家已见过的「谱系 × 阶级」）。
+        UEAttachments.ATTACHMENT_TYPES.register(modEventBus);
         modEventBus.register(UEDataPackRegistries.INSTANCE);
         // 对外 IMC 通道：其它模组在加载期发来的进阶调参（上限收紧 / 自定义键值 / 升级花费）。
         modEventBus.addListener(com.lyingice.ultraenchantment.logic.UEEnchantRegistry::onCommonSetup);

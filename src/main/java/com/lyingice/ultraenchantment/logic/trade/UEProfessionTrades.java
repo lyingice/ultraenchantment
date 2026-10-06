@@ -112,8 +112,26 @@ public final class UEProfessionTrades {
         return NETHER_STAR_MIN + random.nextInt(NETHER_STAR_MAX - NETHER_STAR_MIN + 1);
     }
 
-    /** 原版各级卖出的经验值。下标即职业等级（1..5），0 位占位。 */
-    public static final int[] XP_SELL = {0, 1, 5, 10, 15, 30};
+    /**
+     * 各级交易给出的经验值。下标即职业等级（1..5），0 位占位。
+     *
+     * <h2>取值依据（原版阈值，源码实证）</h2>
+     *
+     * <p>{@code VillagerData.NEXT_LEVEL_XP_THRESHOLDS = {0, 10, 70, 150, 250}}，
+     * 因此每级所需经验是：<b>1→2 需 10、2→3 需 60、3→4 需 80、4→5 需 100</b>。
+     *
+     * <p>按「约 3~4 本换一级」反推：
+     * <pre>
+     *   1→2: 10 / 4  = 2.5  → 3 本（12 &gt;= 10）
+     *   2→3: 60 / 18 = 3.33 → 4 本（54 &lt; 60）
+     *   3→4: 80 / 25 = 3.2  → 4 本（75 &lt; 80）
+     *   4→5: 100 / 32 = 3.1 → 4 本（96 &lt; 100）
+     * </pre>
+     *
+     * <p>v1 用的是 {@code {0, 1, 5, 10, 15, 30}}：1 级每次只给 1 点，
+     * 升到 2 级要<b>换 10 本</b>——而 1~4 级的 {@code maxUses} 才 12，几乎把整个配额耗光。
+     */
+    public static final int[] XP_SELL = {0, 4, 18, 25, 32, 40};
 
     /** 偏移：把 1..5 级映射到 {@link #XP_SELL} 的下标。 */
     private static int xp(int villagerLevel) {
@@ -122,36 +140,25 @@ public final class UEProfessionTrades {
     }
 
     /**
-     * 造一个「收走某谱系满级原生附魔」的成本。
+     * 成本里的「书」——<b>普通书</b>，形状照原版图书管理员。
      *
-     * <p>展示物品用<b>普通书</b>（{@code Items.BOOK}）——它只是个占位符：
-     * 真正的判定规则写在它的 {@code trade_requirement} 组件上，
-     * 由 {@code MerchantOfferMixin} 在成交时校验，与展示物品的类型无关。
+     * <p>交易形状：<b>一本普通书 + 一种稀有货币 → 一本进阶附魔书</b>。
+     * 与原版 {@code EnchantBookForEmeralds}（绿宝石 + 书 → 附魔书）同构。
      *
-     * <h2>为什么是普通书而不是附魔书</h2>
+     * <h2>刻意没有任何附魔要求</h2>
      *
-     * <p>曾经用 {@code Items.ENCHANTED_BOOK}，但那是<b>误导</b>：成本物品走的是
-     * {@code ItemCost}，其序列化<b>不含 itemStack</b>
-     * （只编解码 {@code (item, count, components谓词)}，反序列化走三参构造重建），
-     * 所以客户端拿到的永远是<b>空壳</b>——玩家悬停只看到「附魔书」三个字却没有任何附魔，
-     * 看起来像 bug。普通书没有「应该带附魔内容」的预期，语义诚实。
+     * <p>曾经有一条「必须交出该谱系<b>满级原生附魔</b>」的隐式规则，
+     * 由 mixin 在 {@code MerchantOffer.satisfiedBy} 上追加校验。它已被<b>删除</b>，
+     * 这是作者的权衡：那条规则只在成交瞬间生效、成本槽里又完全显示不出来，
+     * 玩家看到的就是「放本书进去，交易却做不成」。门槛现在完全交给货币
+     * （回响碎片 / 下界之星），可见、可预期。
      *
-     * <p><b>成本的真实含义由出售物品的 tooltip 表达</b>（它走完整 ItemStack 编解码，
-     * 组件会同步）；判定则由 {@code MerchantOfferMixin} 做。
+     * <p>⚠️ 成本物品的类型<b>就是</b>玩家必须交出的物品类型（{@code ItemCost.test}
+     * 只认 {@code pay1.is(item)}）。所以「收普通书」与「要求交附魔书」这两件事
+     * <b>不可能同时成立</b>——当初正是这个矛盾让交易彻底做不成。
      */
-    private static ItemCost enchantmentCost(Holder<Enchantment> enchantment, int requiredLevel) {
-        ItemStack marker = new ItemStack(Items.BOOK);
-        ResourceLocation rootId = enchantment.unwrapKey()
-                .map(net.minecraft.resources.ResourceKey::location)
-                .orElseThrow();
-        TradeRequirement.bind(marker, rootId, requiredLevel);
-
-        // ⚠️ 必须用四参构造把 marker 直接塞进去。
-        // 三参构造 (Holder, int, DataComponentPredicate) 会自建一个全新的
-        // itemStack，marker 上刚写的规则组件会被丢掉——那样校验永远看到 null，
-        // 交易退化成「1 本书换」，静默放宽而不是报错。
-        return new ItemCost(Items.BOOK.builtInRegistryHolder(), 1,
-                DataComponentPredicate.EMPTY, marker);
+    private static ItemCost bookCost() {
+        return new ItemCost(Items.BOOK.builtInRegistryHolder(), 1, DataComponentPredicate.EMPTY);
     }
 
     // ── ① 随机铭刻书 ──────────────────────────────────────────────────
@@ -159,7 +166,7 @@ public final class UEProfessionTrades {
     /**
      * 随机铭刻书：随机一条谱系 + 随机等级（1..该谱系高阶上限）。
      *
-     * <p>成本 = 对应谱系<b>满级原生附魔</b>（普通书承载）+ <b>回响碎片</b>。
+     * <p>成本 = <b>一本普通书</b> + <b>回响碎片</b>（照原版图书管理员的形状）。
      */
     public static final class RandomInscription implements VillagerTrades.ItemListing {
         private final int villagerLevel;
@@ -189,7 +196,7 @@ public final class UEProfessionTrades {
                     new BookSpecs.Inscription(AscensionTier.ADVANCED,
                             List.of(new BookSpecs.Inscription.Entry(rootId, level))));
 
-            ItemCost costA = enchantmentCost(ench.get(), ench.get().value().getMaxLevel());
+            ItemCost costA = bookCost();
             ItemCost costB = new ItemCost(Items.ECHO_SHARD, echoShards(random));
             return new MerchantOffer(costA, Optional.of(costB), book,
                     BOOK_MAX_USES, xp(this.villagerLevel), BOOK_PRICE_MULTIPLIER);
@@ -224,7 +231,7 @@ public final class UEProfessionTrades {
             book.set(UEComponents.ASCENSION_SPEC.get(),
                     new BookSpecs.Ascension(LineageTier.NATIVE, LineageTier.ADVANCED, Optional.of(rootId)));
 
-            ItemCost costA = enchantmentCost(ench.get(), ench.get().value().getMaxLevel());
+            ItemCost costA = bookCost();
             ItemCost costB = new ItemCost(Items.ECHO_SHARD, echoShards(random));
             return new MerchantOffer(costA, Optional.of(costB), book,
                     BOOK_MAX_USES, xp(this.villagerLevel), BOOK_PRICE_MULTIPLIER);

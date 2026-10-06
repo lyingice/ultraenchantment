@@ -119,6 +119,20 @@ def apotheosis = [
         "maven.modrinth:gateways-to-eternity:${gateways_version}",
 ]
 
+// ── Enchanting Infuser（附魔灌注台）兼容 ────────────────────────────────
+// 进阶附魔台的配方以它的「进阶高级附魔台」为材料，因此开发期必须能加载它。
+//
+// ⚠️ 它**强制依赖 PuzzlesLib**（neoforge.mods.toml: mandatory = true），
+//    只加本体会在启动时因缺前置而加载失败——两个都要加。
+//
+// ⚠️ 我们**不引用它的任何类**（配方里只用字符串 id），所以严格说 compileOnly 非必需；
+//    但按作者要求「编译时带上」，加着无害，也便于将来真做 API 级联动。
+//    玩家侧不装它照样能跑：方块永远注册，配方由 neoforge:mod_loaded 条件门控。
+def enchantingInfuser = [
+        "maven.modrinth:enchanting-infuser:${enchanting_infuser_version}",
+        "maven.modrinth:puzzles-lib:${puzzleslib_version}",
+]
+
 dependencies {
     compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
@@ -135,6 +149,10 @@ dependencies {
     // ⚠️ 需要玩家侧也装好神化及其前置，否则此处会因缺前置而加载失败；
     //    这也是它只进 runtimeOnly、不进 jar 的原因。
     runtimeOnly apotheosis
+
+    // Enchanting Infuser + PuzzlesLib：编译期与开发运行期都带上。
+    compileOnly enchantingInfuser
+    runtimeOnly enchantingInfuser
 }
 
 // runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。

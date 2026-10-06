@@ -45,6 +45,17 @@ public enum AscensionTier implements StringRepresentable {
         return this.id;
     }
 
+    /**
+     * 本阶级的<b>语言键</b>——界面与 tooltip 共用同一份实现。
+     *
+     * <p>放在枚举上而不是放在 datagen 的 {@code UELang} 里：界面要读它，
+     * 而界面不应该依赖 datagen 包。{@code UELang} 反过来委托到这里，
+     * 于是「键怎么拼」只有一处定义。
+     */
+    public String translationKey() {
+        return "tier." + com.lyingice.ultraenchantment.Ultraenchantment.MODID + "." + this.id;
+    }
+
     @Override
     public String getSerializedName() {
         return this.id;

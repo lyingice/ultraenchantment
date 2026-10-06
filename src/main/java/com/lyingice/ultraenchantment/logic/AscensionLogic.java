@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.logic;
 
+import com.lyingice.ultraenchantment.content.AscensionData;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.BookSpecs;
 import com.lyingice.ultraenchantment.content.LineageTier;
@@ -39,6 +40,43 @@ public final class AscensionLogic {
      */
     public record Ascension(Holder<Enchantment> root, ResourceLocation stageId,
                             StageDefinition stage, int level, int cost) {}
+
+    /**
+     * 把一个 <b>(谱系, 阶级, 等级)</b> 写到物品上——进阶台的落盘动作。
+     *
+     * <h2>存储等级为什么是「该阶上限」</h2>
+     *
+     * <p>结算层（{@code EnchantmentLevelEvents}）要求原版存储等级 <b>&gt; 0</b>
+     * 才会注入阶段；同时原版机制（铁砧、村民）看到的也应该是「满级附魔」。
+     * 因此存储等级取该阶的 {@code max_level}，再夹进<b>该附魔自己的上限</b>与 255。
+     *
+     * <p>⚠️ 这个夹取<b>不能省</b>：{@code ItemEnchantments} 的等级有取值域，
+     * 第三方数据包把 {@code max_level} 写得过大时，越界等级会在<b>网络编码</b>阶段抛异常——
+     * 而那是包处理线程，表现是<b>玩家掉线</b>，不是一条可读的报错。
+     * 这条规则与 {@code InscriptionLogic} 的铭刻路径<b>同源</b>，改一处必须改两处。
+     *
+     * <p>写入的是<b>两个组件</b>：{@code ultraenchantment:ascension}（阶段 + 曲线等级）
+     * 与原版 {@code minecraft:enchantments}（存储等级，供原版机制读）。
+     * 效果强度只由曲线等级决定（见 {@code EnchantmentLevelEvents}）。
+     *
+     * @param stageMaxLevel 该阶的 {@code max_level}（来自数据包）
+     * @param tierLevel     曲线等级
+     */
+    public static void writeAscension(ItemStack stack, Holder<Enchantment> root, ResourceLocation rootId,
+                                      ResourceLocation stageId, int stageMaxLevel, int tierLevel) {
+        AscensionData data = UEComponents.ascensionOf(stack).with(rootId, stageId, tierLevel);
+        UEComponents.setAscension(stack, data);
+
+        ItemEnchantments.Mutable table =
+                new ItemEnchantments.Mutable(EnchantmentHelper.getEnchantmentsForCrafting(stack));
+        table.set(root, storedLevel(root, stageMaxLevel));
+        EnchantmentHelper.setEnchantments(stack, table.toImmutable());
+    }
+
+    /** 原版存储等级：该阶上限，夹进该附魔自身上限与 255，且至少 1。 */
+    public static int storedLevel(Holder<Enchantment> root, int stageMaxLevel) {
+        return Math.max(1, Math.min(stageMaxLevel, Math.min(root.value().getMaxLevel(), 255)));
+    }
 
     /**
      * 判定一次「进化型」进阶（通用 / 定向共用）。

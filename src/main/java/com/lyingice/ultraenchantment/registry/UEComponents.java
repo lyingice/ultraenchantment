@@ -69,25 +69,6 @@ public final class UEComponents {
                     .networkSynchronized(AscensionTier.STREAM_CODEC)
                     .build());
 
-    /**
-     * 交易成本规则：这条交易要收走哪个谱系的满级原生附魔。
-     *
-     * <p>存在<b>成本物品</b>（{@code ItemCost.itemStack()}）上，因为
-     * {@code MerchantOffer} 会序列化并经网络同步，只有组件能完整往返。
-     *
-     * <p>为什么不能改用 {@code DataComponentPredicate} 表达：谓词是
-     * {@code Objects.equals} <b>精确比对</b>整条组件，而 {@code ItemEnchantments}
-     * 比的是整张 map——「包含某条附魔且等级 ≥ N」根本无法表达。
-     * 详见 {@code logic/trade/TradeRequirement} 类文档。
-     */
-    public static final DeferredHolder<DataComponentType<?>,
-            DataComponentType<com.lyingice.ultraenchantment.logic.trade.TradeRequirement>> TRADE_REQUIREMENT =
-            COMPONENTS.register("trade_requirement", () -> DataComponentType
-                    .<com.lyingice.ultraenchantment.logic.trade.TradeRequirement>builder()
-                    .persistent(com.lyingice.ultraenchantment.logic.trade.TradeRequirement.CODEC)
-                    .networkSynchronized(com.lyingice.ultraenchantment.logic.trade.TradeRequirement.STREAM_CODEC)
-                    .build());
-
     // ── 物品读写便捷方法 ────────────────────────────────────────────────
     // 放在这里而不是 AscensionData：content 包保持纯数据、不反向依赖 registry 包。
 

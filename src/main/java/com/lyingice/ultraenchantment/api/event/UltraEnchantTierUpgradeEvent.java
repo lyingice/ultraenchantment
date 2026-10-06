@@ -35,6 +35,8 @@ public class UltraEnchantTierUpgradeEvent extends Event implements ICancellableE
         UPGRADE_BOOK,
         /** 铁砧 + 同名装备合并（曲线等级提高）。 */
         MERGE,
+        /** 附魔进阶台（消耗图书馆库存，不消耗经验）。 */
+        ASCENSION_TABLE,
         /** 其它模组通过 {@link com.lyingice.ultraenchantment.api.UltraEnchantmentApi} 调用。 */
         API
     }

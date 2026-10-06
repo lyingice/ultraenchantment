@@ -1,6 +1,10 @@
 package com.lyingice.ultraenchantment.datagen;
 
 import com.lyingice.ultraenchantment.Ultraenchantment;
+import java.util.List;
+import java.util.Set;
+import net.minecraft.data.loot.LootTableProvider;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 /**
@@ -25,6 +29,14 @@ public final class UEDataGen {
         // ⚠️ 同 locale 开两个 LanguageProvider 会抛 Duplicate provider（P1-19）。
         event.addProvider(new UELang(event.getGenerator().getPackOutput(), "en_us", false));
         event.addProvider(new UELang(event.getGenerator().getPackOutput(), "zh_cn", true));
+
+        // 方块掉落表（v3.4：图书馆 + 进阶台）。
+        // 与其它数据包提供器同处一个 DataGenerator 事件里（P0-12 的约束）。
+        event.addProvider(new LootTableProvider(
+                event.getGenerator().getPackOutput(),
+                Set.of(),
+                List.of(new LootTableProvider.SubProviderEntry(UEBlockLoot::new, LootContextParamSets.BLOCK)),
+                event.getLookupProvider()));
 
         // ── 数据包 ──
         // 阶段条目的 effects 是「原版附魔效果表原样搬用 + 阶级加成」，所以需要

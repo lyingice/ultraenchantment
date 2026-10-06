@@ -18,6 +18,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 
 /**
@@ -110,7 +111,36 @@ public final class CreativeTabEvents {
         }
         if (event.getTabKey().equals(CreativeModeTabs.TOOLS_AND_UTILITIES)) {
             curativeStones(event);
+            return;
         }
+        if (event.getTabKey().equals(CreativeModeTabs.FUNCTIONAL_BLOCKS)) {
+            functionalBlocks(event);
+        }
+    }
+
+    /**
+     * 功能方块标签：附魔图书馆 + 附魔进阶台。
+     *
+     * <h2>门控的边界：只门控创造栏，不门控注册</h2>
+     *
+     * <p>图书馆<b>总是</b>投放——它不依赖任何外部模组。
+     *
+     * <p>进阶台只在装了 Enchanting Infuser 时投放：它的配方以对方的
+     * 「进阶高级附魔台」为材料，定位是那个方块的升级版。
+     *
+     * <p>⚠️ 这里是<b>创造栏</b>的门控。方块本身<b>永远注册</b>——
+     * 条件注册会让玩家卸载对方模组后已放置的方块变成未知方块（见 {@code UEBlocks} 类文档）。
+     * 配方同样由静态 JSON 里的 {@code neoforge:mod_loaded} 条件门控。
+     */
+    private void functionalBlocks(BuildCreativeModeTabContentsEvent event) {
+        accept(event, new ItemStack(UEItems.ENCHANTMENT_LIBRARY.get()));
+        // ⚠️ 进阶台【不】按对方模组是否存在门控。
+        //
+        // 曾经门控过，理由是「它的配方需要 Enchanting Infuser 的方块」——
+        // 那是把【配方】的门控错当成了【方块】的门控。方块本身只依赖我们自己的图书馆，
+        // 完全独立可用；藏起来只会让没装对方模组的人以为这个方块根本不存在。
+        // 配方那边有 neoforge:mod_loaded 条件，已经够了。
+        accept(event, new ItemStack(UEItems.ASCENSION_TABLE.get()));
     }
 
     /**

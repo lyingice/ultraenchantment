@@ -34,6 +34,58 @@ public class UELang extends LanguageProvider {
         add(itemKey("advanced_enchanted_book"), this.chinese ? "进阶附魔书" : "Advanced Enchanted Book");
         add(itemKey("curative_stone"), this.chinese ? "祛咒石" : "Curative Stone");
 
+        // ── 方块名（v3.4）──
+        //
+        // 键的形态由 Block.getDescriptionId() 决定：block.<命名空间>.<路径>。
+        add("block." + Ultraenchantment.MODID + ".enchantment_library",
+                this.chinese ? "附魔图书馆" : "Enchantment Library");
+        add("block." + Ultraenchantment.MODID + ".ascension_table",
+                this.chinese ? "附魔进阶台" : "Ascension Table");
+
+        // ── 图书馆界面（v3.5）──
+        add("container." + Ultraenchantment.MODID + ".enchantment_library",
+                this.chinese ? "附魔图书馆" : "Enchantment Library");
+        add("container." + Ultraenchantment.MODID + ".enchantment_library.empty",
+                this.chinese ? "空——把铭刻书放进左侧格子" : "Empty — put an inscribed book in the left slot");
+        add("container." + Ultraenchantment.MODID + ".enchantment_library.hint",
+                this.chinese ? "放入铭刻书" : "Insert a book");
+
+        // ── 进阶台界面（v3.7）──
+        add("container." + Ultraenchantment.MODID + ".ascension_table",
+                this.chinese ? "附魔进阶台" : "Ascension Table");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.empty",
+                this.chinese ? "把要灌注的物品放进左上格子" : "Put an item in the top-left slot");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.none",
+                this.chinese ? "未选" : "none");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.free",
+                this.chinese ? "免费" : "free");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.apply",
+                this.chinese ? "灌注" : "Apply");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.hint",
+                this.chinese ? "放入待灌注物品" : "Insert an item");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.col.enchantment",
+                this.chinese ? "附魔" : "Enchantment");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.col.tier",
+                this.chinese ? "阶级" : "Tier");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.col.level",
+                this.chinese ? "等级" : "Level");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.col.cost",
+                this.chinese ? "花费" : "Cost");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.ok",
+                this.chinese ? "已灌注" : "Applied");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.no_item",
+                this.chinese ? "没有物品" : "No item");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.no_selection",
+                this.chinese ? "未选择附魔" : "Nothing selected");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.locked",
+                this.chinese ? "该阶级尚未解锁" : "Tier not unlocked");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.not_enough",
+                this.chinese ? "图书馆库存不足" : "Not enough library stock");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.cancelled",
+                this.chinese ? "被其它模组取消" : "Cancelled by another mod");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.no_library",
+                this.chinese ? "附近没有附魔图书馆" : "No enchantment library nearby");
+
         // ── 村民职业名 ──
         //
         // ⚠️ 键的形态要看 Villager.getTypeName()（源码 744-749 行）怎么拼，别按直觉写：
@@ -60,6 +112,9 @@ public class UELang extends LanguageProvider {
         for (AscensionTier tier : AscensionTier.values()) {
             add(tierKey(tier), tierName(tier));
         }
+        // 原生阶：LineageTier 独有（AscensionTier 刻意不含它），但进阶台的阶级切换要显示它。
+        // ⚠️ 漏了这条，进阶台里那一档会直接显示未翻译的键名。
+        add("tier." + Ultraenchantment.MODID + ".native", this.chinese ? "原生" : "Native");
 
         // ── 进阶附魔书 tooltip（四套格式的标题与标签）──
         addTooltips();
@@ -230,8 +285,9 @@ public class UELang extends LanguageProvider {
         };
     }
 
+    /** 委托到 {@link AscensionTier#translationKey()}——键的拼法只有那一处定义。 */
     static String tierKey(AscensionTier tier) {
-        return "tier." + Ultraenchantment.MODID + "." + tier.id();
+        return tier.translationKey();
     }
 
     private static String itemKey(String name) {

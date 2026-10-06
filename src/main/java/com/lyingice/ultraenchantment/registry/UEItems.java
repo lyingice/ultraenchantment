@@ -5,6 +5,7 @@ import com.lyingice.ultraenchantment.content.BookSubject;
 import com.lyingice.ultraenchantment.content.TieredItem;
 import java.util.Optional;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -63,6 +64,22 @@ public final class UEItems {
     public static final DeferredHolder<Item, Item> CURATIVE_STONE =
             ITEMS.register("curative_stone",
                     () -> new TieredItem(new Item.Properties().stacksTo(1).durability(16).rarity(Rarity.UNCOMMON)));
+
+    // ── 方块物品（v3.4 新增：图书馆 + 进阶台）────────────────────────────
+    //
+    // 方块**永远注册**，不做条件注册——条件注册会让玩家卸载对方模组后
+    // 已放置的方块变成未知方块。门控放在配方（静态 JSON 带 mod_loaded 条件）
+    // 与创造栏（见 CreativeTabEvents）上。理由详见 UEBlocks 类文档。
+
+    /** 附魔图书馆的方块物品。 */
+    public static final DeferredHolder<Item, BlockItem> ENCHANTMENT_LIBRARY =
+            ITEMS.register("enchantment_library",
+                    () -> new BlockItem(UEBlocks.ENCHANTMENT_LIBRARY.get(), new Item.Properties()));
+
+    /** 附魔进阶台的方块物品。 */
+    public static final DeferredHolder<Item, BlockItem> ASCENSION_TABLE =
+            ITEMS.register("ascension_table",
+                    () -> new BlockItem(UEBlocks.ASCENSION_TABLE.get(), new Item.Properties()));
 
     // ── 变种判定 ────────────────────────────────────────────────────────
     // 「这本书是什么」的唯一入口。事件层与 tooltip 层都走这里，

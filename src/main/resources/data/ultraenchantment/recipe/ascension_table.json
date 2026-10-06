@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "neoforge:conditions": [
+    { "type": "neoforge:mod_loaded", "modid": "enchantinginfuser" }
+  ],
+  "key": {
+    "X": { "item": "minecraft:experience_bottle" },
+    "I": { "item": "enchantinginfuser:advanced_enchanting_infuser" }
+  },
+  "pattern": [
+    "XXX",
+    "XIX",
+    "XXX"
+  ],
+  "result": {
+    "count": 1,
+    "id": "ultraenchantment:ascension_table"
+  }
+}
