@@ -96,7 +96,7 @@ public final class InscriptionLogic {
 
             LineageTier current = AscensionLogic.currentTierOf(stages, out, root);
 
-            // ① 原生阶：生存拒绝（必须先用进阶书把阶级升上来），创造旁路直接授予。
+            // ① 基础阶：生存拒绝（必须先用进阶书把阶级升上来），创造旁路直接授予。
             if (current == LineageTier.NATIVE) {
                 if (!bypass) {
                     leftovers.add(entry);

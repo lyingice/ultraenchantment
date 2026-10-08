@@ -82,7 +82,7 @@ public class UltraEnchantTierUpgradeEvent extends Event implements ICancellableE
         return this.enchantment;
     }
 
-    /** 改动前的阶级：0=原生（未进阶）1=高阶 2=超级 3=究极。 */
+    /** 改动前的阶级：0=基础（未进阶）1=高阶 2=超级 3=究极。 */
     public int oldTier() {
         return this.oldTier;
     }

@@ -1,5 +1,9 @@
 package com.lyingice.ultraenchantment.event;
 
+import com.lyingice.ultraenchantment.Ultraenchantment;
+import com.lyingice.ultraenchantment.block.entity.EnchantmentLibraryBlockEntity;
+import com.lyingice.ultraenchantment.compat.tooltip.PrismRainbow;
+import com.lyingice.ultraenchantment.compat.tooltip.TooltipStackCompat;
 import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.BookSpecs;
 import com.lyingice.ultraenchantment.content.BookSubject;
@@ -12,6 +16,9 @@ import java.util.List;
 import java.util.Optional;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -201,7 +208,7 @@ public final class BookTooltipEvents {
         // 定向书是「限定谱系的通用进阶书」，它和通用进阶书描述的是同一件事：
         // 谱系链上的一条边 from_tier → to_tier。所以这一行必须写边的**起点**：
         //   · 高阶→超级 那本书要贴在「已经是高阶」的物品上 → 写「高阶锋利」
-        //   · 只有 from_tier 是原生阶时，起点才恰好是原版附魔本身 → 写「锋利」
+        //   · 只有 from_tier 是基础阶时，起点才恰好是原版附魔本身 → 写「锋利」
         //
         // ⚠️ 早期实现一律写原版附魔名，于是「高阶→超级」显示成
         // 「可应用于附魔：锋利 / 进阶为：超级锋利」——中间整整少了一阶。
@@ -255,7 +262,7 @@ public final class BookTooltipEvents {
         // 阶级直接取自载荷——这是本书自身的属性，与它铭刻哪个附魔无关。
         //
         // ⚠️ 不要试图从附魔 id 反推阶级：铭刻书铭刻的是原版 id（minecraft:sharpness），
-        // 路径里没有阶级信息，反推只会得到原生阶，导致三档书全显示同一个阶级。
+        // 路径里没有阶级信息，反推只会得到基础阶，导致三档书全显示同一个阶级。
         AscensionTier tier = spec.tier();
 
         // h1：阶级名 + 「附魔」
@@ -287,7 +294,21 @@ public final class BookTooltipEvents {
                 full.append(Component.literal(" "))
                         .append(Component.translatable("enchantment.level." + entry.level()));
             }
-            out.add(full);
+
+            // ── 超限 → 按阶级走「浅 ⇄ 深」双色流体渐变 ──────────────────────
+            //
+            // 与【物品】tooltip 的超限配色同源（同一份 overCapColors + 同一个 PrismRainbow），
+            // 否则同一件附魔在书上和装备上会显示成两种颜色。
+            //
+            // 两条硬约束同 TooltipEvents：① 必须逻辑客户端（Prism 是客户端库）；
+            // ② Prism 必须已安装——PrismRainbow 里才有对方的 import，没装的玩家永远碰不到。
+            Component rendered = full;
+            if (StageLookup.isAboveDataPackCap(tier.asLineageTier(), entry.enchantment(), entry.level())
+                    && TooltipStackCompat.usePrismGradient()) {
+                int[] pair = TooltipEvents.overCapColors(tier);
+                rendered = PrismRainbow.applyFlow(full, pair[0], pair[1]);
+            }
+            out.add(rendered);
         }
     }
 
@@ -339,7 +360,7 @@ public final class BookTooltipEvents {
     /**
      * 某一阶的显示名。
      *
-     * <p>原生阶没有阶段条目（它只是「还没进阶」这个状态的代称），所以退回原版附魔自己的名字；
+     * <p>基础阶没有阶段条目（它只是「还没进阶」这个状态的代称），所以退回原版附魔自己的名字；
      * 其余各阶一律走阶段条目的独立键——与物品上进阶附魔行、铭刻书 h2 同源，
      * 整合包覆盖一个键即可重命名。
      */
@@ -365,6 +386,87 @@ public final class BookTooltipEvents {
                 .orElse(null);
     }
 
+    /**
+     * <b>图书馆物品的 tooltip</b>——把掉落物里带的库存显示出来。
+     *
+     * <p>图书馆被拆掉时库存随掉落物走（{@code EnchantmentLibraryBlock.getDrops}
+     * → {@code BlockEntity.saveToItem} → {@code minecraft:block_entity_data} 组件）。
+     * 那个组件是<b>二进制 NBT</b>，玩家在物品栏里看不见——所以这里翻译成可读的几行。
+     *
+     * <p>只显示<b>非空</b>的桶；空的图书馆不显示任何库存行。
+     */
+    @SubscribeEvent
+    public void onLibraryTooltip(ItemTooltipEvent event) {
+        ItemStack stack = event.getItemStack();
+        if (!stack.is(UEItems.ENCHANTMENT_LIBRARY.get())) {
+            return;
+        }
+        CustomData data = stack.get(DataComponents.BLOCK_ENTITY_DATA);
+        if (data == null) {
+            return;
+        }
+        CompoundTag tag = data.copyTag();
+        CompoundTag levels = tag.getCompound(EnchantmentLibraryBlockEntity.TAG_LEVEL_ENERGY);
+        CompoundTag generic = tag.getCompound(EnchantmentLibraryBlockEntity.TAG_GENERIC_BOOKS);
+        CompoundTag targeted = tag.getCompound(EnchantmentLibraryBlockEntity.TAG_TARGETED_BOOKS);
+        if (levels.isEmpty() && generic.isEmpty() && targeted.isEmpty()) {
+            return;   // 空图书馆不出行
+        }
+        event.getToolTip().add(Component.translatable("tooltip." + Ultraenchantment.MODID + ".library.contents")
+                .withStyle(ChatFormatting.GOLD));
+        // 固定顺序（阶级枚举序），避免 tooltip 行序随机跳动
+        for (LineageTier tier : LineageTier.values()) {
+            int value = levels.getInt(tier.id());
+            if (value <= 0) {
+                continue;
+            }
+            event.getToolTip().add(Component.literal("  ")
+                    .append(Component.translatable("energy." + Ultraenchantment.MODID + ".level"))
+                    .append(Component.literal(" · "))
+                    .append(Component.translatable("tier." + Ultraenchantment.MODID + "." + tier.id()))
+                    .append(Component.literal("  " + value))
+                    .withStyle(ChatFormatting.GRAY));
+        }
+        for (LineageTier tier : LineageTier.values()) {
+            if (!EnchantmentLibraryBlockEntity.isBookTier(tier)) {
+                continue;
+            }
+            int genericCount = generic.getInt(tier.id());
+            CompoundTag perTier = targeted.getCompound(tier.id());
+            if (genericCount <= 0 && perTier.isEmpty()) {
+                continue;
+            }
+            MutableComponent line = Component.literal("  ")
+                    .append(Component.translatable("container." + Ultraenchantment.MODID
+                            + ".advanced_enchantment_library.strip.books"))
+                    .append(Component.literal(" · "))
+                    .append(Component.translatable("tier." + Ultraenchantment.MODID + "." + tier.id()))
+                    .append(Component.literal("  "));
+            List<Component> parts = new ArrayList<>();
+            if (genericCount > 0) {
+                parts.add(Component.translatable("container." + Ultraenchantment.MODID
+                        + ".advanced_enchantment_library.stock.generic", genericCount));
+            }
+            for (String raw : perTier.getAllKeys()) {
+                int count = perTier.getInt(raw);
+                ResourceLocation rootId = ResourceLocation.tryParse(raw);
+                if (count <= 0 || rootId == null) {
+                    continue;
+                }
+                // 直接用附魔自己的描述键——原版与规范的模组都是 enchantment.<ns>.<path>
+                parts.add(Component.translatable("enchantment." + rootId.getNamespace()
+                        + "." + rootId.getPath()).append(Component.literal(" ×" + count)));
+            }
+            for (int i = 0; i < parts.size(); i++) {
+                if (i > 0) {
+                    line.append(Component.literal(" · "));
+                }
+                line.append(parts.get(i));
+            }
+            event.getToolTip().add(line.withStyle(ChatFormatting.GRAY));
+        }
+    }
+
     private static String tierKey(AscensionTier tier) {
         return "tier.ultraenchantment." + tier.id();
     }
@@ -378,7 +480,7 @@ public final class BookTooltipEvents {
      *
      * <p>键只由「阶级的 {@code id()}」与「附魔的 {@code path}」决定，
      * 所以两个阶级类型（{@link AscensionTier} / {@link LineageTier}）共用同一套构造。
-     * 定向进阶书拿的是 {@link LineageTier}（它的 {@code to_tier} 允许从原生阶起步），
+     * 定向进阶书拿的是 {@link LineageTier}（它的 {@code to_tier} 允许从基础阶起步），
      * 铭刻书拿的是 {@link AscensionTier}，两者最终落在同一个键上。
      */
     private static String stageNameKey(LineageTier tier, ResourceLocation enchantment) {

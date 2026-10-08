@@ -122,7 +122,7 @@ public class EnchantmentLibraryBlock extends Block implements EntityBlock {
         return new SimpleMenuProvider(
                 (windowId, inventory, player) -> new LibraryMenu(windowId, inventory, pos),
                 Component.translatable("container." + com.lyingice.ultraenchantment.Ultraenchantment.MODID
-                        + ".enchantment_library"));
+                        + ".advanced_enchantment_library"));
     }
 
     /** 方块实体不参与比较器输出。 */

@@ -15,7 +15,7 @@ import net.minecraft.resources.ResourceLocation;
  * <h2>阶级字段的类型选择（两种书不同，不要统一）</h2>
  *
  * <table>
- *   <tr><th>书</th><th>字段</th><th>类型</th><th>能否含原生阶</th></tr>
+ *   <tr><th>书</th><th>字段</th><th>类型</th><th>能否含基础阶</th></tr>
  *   <tr><td><b>进阶书</b>（进化型）</td><td>{@code from_tier} / {@code to_tier}</td>
  *       <td>{@link LineageTier}</td><td><b>能</b>——{@code from_tier: native} 就是「基础→高阶」那一档</td></tr>
  *   <tr><td><b>载体书</b>（铭刻型）</td><td>{@code tier} + {@code entries[]}</td>
@@ -24,8 +24,8 @@ import net.minecraft.resources.ResourceLocation;
  *       <td>{@link AscensionTier}</td><td><b>不能</b>——只作用于已进阶附魔</td></tr>
  * </table>
  *
- * <p>理由：进阶书描述的是「谱系链上的一条边」，边的起点可以是原生阶（链的头部）；
- * 载体书与升级书描述的都是「已经存在的进阶形态」，原生阶没有阶级，出现 native 无意义。
+ * <p>理由：进阶书描述的是「谱系链上的一条边」，边的起点可以是基础阶（链的头部）；
+ * 载体书与升级书描述的都是「已经存在的进阶形态」，基础阶没有阶级，出现 native 无意义。
  *
  * <h2>载体书（铭刻型）为什么是多条目</h2>
  *
@@ -71,7 +71,7 @@ public final class BookSpecs {
      * <h2>为什么载荷必须自带 {@code tier}</h2>
      *
      * <p>曾尝试「不记阶级、由附魔 id 反推」。那是错的——载体书里记的是<b>原版附魔 id</b>
-     * （{@code minecraft:sharpness}），路径里根本没有阶级信息，反推只会得到原生阶。
+     * （{@code minecraft:sharpness}），路径里根本没有阶级信息，反推只会得到基础阶。
      *
      * <p>阶级是<b>这本书自身的属性</b>，与它携带哪些附魔无关，必须显式声明。
      *
@@ -81,7 +81,7 @@ public final class BookSpecs {
      * 选 tierLevel，「两本同级书 → 升 1 级」才真的变强（docs/book-system-spec.md §3.1）。
      * 实际生效值一律夹在该谱系该阶的 {@code max_level} 内。
      *
-     * @param tier    本书所属阶级（必非原生阶）。<b>书级单值</b>——一本书里所有条目同阶级
+     * @param tier    本书所属阶级（必非基础阶）。<b>书级单值</b>——一本书里所有条目同阶级
      * @param entries 条目表，至少 1 条
      */
     public record Inscription(AscensionTier tier, List<Entry> entries) {

@@ -126,7 +126,7 @@ public final class ItemMergeLogic {
             if (current == null) {
                 continue;   // 右槽独有的谱系不搬：避免把进阶形态凭空带进产物
             }
-            // 阶级必须完全相等才参与：`tierOfStageId` 返回 AscensionTier（必非原生阶，
+            // 阶级必须完全相等才参与：`tierOfStageId` 返回 AscensionTier（必非基础阶，
             // 查不到时兜底 ADVANCED），所以拿它比较即可。
             AscensionTier leftTier = ProtectionLogic.tierOfStageId(current.stage());
             AscensionTier rightTier = ProtectionLogic.tierOfStageId(fromRight.stage());

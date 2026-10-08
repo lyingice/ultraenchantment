@@ -1,222 +1,248 @@
 package com.lyingice.ultraenchantment.block.entity;
 
-import com.lyingice.ultraenchantment.content.LibraryKey;
+import com.lyingice.ultraenchantment.content.LineageTier;
+import com.lyingice.ultraenchantment.logic.EnergyMath;
 import com.lyingice.ultraenchantment.registry.UEBlockEntities;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * <b>附魔图书馆的存储</b>——按「谱系 × 阶级」分池记点。
+ * <b>附魔图书馆的存储</b>——v5「阶级书库存化」。
  *
- * <h2>数据结构</h2>
+ * <h2>v5 改了什么</h2>
  *
- * <p>两张表，键都是 {@link LibraryKey}：
+ * <p>v4 存的是<b>8 类抽象能量</b>（2 家族 × 4 阶级）。其中「阶级单位」（点数）在 v5 被
+ * <b>整个删掉</b>，换成<b>进阶书库存计数</b>：
+ *
+ * <pre>
+ *                    基础   高阶   超级   究极
+ * 等级单位（提级）   有     有     有     有      ← 仍然是点数，f(L) = 2^(L-1)
+ * 通用进阶书          ——     ×N     ×N     ×N     ← 本数，可升任意谱系
+ * 定向进阶书          ——     ×N     ×N     ×N     ← 本数，只升它钉住的那条谱系
+ * </pre>
+ *
+ * <p><b>为什么</b>：点数把「一把钥匙」拆成了「五枚硬币」——玩家会去算「我还差 3 点」，
+ * 而进阶书的直觉是「我有这本就能跨过去」。书本就是离散的，折成点数是**多余的中间层**。
+ * 顺带：4:1 向上兑换也随之删除（它把低阶书的稀缺性抹平了）。
+ *
+ * <h2>三块存储</h2>
+ *
  * <ul>
- *   <li>{@code points} —— 该 (谱系, 阶级) 已存的<b>点数</b></li>
- *   <li>{@code maxLevels} —— 该 (谱系, 阶级) 见过的<b>最高等级</b></li>
+ *   <li>{@link #levelEnergy} —— 等级单位，按 {@link LineageTier#ordinal()} 索引，<b>4 档</b>
+ *       （基础阶也有效：原版附魔书存进来产出的就是「等级单位·基础」）</li>
+ *   <li>{@link #genericBooks} —— 通用进阶书，按阶级计数，<b>只有 3 档</b>（基础档没有进阶书）</li>
+ *   <li>{@link #targetedBooks} —— 定向进阶书，按（阶级 → 谱系）计数</li>
  * </ul>
  *
- * <p>两张表都必须按阶级分池：{@code 锋利·高阶} 的点数<b>不</b>进
- * {@code 锋利·超级} 的池子。跨阶级「晋升」是独立的设计决策，不在这里隐式发生。
+ * <h2>旧存档（v4）</h2>
  *
- * <h2>点数换算</h2>
- *
- * <p>{@code levelToPoints(L) = 2^(L-1)}，照神化图书馆的指数换算——
- * 高等级自然比低等级贵得多，于是「囤低级书堆满级」不划算。
- *
- * <p>⚠️ 位移<b>上限 30</b>（{@code 2^30}）：阶段定义的 {@code max_level} 上限是 255，
- * 直接 {@code 1 << 254} 会溢出成负数。上限取 30 与神化的「末影图书馆 31 级」同量级，
- * 也保证点数始终能安全放进 int。
- *
- * <h2>上限来自数据包，不写死</h2>
- *
- * <p>每格的等级上限由调用方从 {@code StageDefinition.definition().maxLevel()} 传入
- * （见 {@code StageLookup}），<b>不是</b>本类的常量——数据包改一个阶段的
- * {@code max_level}，图书馆立刻跟随。
- *
- * <h2>读盘容错</h2>
- *
- * <p>解析不出来的键（未知阶级、非法 ResourceLocation）<b>静默丢弃</b>。
- * 数据包移除某阶级后旧存档里会留下这类死键，丢弃比抛异常正确。
+ * <p>{@code energy} 字段里的 {@code level|<tier>} <b>照旧读进来</b>；
+ * {@code ascension|<tier>} <b>直接丢弃</b>（点数是「元」，书是「本」，无法无损换算，
+ * 强行换算只会引入一堆边界规则——开发期不做）。
  */
 public class EnchantmentLibraryBlockEntity extends BlockEntity {
 
-    private static final String TAG_POINTS = "points";
-    private static final String TAG_MAX_LEVELS = "max_levels";
+    /** v4 的存档键。<b>只读</b>，只为迁移：只取其中的 {@code level|} 条目。 */
+    public static final String TAG_LEGACY_ENERGY = "energy";
+    /** 等级单位：{@code {native: n, advanced: n, ...}}，键是 {@link LineageTier#id()}。 */
+    public static final String TAG_LEVEL_ENERGY = "level_energy";
+    /** 通用进阶书：{@code {advanced: 2}}。 */
+    public static final String TAG_GENERIC_BOOKS = "generic_books";
+    /** 定向进阶书：{@code {advanced: {sharpness: 1}}}（里层键是完整 {@code namespace:path}）。 */
+    public static final String TAG_TARGETED_BOOKS = "targeted_books";
 
-    /** 点数换算的最大位移，防 int 溢出。 */
-    private static final int MAX_SHIFT = 30;
+    /** 单条书库存的上限——给 GUI 一个确定的天花板，也让「整本吸收」的原子性有明确判据。 */
+    public static final int MAX_BOOKS = 999;
 
-    private final Object2IntMap<LibraryKey> points = new Object2IntOpenHashMap<>();
-    private final Object2IntMap<LibraryKey> maxLevels = new Object2IntOpenHashMap<>();
+    private final int[] levelEnergy = new int[LineageTier.values().length];
+    private final int[] genericBooks = new int[LineageTier.values().length];
+    private final EnumMap<LineageTier, Object2IntMap<ResourceLocation>> targetedBooks =
+            new EnumMap<>(LineageTier.class);
 
     public EnchantmentLibraryBlockEntity(BlockPos pos, BlockState state) {
         super(UEBlockEntities.ENCHANTMENT_LIBRARY.get(), pos, state);
     }
 
-    // ── 换算 ────────────────────────────────────────────────────────────
+    /** 基础阶没有进阶书——所有书库存都只认这三档。 */
+    public static boolean isBookTier(LineageTier tier) {
+        return tier != LineageTier.NATIVE;
+    }
 
-    /** {@code 2^(level-1)}，位移夹在 30 以内。 */
-    public static int levelToPoints(int level) {
-        if (level <= 0) {
+    // ── 等级单位 ────────────────────────────────────────────────────────
+
+    public int levelEnergy(LineageTier tier) {
+        return this.levelEnergy[tier.ordinal()];
+    }
+
+    /** 该桶还能装多少（到 {@link EnergyMath#MAX_ENERGY} 为止）。 */
+    public int roomForLevel(LineageTier tier) {
+        return Math.max(0, EnergyMath.MAX_ENERGY - this.levelEnergy[tier.ordinal()]);
+    }
+
+    public boolean canSpendLevel(LineageTier tier, int amount) {
+        return amount <= 0 || this.levelEnergy[tier.ordinal()] >= amount;
+    }
+
+    /** 加等级单位，夹在上限以内；返回实际加进去的数量。 */
+    public int addLevelEnergy(LineageTier tier, int amount) {
+        if (amount <= 0) {
             return 0;
         }
-        return 1 << Math.min(level - 1, MAX_SHIFT);
-    }
-
-    /** 把某格从 {@code currentLevel} 提到 {@code targetLevel} 所需的点数。 */
-    public static int costToReach(int targetLevel, int currentLevel) {
-        return Math.max(0, levelToPoints(targetLevel) - levelToPoints(currentLevel));
-    }
-
-    /**
-     * 现有点数<b>够取到的最高等级</b>（不考虑「见过没见过」）。
-     *
-     * <p>取出的目标等级 = {@code min(见过的最高等级, 本方法)}。
-     *
-     * <h2>为什么必须由点数反推，而不是直接取「见过的最高级」</h2>
-     *
-     * <p>「合并等级」的全部意义就在这里：见过的等级是<b>天花板</b>，
-     * 点数决定<b>这次能到多高</b>。若直接取见过的最高级，
-     * 存入一本 5 级后再取出来要付满额点数，而点数不够时只能<b>拒绝</b>——
-     * 玩家攒了一堆低级书却什么也取不出来。
-     *
-     * <p>由点数反推后：见过 5 级 + 攒够点数 ⇒ 取出 5 级；
-     * 点数只够 2 级 ⇒ 取出 2 级（而不是报错）。
-     *
-     * @param currentLevel 输出物品上该附魔已有的等级（新书为 0）
-     */
-    public static int affordableLevel(int points, int currentLevel) {
-        long budget = (long) points + levelToPoints(currentLevel);
-        if (budget <= 0) {
-            return 0;
-        }
-        int level = 1;
-        while (level < MAX_SHIFT + 1 && levelToPoints(level + 1) <= budget) {
-            level++;
-        }
-        return level;
-    }
-
-    // ── 存入 ────────────────────────────────────────────────────────────
-
-    /**
-     * 存入一本 {@code (root, tier)}、等级为 {@code level} 的书。
-     *
-     * @param stageMaxLevel 该阶段的等级上限（来自数据包）
-     * @return 是否真的改变了内容
-     */
-    public boolean deposit(LibraryKey key, int level, int stageMaxLevel) {
-        if (level <= 0 || stageMaxLevel <= 0) {
-            return false;
-        }
-        boolean changed = false;
-
-        int cap = levelToPoints(stageMaxLevel);
-        int current = this.points.getInt(key);
-        // 用 long 中间量：current 与增量都可能接近 2^30，直接相加会溢出
-        int next = (int) Math.min(cap, (long) current + levelToPoints(level));
-        if (next != current) {
-            this.points.put(key, next);
-            changed = true;
-        }
-
-        int seenBefore = this.maxLevels.getInt(key);
-        int seen = Math.min(stageMaxLevel, Math.max(seenBefore, level));
-        if (seen != seenBefore) {
-            this.maxLevels.put(key, seen);
-            changed = true;
-        }
-
-        if (changed) {
+        int index = tier.ordinal();
+        int next = EnergyMath.cappedAdd(this.levelEnergy[index], amount);
+        int added = next - this.levelEnergy[index];
+        if (added > 0) {
+            this.levelEnergy[index] = next;
             this.setChanged();
         }
-        return changed;
+        return added;
     }
 
-    /**
-     * 这次存入是否<b>真的会增加内容</b>。
-     *
-     * <p>菜单用它做「整本吸收」的原子性校验：若任一条目已满（点数到顶且等级没涨），
-     * 整本书留在槽里不消耗——否则玩家会静默损失那一条的价值。
-     */
-    public boolean canAccept(LibraryKey key, int level, int stageMaxLevel) {
-        if (level <= 0 || stageMaxLevel <= 0) {
+    /** 扣等级单位。<b>全有或全无</b>：不够就一个都不扣。 */
+    public boolean spendLevelEnergy(LineageTier tier, int amount) {
+        if (amount <= 0) {
+            return true;
+        }
+        int index = tier.ordinal();
+        if (this.levelEnergy[index] < amount) {
             return false;
         }
-        boolean pointsRoom = this.points.getInt(key) < levelToPoints(stageMaxLevel);
-        boolean levelRoom = Math.min(stageMaxLevel, level) > this.maxLevels.getInt(key);
-        return pointsRoom || levelRoom;
-    }
-
-    // ── 查询 ────────────────────────────────────────────────────────────
-
-    public int pointsOf(LibraryKey key) {
-        return this.points.getInt(key);
-    }
-
-    public int maxLevelOf(LibraryKey key) {
-        return this.maxLevels.getInt(key);
-    }
-
-    /** 两张表的键并集。 */
-    public Set<LibraryKey> keys() {
-        Set<LibraryKey> all = new LinkedHashSet<>(this.points.keySet());
-        all.addAll(this.maxLevels.keySet());
-        return all;
-    }
-
-    // ── 取出 ────────────────────────────────────────────────────────────
-
-    /** 是否够取：目标等级不超过见过的上限，且点数足够。 */
-    public boolean canExtract(LibraryKey key, int targetLevel, int currentLevel, int stageMaxLevel) {
-        if (targetLevel < 1 || targetLevel > stageMaxLevel) {
-            return false;
-        }
-        if (this.maxLevels.getInt(key) < targetLevel) {
-            return false;
-        }
-        return this.points.getInt(key) >= costToReach(targetLevel, currentLevel);
-    }
-
-    /** 扣点。调用前必须先过 {@link #canExtract}。 */
-    public boolean extract(LibraryKey key, int targetLevel, int currentLevel, int stageMaxLevel) {
-        if (!canExtract(key, targetLevel, currentLevel, stageMaxLevel)) {
-            return false;
-        }
-        int left = this.points.getInt(key) - costToReach(targetLevel, currentLevel);
-        this.points.put(key, Math.max(0, left));
+        this.levelEnergy[index] -= amount;
         this.setChanged();
         return true;
     }
 
-    /**
-     * 直接扣点——<b>跨图书馆池化消费</b>用。
-     *
-     * <p>与 {@link #extract} 的区别：{@code extract} 表达的是「从这一座图书馆取出一本书」，
-     * 因此要校验「见过该等级」；而池化消费表达的是「把点数花掉」，
-     * 校验（库存够不够）由调用方在<b>所有</b>图书馆上聚合后统一做。
-     *
-     * @return 实际扣掉的数量（不足时就是剩下的全部）
-     */
-    public int spend(LibraryKey key, int amount) {
-        if (amount <= 0) {
+    // ── 进阶书库存 ──────────────────────────────────────────────────────
+
+    public int genericBooks(LineageTier tier) {
+        return isBookTier(tier) ? this.genericBooks[tier.ordinal()] : 0;
+    }
+
+    public int targetedBooks(LineageTier tier, ResourceLocation rootId) {
+        if (!isBookTier(tier)) {
             return 0;
         }
-        int have = this.points.getInt(key);
-        int take = Math.min(have, amount);
-        if (take > 0) {
-            this.points.put(key, have - take);
-            this.setChanged();
+        Object2IntMap<ResourceLocation> map = this.targetedBooks.get(tier);
+        return map == null ? 0 : map.getInt(rootId);
+    }
+
+    /** 该阶级的定向书总数（不分谱系）——GUI 用。 */
+    public int targetedBookTotal(LineageTier tier) {
+        if (!isBookTier(tier)) {
+            return 0;
         }
-        return take;
+        Object2IntMap<ResourceLocation> map = this.targetedBooks.get(tier);
+        if (map == null) {
+            return 0;
+        }
+        int sum = 0;
+        for (int value : map.values()) {
+            sum += value;
+        }
+        return sum;
+    }
+
+    /** 该阶级的书库存总量（通用 + 定向）——GUI 的「×N」。 */
+    public int totalBooks(LineageTier tier) {
+        return this.genericBooks(tier) + this.targetedBookTotal(tier);
+    }
+
+    /** 该阶级的定向书明细，按<b>数量降序 → 谱系字典序</b>排序（GUI 行序不跳）。 */
+    public List<Map.Entry<ResourceLocation, Integer>> targetedEntries(LineageTier tier) {
+        List<Map.Entry<ResourceLocation, Integer>> out = new ArrayList<>();
+        Object2IntMap<ResourceLocation> map = this.targetedBooks.get(tier);
+        if (map != null) {
+            for (Object2IntMap.Entry<ResourceLocation> entry : map.object2IntEntrySet()) {
+                if (entry.getIntValue() > 0) {
+                    out.add(Map.entry(entry.getKey(), entry.getIntValue()));
+                }
+            }
+        }
+        out.sort(Comparator
+                .comparingInt((Map.Entry<ResourceLocation, Integer> e) -> -e.getValue())
+                .thenComparing(e -> e.getKey().toString()));
+        return out;
+    }
+
+    public boolean roomForGenericBook(LineageTier tier) {
+        return isBookTier(tier) && this.genericBooks[tier.ordinal()] < MAX_BOOKS;
+    }
+
+    public boolean roomForTargetedBook(LineageTier tier, ResourceLocation rootId) {
+        return isBookTier(tier) && this.targetedBooks(tier, rootId) < MAX_BOOKS;
+    }
+
+    /** 收一本通用进阶书；装不下返回 false（调用方必须已经探过容量）。 */
+    public boolean addGenericBook(LineageTier tier) {
+        if (!this.roomForGenericBook(tier)) {
+            return false;
+        }
+        this.genericBooks[tier.ordinal()]++;
+        this.setChanged();
+        return true;
+    }
+
+    public boolean addTargetedBook(LineageTier tier, ResourceLocation rootId) {
+        if (!this.roomForTargetedBook(tier, rootId)) {
+            return false;
+        }
+        Object2IntMap<ResourceLocation> map =
+                this.targetedBooks.computeIfAbsent(tier, k -> new Object2IntOpenHashMap<>());
+        map.put(rootId, map.getInt(rootId) + 1);
+        this.setChanged();
+        return true;
+    }
+
+    public boolean spendGenericBook(LineageTier tier) {
+        if (this.genericBooks(tier) <= 0) {
+            return false;
+        }
+        this.genericBooks[tier.ordinal()]--;
+        this.setChanged();
+        return true;
+    }
+
+    public boolean spendTargetedBook(LineageTier tier, ResourceLocation rootId) {
+        Object2IntMap<ResourceLocation> map = this.targetedBooks.get(tier);
+        if (map == null || map.getInt(rootId) <= 0) {
+            return false;
+        }
+        map.put(rootId, map.getInt(rootId) - 1);
+        this.setChanged();
+        return true;
+    }
+
+    /** 有没有任何库存（等级单位或书）——tooltip 判空用。 */
+    public boolean isEmpty() {
+        for (int value : this.levelEnergy) {
+            if (value > 0) {
+                return false;
+            }
+        }
+        for (int value : this.genericBooks) {
+            if (value > 0) {
+                return false;
+            }
+        }
+        for (Object2IntMap<ResourceLocation> map : this.targetedBooks.values()) {
+            for (int value : map.values()) {
+                if (value > 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // ── 持久化 ──────────────────────────────────────────────────────────
@@ -224,35 +250,96 @@ public class EnchantmentLibraryBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.put(TAG_POINTS, writeMap(this.points));
-        tag.put(TAG_MAX_LEVELS, writeMap(this.maxLevels));
+
+        CompoundTag levels = new CompoundTag();
+        for (LineageTier tier : LineageTier.values()) {
+            if (this.levelEnergy[tier.ordinal()] > 0) {
+                levels.putInt(tier.id(), this.levelEnergy[tier.ordinal()]);
+            }
+        }
+        tag.put(TAG_LEVEL_ENERGY, levels);
+
+        CompoundTag generic = new CompoundTag();
+        CompoundTag targeted = new CompoundTag();
+        for (LineageTier tier : LineageTier.values()) {
+            if (!isBookTier(tier)) {
+                continue;
+            }
+            if (this.genericBooks[tier.ordinal()] > 0) {
+                generic.putInt(tier.id(), this.genericBooks[tier.ordinal()]);
+            }
+            Object2IntMap<ResourceLocation> map = this.targetedBooks.get(tier);
+            if (map == null || map.isEmpty()) {
+                continue;
+            }
+            CompoundTag perTier = new CompoundTag();
+            for (Object2IntMap.Entry<ResourceLocation> entry : map.object2IntEntrySet()) {
+                if (entry.getIntValue() > 0) {
+                    perTier.putInt(entry.getKey().toString(), entry.getIntValue());
+                }
+            }
+            if (!perTier.isEmpty()) {
+                targeted.put(tier.id(), perTier);
+            }
+        }
+        tag.put(TAG_GENERIC_BOOKS, generic);
+        tag.put(TAG_TARGETED_BOOKS, targeted);
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         // 先清空：本方法可能被调用两次（setPlacedBy 兜底 + 原版 BlockItem），必须幂等
-        this.points.clear();
-        this.maxLevels.clear();
-        readMap(tag.getCompound(TAG_POINTS), this.points);
-        readMap(tag.getCompound(TAG_MAX_LEVELS), this.maxLevels);
-    }
+        java.util.Arrays.fill(this.levelEnergy, 0);
+        java.util.Arrays.fill(this.genericBooks, 0);
+        this.targetedBooks.clear();
 
-    private static CompoundTag writeMap(Object2IntMap<LibraryKey> map) {
-        CompoundTag tag = new CompoundTag();
-        for (Object2IntMap.Entry<LibraryKey> entry : map.object2IntEntrySet()) {
-            tag.putInt(entry.getKey().storageKey(), entry.getIntValue());
-        }
-        return tag;
-    }
-
-    private static void readMap(CompoundTag tag, Object2IntMap<LibraryKey> out) {
-        for (String raw : tag.getAllKeys()) {
-            LibraryKey key = LibraryKey.parseStorageKey(raw);
-            if (key == null) {
-                continue;   // 死键：数据包移除阶级后的残留，丢弃
+        // ① v5 格式
+        CompoundTag levels = tag.getCompound(TAG_LEVEL_ENERGY);
+        for (String raw : levels.getAllKeys()) {
+            LineageTier tier = LineageTier.byId(raw);
+            if (tier != null) {
+                this.levelEnergy[tier.ordinal()] = levels.getInt(raw);
             }
-            out.put(key, tag.getInt(raw));
+        }
+        CompoundTag generic = tag.getCompound(TAG_GENERIC_BOOKS);
+        for (String raw : generic.getAllKeys()) {
+            LineageTier tier = LineageTier.byId(raw);
+            if (tier != null && isBookTier(tier)) {
+                this.genericBooks[tier.ordinal()] = generic.getInt(raw);
+            }
+        }
+        CompoundTag targeted = tag.getCompound(TAG_TARGETED_BOOKS);
+        for (String tierId : targeted.getAllKeys()) {
+            LineageTier tier = LineageTier.byId(tierId);
+            if (tier == null || !isBookTier(tier)) {
+                continue;
+            }
+            CompoundTag perTier = targeted.getCompound(tierId);
+            Object2IntMap<ResourceLocation> map =
+                    this.targetedBooks.computeIfAbsent(tier, k -> new Object2IntOpenHashMap<>());
+            for (String raw : perTier.getAllKeys()) {
+                ResourceLocation rootId = ResourceLocation.tryParse(raw);
+                if (rootId != null) {
+                    map.put(rootId, perTier.getInt(raw));
+                }
+            }
+        }
+
+        // ② v4 迁移：只取 level| 条目，ascension| 一律丢弃（点数是元，书是本，无法无损换算）
+        CompoundTag legacy = tag.getCompound(TAG_LEGACY_ENERGY);
+        for (String raw : legacy.getAllKeys()) {
+            int bar = raw.indexOf('|');
+            if (bar <= 0) {
+                continue;
+            }
+            if (!"level".equals(raw.substring(0, bar))) {
+                continue;   // ascension|* —— 刻意丢弃
+            }
+            LineageTier tier = LineageTier.byId(raw.substring(bar + 1));
+            if (tier != null) {
+                this.levelEnergy[tier.ordinal()] = legacy.getInt(raw);
+            }
         }
     }
 }

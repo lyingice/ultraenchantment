@@ -18,7 +18,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  *
  * <table>
  *   <tr><th>id</th><th>中文名</th><th>职责</th></tr>
- *   <tr><td>{@code enchantment_library}</td><td>附魔图书馆</td>
+ *   <tr><td>{@code ENCHANTMENT_LIBRARY}</td><td>附魔图书馆</td>
  *       <td>按「谱系 × 阶级」存取合并进阶附魔书；解锁图鉴</td></tr>
  *   <tr><td>{@code ascension_table}</td><td>附魔进阶台</td>
  *       <td>阶级 × 等级双轴选择；消耗附近图书馆库存</td></tr>
@@ -52,7 +52,7 @@ public final class UEBlocks {
 
     /** 附魔图书馆——带方块实体（存储）。 */
     public static final DeferredHolder<Block, EnchantmentLibraryBlock> ENCHANTMENT_LIBRARY =
-            BLOCKS.register("enchantment_library", EnchantmentLibraryBlock::new);
+            BLOCKS.register("advanced_enchantment_library", EnchantmentLibraryBlock::new);
 
     /** 附魔进阶台——无方块实体（物品槽由菜单自持，照原版附魔台的做法）。 */
     public static final DeferredHolder<Block, AscensionTableBlock> ASCENSION_TABLE =

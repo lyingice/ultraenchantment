@@ -15,8 +15,8 @@ import net.minecraft.util.StringRepresentable;
  *       {@code ultraenchantment:ascension} 组件承载。</li>
  * </ul>
  *
- * <p>多出一个 {@link #NATIVE}（原生阶）：原版附魔本身所处的档位，没有对应的阶段条目。
- * 有它才能表达「从原生阶进阶到高阶」这一动作。
+ * <p>多出一个 {@link #NATIVE}（基础阶）：原版附魔本身所处的档位，没有对应的阶段条目。
+ * 有它才能表达「从基础阶进阶到高阶」这一动作。
  */
 public enum LineageTier implements StringRepresentable {
     NATIVE("native"),
@@ -51,12 +51,12 @@ public enum LineageTier implements StringRepresentable {
                 : Optional.empty();
     }
 
-    /** 是否已被进阶过（即受保护）。原生阶返回 false。 */
+    /** 是否已被进阶过（即受保护）。基础阶返回 false。 */
     public boolean isAscended() {
         return this != NATIVE;
     }
 
-    /** 转成物品形态阶级；原生阶没有对应形态，返回空。 */
+    /** 转成物品形态阶级；基础阶没有对应形态，返回空。 */
     public Optional<UETier> asViewTier() {
         return switch (this) {
             case NATIVE -> Optional.empty();

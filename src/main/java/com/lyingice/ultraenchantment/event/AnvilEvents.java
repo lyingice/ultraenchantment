@@ -397,8 +397,8 @@ public final class AnvilEvents {
      * <p>转印把「进阶形态」落到真正的载体上：物品变成我们的书、载荷带全部条目，
      * 从此可以合并、可以流通、可以贴装备。
      *
-     * <p>只剩「基础→高阶」这一档能转印——原生阶没有对应档位，
-     * 而原版附魔书的状态就是原生阶（正好由 {@code from_tier == native} 表达）。
+     * <p>只剩「基础→高阶」这一档能转印——基础阶没有对应档位，
+     * 而原版附魔书的状态就是基础阶（正好由 {@code from_tier == native} 表达）。
      */
     private void applyTranscription(AnvilUpdateEvent event, ItemStack vanillaBook,
                                     BookSpecs.Ascension spec, boolean creative) {
@@ -486,8 +486,8 @@ public final class AnvilEvents {
             }
 
             // 阶级匹配：升级型书只对同阶级的**已进阶**附魔有效。
-            // 谱系当前状态（LineageTier，可能是原生阶）对上书的档位（AscensionTier，必非原生阶）：
-            // 原生阶没有对应档位 → of() 返回空 → 自然不匹配。
+            // 谱系当前状态（LineageTier，可能是基础阶）对上书的档位（AscensionTier，必非基础阶）：
+            // 基础阶没有对应档位 → of() 返回空 → 自然不匹配。
             var currentTier = AscensionTier.of(AscensionLogic.currentTierOf(stages, out, rootId));
             if (currentTier.isEmpty() || currentTier.get() != spec.tier()) {
                 continue;
@@ -503,13 +503,17 @@ public final class AnvilEvents {
             // 不夹这一下，「5 级升级书」会把上限 3 的耐久顶到 5 级，
             // 而阶段条目只按自己的 max_level 写了曲线，等于让数据被外推到没有定义的位置。
             // 夹住之后，已达上限时这本书自然无效（tierLevel >= target 分支），不浪费书。
-            int cap = StageLookup.maxLevelOf(stages, currentTier.get().asLineageTier(), rootId, spec.targetLevel());
+            int datapackMax = StageLookup.maxLevelOf(stages, currentTier.get().asLineageTier(),
+                    rootId, spec.targetLevel());
 
             // 神化联动（B1）：它把原版附魔上限抬高后，进阶曲线等级也允许提到数据包 max_level 之上。
             // 数值曲线不变——超出部分按数据包里的 Linear 自然外推。
             // 神化缺席或读取失败时 vanillaCapOf 原样返回 fallback，行为与从前一字不差。
-            cap = Math.max(cap, com.lyingice.ultraenchantment.compat.apotheosis.ApothCaps
-                    .vanillaCapOf(ench, cap));
+            //
+            // ⚠️ 数据包可用 level_lock 给不该无限超限的附魔设【绝对天花板】：
+            //    有效上限 = min(神化上限, level_lock)。见 StageLookup.effectiveCap。
+            int cap = StageLookup.effectiveCap(ench, currentTier.get().asLineageTier(), rootId,
+                    datapackMax);
 
             int target = Math.min(spec.targetLevel(), cap);
             if (tierLevel >= target) {

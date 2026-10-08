@@ -15,12 +15,16 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
  * <p>{@code serialize} 让它随玩家 NBT 存盘；{@code copyOnDeath()} 让死亡不掉——
  * 规格要求的是「<b>永久</b>解锁」，死了就忘掉显然不叫永久。
  *
- * <h2>为什么不做 {@code sync}</h2>
+ * <h2>为什么<b>要</b> {@code sync}（v4 起）</h2>
  *
- * <p>图鉴的读取方是<b>服务端</b>：进阶台的「这个阶级能不能选」由服务端判定，
- * 客户端只需要知道<b>当前可见的那几行</b>的解锁掩码——那由菜单的
- * {@code ContainerData} 逐行下发（每行 1 个 int），比整份图鉴全量同步更省。
- * 图鉴目前没有独立的浏览界面，因此不需要全量同步。
+ * <p>v3 时刻意不做同步，理由是「图鉴的读取方是服务端，客户端只需要当前可见的那几行，
+ * 由菜单的 {@code ContainerData} 逐行下发更省」。那个理由在<b>没有图鉴浏览界面</b>时成立。
+ *
+ * <p>v4 要新增**图鉴界面**（由图书馆/进阶台提供按钮进入），玩家要看到<b>全部</b>
+ * 谱系 × 阶级的解锁状态。逐行下发不再适用——那是「当前列表可见的几行」，
+ * 而图鉴是「所有谱系的一张总表」。
+ *
+ * <p>数据量很小（30 条谱系封顶，每条一个 int），整份同步的开销可以忽略。
  */
 public final class UEAttachments {
     private UEAttachments() {}
@@ -33,6 +37,7 @@ public final class UEAttachments {
             ATTACHMENT_TYPES.register("codex", () -> AttachmentType
                     .builder(() -> CodexData.EMPTY)
                     .serialize(CodexData.CODEC)
+                    .sync(CodexData.STREAM_CODEC)
                     .copyOnDeath()
                     .build());
 }

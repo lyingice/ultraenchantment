@@ -32,6 +32,10 @@ import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
  *   <li>{@code next} —— 谱系链的下一阶；缺省表示本条即谱系终点。</li>
  *   <li>{@code requiredLevel} —— <b>进阶到本条</b>所需的源附魔等级。门槛由更高阶自己定义，
  *       实际生效值取 {@code min(requiredLevel, 源阶段上限)}（反死锁）。</li>
+ *   <li>{@code levelLock} —— <b>等级锁（超限上限）</b>，可选。
+ *       装了神化时原版上限被抬高、附魔获得「超限」能力；有些附魔<b>不该</b>无限超限，
+ *       这一项就是给它们设的<b>绝对天花板</b>：{@code 有效上限 = min(神化上限, level_lock)}。
+ *       缺省 = 不锁（完全交给神化）。</li>
  *   <li>{@code definition} —— 与原版 {@code EnchantmentDefinition} 同构的数值定义。</li>
  *   <li>{@code effects} —— 效果组件，语法与原版附魔 JSON 的 {@code effects} 完全一致。</li>
  * </ul>
@@ -43,6 +47,7 @@ import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
  *   "tier": "super",
  *   "next": "ultraenchantment:ultra/sharpness",
  *   "required_level": 4,
+ *   "level_lock": 8,
  *   "definition": { "weight": 1, "max_level": 5, ... },
  *   "effects": { "minecraft:damage": [ ... ] }
  * }
@@ -54,7 +59,8 @@ public record StageDefinition(
         Optional<ResourceLocation> next,
         int requiredLevel,
         Definition definition,
-        DataComponentMap effects) {
+        DataComponentMap effects,
+        Optional<Integer> levelLock) {
 
     public static final Codec<StageDefinition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("root").forGetter(StageDefinition::root),
@@ -65,7 +71,9 @@ public record StageDefinition(
             // 直接复用原版附魔效果组件的 codec：完整解析 27 种效果类型，
             // 因此本字段的 JSON 与原版附魔的 "effects" 一字不差。
             EnchantmentEffectComponents.CODEC.optionalFieldOf("effects", DataComponentMap.EMPTY)
-                    .forGetter(StageDefinition::effects)
+                    .forGetter(StageDefinition::effects),
+            // 等级锁（超限上限）：可选。缺省 = 不锁，完全交给神化的上限。
+            ExtraCodecs.POSITIVE_INT.optionalFieldOf("level_lock").forGetter(StageDefinition::levelLock)
     ).apply(instance, StageDefinition::new));
 
     /**

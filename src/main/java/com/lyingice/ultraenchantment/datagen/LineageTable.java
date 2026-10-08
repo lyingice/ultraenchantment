@@ -216,12 +216,12 @@ public final class LineageTable {
          * <p>返回的是<b>列表</b>而不是一个合体函数——生成阶段条目要按顺序 apply，
          * 生成效果总表要逐条列出「这一阶加了什么」。两件事用的是同一份声明，不会走偏。
          *
-         * @throws IllegalArgumentException 传入 {@link LineageTier#NATIVE}（原生阶没有阶段条目）
+         * @throws IllegalArgumentException 传入 {@link LineageTier#NATIVE}（基础阶没有阶段条目）
          */
         public List<UEStageEffects.Patch> patchesFor(LineageTier tier) {
             int index = this.tiers().indexOf(tier);
             if (index < 0) {
-                throw new IllegalArgumentException("原生阶没有阶段条目，不存在阶位加成：" + tier);
+                throw new IllegalArgumentException("基础阶没有阶段条目，不存在阶位加成：" + tier);
             }
             // 绝对谱系：每阶的补丁**就是该阶的全部数值**（表里每行都是该阶总值）。
             // 累积谱系（尚未按效果总表 v3 转换的老条目）：仍是「从头叠到本阶」。
@@ -242,26 +242,36 @@ public final class LineageTable {
      * @param patch         该阶级要写进 {@code effects} 的补丁（整条覆盖式）
      * @param maxLevel      等级上限覆盖；{@code null} = 沿用原版上限
      * @param requiredLevel 进阶到该阶级所需的最低等级；{@code null} = 原版上限（即「满级」）
+     * @param levelLock     <b>等级锁（超限上限）</b>；{@code null} = 不锁（完全交给神化）。
+     *                      装了神化时原版上限被抬高、附魔获得超限能力；这一项给不该无限超限的
+     *                      附魔设<b>绝对天花板</b>：{@code 有效上限 = min(神化上限, levelLock)}。
      */
-    public record StageSpec(UEStageEffects.Patch patch, Integer maxLevel, Integer requiredLevel) {
+    public record StageSpec(UEStageEffects.Patch patch, Integer maxLevel, Integer requiredLevel,
+                            Integer levelLock) {
         public StageSpec {
             Objects.requireNonNull(patch, "patch");
         }
     }
 
-    /** 只给数值（上限与门槛都按默认：原版上限 / 满级）。 */
+    /** 只给数值（上限与门槛都按默认：原版上限 / 满级 / 不锁）。 */
     public static StageSpec stage(UEStageEffects.Patch patch) {
-        return new StageSpec(patch, null, null);
+        return new StageSpec(patch, null, null, null);
     }
 
     /** 数值 + 等级上限覆盖（例如「三系保护超级」上限压到 1）。 */
     public static StageSpec stage(UEStageEffects.Patch patch, int maxLevel) {
-        return new StageSpec(patch, maxLevel, null);
+        return new StageSpec(patch, maxLevel, null, null);
     }
 
     /** 数值 + 上限 + 进阶门槛三件套。 */
     public static StageSpec stage(UEStageEffects.Patch patch, Integer maxLevel, int requiredLevel) {
-        return new StageSpec(patch, maxLevel, requiredLevel);
+        return new StageSpec(patch, maxLevel, requiredLevel, null);
+    }
+
+    /** 四件套：再加<b>等级锁（超限上限）</b>。 */
+    public static StageSpec stage(UEStageEffects.Patch patch, Integer maxLevel, int requiredLevel,
+                                  int levelLock) {
+        return new StageSpec(patch, maxLevel, requiredLevel, levelLock);
     }
 
     // ────────────────────────────────────────────────────────────────────

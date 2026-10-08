@@ -25,7 +25,7 @@ public final class UEMenus {
             DeferredRegister.create(Registries.MENU, Ultraenchantment.MODID);
 
     public static final DeferredHolder<MenuType<?>, MenuType<LibraryMenu>> ENCHANTMENT_LIBRARY =
-            MENUS.register("enchantment_library", () -> IMenuTypeExtension.create(
+            MENUS.register("advanced_enchantment_library", () -> IMenuTypeExtension.create(
                     (windowId, inventory, data) -> new LibraryMenu(windowId, inventory, data.readBlockPos())));
 
     public static final DeferredHolder<MenuType<?>, MenuType<AscensionTableMenu>> ASCENSION_TABLE =

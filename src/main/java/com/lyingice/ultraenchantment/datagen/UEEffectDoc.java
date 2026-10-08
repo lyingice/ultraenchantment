@@ -127,7 +127,7 @@ public final class UEEffectDoc implements DataProvider {
         sb.append("# 进阶附魔效果总表\n\n");
         sb.append("> **本文件由 datagen 生成**（runData），不要手改 —— 改了下次生成会被覆盖。\n");
         sb.append("> 要调数值，请改 LineageTable 里的阶位加成，然后重跑 runData。\n\n");
-        sb.append("- **原生阶（原版·参考）**：这条附魔在原版里长什么样，只作对照，**不参与该阶级的计算**。\n");
+        sb.append("- **基础阶（原版·参考）**：这条附魔在原版里长什么样，只作对照，**不参与该阶级的计算**。\n");
         sb.append("- **该阶实际公式**：该阶级真正生效的内容 —— 数值就是该阶级自己的公式，原版数字不参与。\n");
         sb.append("  「追加」= 在原版之外再挂一条（与原版叠加）；\n");
         sb.append("  「覆盖」= 把原版那一条整条换掉（结算时用效果算出的值替换当前值，所以数值写小是**变弱**）。\n");
@@ -136,7 +136,7 @@ public final class UEEffectDoc implements DataProvider {
         sb.append("  条件是「这个附魔是什么」的一部分，**照原版保留**（亡灵杀手依然只打亡灵）。\n");
         sb.append("- **满级合计**：只对「全部无条件加法 + 线性」的组件求和，上限取该阶级 max_level；\n");
         sb.append("  含条件或非加法效果的组件标 —，那类强度看摘要那句话。\n\n");
-        sb.append("| 谱系 | 阶级 | 上限 | 门槛 | 原生阶（原版·参考） | 该阶实际公式（**粗体**=该阶新增的效果） | 满级合计 |\n");
+        sb.append("| 谱系 | 阶级 | 上限 | 门槛 | 基础阶（原版·参考） | 该阶实际公式（**粗体**=该阶新增的效果） | 满级合计 |\n");
         sb.append("|---|---|---|---|---|---|---|\n");
 
         for (UEStages.GeneratedStage generated : stages) {

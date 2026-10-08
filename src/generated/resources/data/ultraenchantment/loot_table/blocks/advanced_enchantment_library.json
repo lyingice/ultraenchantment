@@ -11,11 +11,11 @@
             "entries": [
                 {
                     "type": "minecraft:item",
-                    "name": "ultraenchantment:enchantment_library"
+                    "name": "ultraenchantment:advanced_enchantment_library"
                 }
             ],
             "rolls": 1.0
         }
     ],
-    "random_sequence": "ultraenchantment:blocks/enchantment_library"
+    "random_sequence": "ultraenchantment:blocks/advanced_enchantment_library"
 }

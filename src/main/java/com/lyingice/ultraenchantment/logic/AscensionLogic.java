@@ -86,7 +86,7 @@ public final class AscensionLogic {
      *   <li>物品上有附魔</li>
      *   <li>定向书：附魔必须等于书的 {@code applicable}</li>
      *   <li>该谱系当前阶级必须等于书的 {@code fromTier}</li>
-     *   <li>目标阶段存在（原生阶扫表找 {@code root + toTier}；已有阶段走 {@code next}）</li>
+     *   <li>目标阶段存在（基础阶扫表找 {@code root + toTier}；已有阶段走 {@code next}）</li>
      *   <li>等级 ≥ {@code min(目标阶段 requiredLevel, 源阶段上限)}——反死锁</li>
      * </ol>
      *
@@ -147,7 +147,7 @@ public final class AscensionLogic {
             // 存储等级升阶后不变（锋利 5 仍是 5），拿它比会让门槛永远满足、形同虚设。
             if (!bypassGate) {
                 int tierLevel = UEComponents.ascensionOf(left).tierLevelOf(rootId);
-                // 未进阶的谱系没有 tierLevel 记录 → 走原生阶路线，用存储等级。
+                // 未进阶的谱系没有 tierLevel 记录 → 走基础阶路线，用存储等级。
                 int gauge = currentTier == LineageTier.NATIVE ? entry.getIntValue() : tierLevel;
                 int sourceMax = sourceMaxLevel(stages, enchantments, left, rootId, currentTier);
                 if (gauge < Math.min(stage.requiredLevel(), sourceMax)) {
@@ -163,7 +163,7 @@ public final class AscensionLogic {
         return Optional.empty();
     }
 
-    /** 取该谱系当前所处阶级；物品上无记录即原生阶。 */
+    /** 取该谱系当前所处阶级；物品上无记录即基础阶。 */
     public static LineageTier currentTierOf(HolderLookup.RegistryLookup<StageDefinition> stages,
                                             ItemStack stack, ResourceLocation rootId) {
         ResourceLocation stageId = UEComponents.ascensionOf(stack).stages().get(rootId);
@@ -186,9 +186,9 @@ public final class AscensionLogic {
      *       并且它的阶级必须正好是书本写的 {@code to_tier}。
      *       数据包若把 {@code next} 接到了跳阶的位置，这本书<b>不生效</b>，
      *       而不是「跟着跳到三阶」。</li>
-     *   <li><b>原生阶</b>（物品上没有记录）：「上一阶」是谱系链的<b>表头</b>——
+     *   <li><b>基础阶</b>（物品上没有记录）：「上一阶」是谱系链的<b>表头</b>——
      *       即<b>没有任何阶段的 {@code next} 指向它</b>的那一条。
-     *       这样才排除了「定向书把原生阶直接推到超级」这种跳阶
+     *       这样才排除了「定向书把基础阶直接推到超级」这种跳阶
      *       （AGENT.md §2 被否方案 #8：定向书恒定 +1 阶）。</li>
      * </ul>
      *
@@ -236,7 +236,7 @@ public final class AscensionLogic {
     /**
      * 源阶段的等级上限。
      *
-     * <p>原生阶取**原版附魔自己**的 {@code max_level}（锋利 5、耐久 3…各不相同）；
+     * <p>基础阶取**原版附魔自己**的 {@code max_level}（锋利 5、耐久 3…各不相同）；
      * 其余取阶段定义的 {@code max_level}。
      *
      * <p>取不到附魔时返回 1（最保守的门槛），不返回 0——避免把门槛算成 0 后

@@ -46,7 +46,11 @@ public class UECompatMixinPlugin implements IMixinConfigPlugin {
      * 不能像假人补丁那样看目标类。
      */
     private static final java.util.Map<String, String> MIXIN_GATES = java.util.Map.of(
-            "DummyMobTypeCompatMixin", "dummmmmmy");
+            "DummyMobTypeCompatMixin", "dummmmmmy",
+            // 神化附魔台的「进阶」注入：目标类只存在于 Apothic Enchanting 里
+            "ApothEnchantmentMenuMixin", "apothic_enchanting",
+            // 9 种装备宝典的搬运补丁
+            "TomeItemMixin", "apothic_enchanting");
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {

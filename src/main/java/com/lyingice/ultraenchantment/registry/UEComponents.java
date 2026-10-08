@@ -60,8 +60,8 @@ public final class UEComponents {
     /**
      * 祛咒石的目标档位。
      *
-     * <p>类型是 {@link AscensionTier}（必非原生阶）——祛咒石只作用于已进阶的附魔，
-     * 「原生阶祛咒石」是无意义的概念。
+     * <p>类型是 {@link AscensionTier}（必非基础阶）——祛咒石只作用于已进阶的附魔，
+     * 「基础阶祛咒石」是无意义的概念。
      */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<AscensionTier>> CURATIVE_TIER =
             COMPONENTS.register("curative_tier", () -> DataComponentType.<AscensionTier>builder()

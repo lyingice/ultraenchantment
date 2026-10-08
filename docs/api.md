@@ -16,7 +16,7 @@ com.lyingice.ultraenchantment.api.UltraEnchantmentApi
 
 | 概念 | API 里的名字 | 取值 | 例子 |
 |---|---|---|---|
-| **阶级**（进阶到哪一档） | `tier` | 0=原生 1=高阶 2=超级 3=究极 | 「究极锋利」的 tier = **3** |
+| **阶级**（进阶到哪一档） | `tier` | 0=基础 1=高阶 2=超级 3=究极 | 「究极锋利」的 tier = **3** |
 | **该阶的曲线等级** | `curveLevel` | 1 .. 该阶上限 | 「究极锋利 V」的 curveLevel = **5** |
 | 原版附魔等级 | （原版组件） | 原版上限 | 锋利 5 —— 它**只决定进阶门槛** |
 
@@ -59,7 +59,7 @@ boolean removeUltraEnchant(ItemStack stack, Enchantment enchant);
 |---|---|---|
 | `setTierLevel(…, tier)` | 升到该阶级；**曲线等级归 1**（与铁砧进阶一致） | `tier == 0` 等价 `unlockEnchant`；tier 不变 → 返回 `false`（想改等级用 `setCurveLevel`） |
 | `setCurveLevel(…, n)` | 改当前阶级的曲线等级 | 未进阶 → `false`；超上限**夹取**并记 WARN（与升级书一致） |
-| `unlockEnchant` | 清进阶记录（回到原生阶，祛咒石做的事） | 本来就没记录 → `false` |
+| `unlockEnchant` | 清进阶记录（回到基础阶，祛咒石做的事） | 本来就没记录 → `false` |
 | `removeUltraEnchant` | 清记录**并摘掉附魔本身** | 两者都没有 → `false` |
 
 返回值 `true` = **物品确实被改了**。以下情况一律 `false`：越界、未纳入体系、该阶没有阶段条目、客户端或非主线程、被事件取消。**不夹取**（`setTierLevel` 超上限直接拒绝，避免"静默改小"）。

@@ -177,7 +177,7 @@ public final class ReloadEvents {
 
             maxLevel = Math.max(maxLevel, stage.definition().maxLevel());
 
-            // 原生阶不是阶段条目，因此 AscensionTier.of 必然有值；
+            // 基础阶不是阶段条目，因此 AscensionTier.of 必然有值；
             // 兜底跳过而非抛异常——异常数据不会通过注册表加载，这里只为健壮性。
             AscensionTier tier = AscensionTier.of(stage.tier()).orElse(null);
             if (tier == null) {

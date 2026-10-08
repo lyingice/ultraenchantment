@@ -73,7 +73,7 @@ public final class UEItems {
 
     /** 附魔图书馆的方块物品。 */
     public static final DeferredHolder<Item, BlockItem> ENCHANTMENT_LIBRARY =
-            ITEMS.register("enchantment_library",
+            ITEMS.register("advanced_enchantment_library",
                     () -> new BlockItem(UEBlocks.ENCHANTMENT_LIBRARY.get(), new Item.Properties()));
 
     /** 附魔进阶台的方块物品。 */

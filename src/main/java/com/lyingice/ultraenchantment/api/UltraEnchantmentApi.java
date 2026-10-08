@@ -36,7 +36,7 @@ import org.slf4j.Logger;
  * <table>
  *   <tr><th>概念</th><th>本类里的名字</th><th>取值</th><th>例子</th></tr>
  *   <tr><td>阶级（进阶到哪一档）</td><td>{@code tier} / {@link #getTierLevel}</td>
- *       <td>0=原生 1=高阶 2=超级 3=究极</td><td>「究极锋利」的 tier = 3</td></tr>
+ *       <td>0=基础 1=高阶 2=超级 3=究极</td><td>「究极锋利」的 tier = 3</td></tr>
  *   <tr><td>该阶曲线上的等级</td><td>{@code curveLevel} / {@link #getCurveLevel}</td>
  *       <td>1..该阶上限</td><td>「究极锋利 V」的 curveLevel = 5</td></tr>
  * </table>
@@ -61,7 +61,7 @@ import org.slf4j.Logger;
 public final class UltraEnchantmentApi {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** 阶级上限（原生 0 之外的三档）。 */
+    /** 阶级上限（基础 0 之外的三档）。 */
     private static final int MAX_TIER = 3;
 
     private UltraEnchantmentApi() {}
@@ -227,7 +227,7 @@ public final class UltraEnchantmentApi {
         return true;
     }
 
-    /** 解除锁定（祛咒石做的事）：清掉进阶记录，物品回到原生阶。没有记录 → {@code false}。 */
+    /** 解除锁定（祛咒石做的事）：清掉进阶记录，物品回到基础阶。没有记录 → {@code false}。 */
     public static boolean unlockEnchant(ItemStack stack, Enchantment enchant) {
         return UERoots.rootOf(enchant)
                 .map(root -> unlock(stack, root, UltraEnchantLockChangeEvent.Cause.API))

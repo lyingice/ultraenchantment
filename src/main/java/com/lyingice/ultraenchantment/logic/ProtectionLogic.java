@@ -31,11 +31,11 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
  *
  * <table>
  *   <tr><th>物品上的附魔</th><th>第二槽</th><th>结果</th></tr>
- *   <tr><td>原生阶（未升阶）</td><td>空</td><td>原版行为，可移除</td></tr>
+ *   <tr><td>基础阶（未升阶）</td><td>空</td><td>原版行为，可移除</td></tr>
  *   <tr><td>超级阶</td><td>空</td><td><b>受保护，不被移除</b></td></tr>
  *   <tr><td>超级阶</td><td>超级祛咒石</td><td>移除该附魔 + 清除阶段记录</td></tr>
  *   <tr><td>超级阶</td><td>高阶 / 究极祛咒石</td><td><b>无效</b></td></tr>
- *   <tr><td>纯原生阶</td><td>任意祛咒石</td><td><b>无效</b></td></tr>
+ *   <tr><td>纯基础阶</td><td>任意祛咒石</td><td><b>无效</b></td></tr>
  * </table>
  */
 public final class ProtectionLogic {

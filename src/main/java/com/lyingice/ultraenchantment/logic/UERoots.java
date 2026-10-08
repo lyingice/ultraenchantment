@@ -66,7 +66,7 @@ public final class UERoots {
         return Optional.empty();
     }
 
-    /** 阶段条目 id → 阶级序号（0=原生 1=高阶 2=超级 3=究极）。 */
+    /** 阶段条目 id → 阶级序号（0=基础 1=高阶 2=超级 3=究极）。 */
     public static int tierOfStage(ResourceLocation stageId) {
         return ProtectionLogic.tierOfStageId(stageId).ordinal() + 1;
     }

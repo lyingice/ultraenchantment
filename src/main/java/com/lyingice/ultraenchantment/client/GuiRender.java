@@ -1,140 +1,124 @@
 package com.lyingice.ultraenchantment.client;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 /**
- * 本模组界面的<b>绘制原语</b>——统一的原版风格凸起/凹陷边框。
+ * <b>界面绘制原语</b>——v4 起全部改为<b>贴图</b>，不再用 {@code fill} 程序画。
  *
- * <h2>为什么抽出来</h2>
+ * <h2>为什么改成贴图</h2>
  *
- * <p>原版 GUI 的「立体感」全靠 1px 的明暗边：亮边在<b>上/左</b>、暗边在<b>下/右</b>，
- * 于是同一块灰底读起来是「凸起的按钮」还是「凹进去的槽位」完全由边的方向决定。
+ * <p>v2/v3 用 {@code fill} 画凸起/凹陷边框，能看但没有美术空间。
+ * v4 把面板与控件拆成「背景 PNG + 精灵表」，美术可以整张重绘，代码一行不用改
+ * （坐标表在 {@link GuiSprites}）。
  *
- * <p>v1 的界面只用了纯色 {@code fill}，没有边——所有元素看起来都是同一张灰纸，
- * 玩家分不清哪里能点、哪里是槽位。这不是美术问题，是<b>缺少这层约定</b>。
+ * <h2>两类资源</h2>
  *
- * <h2>两种立体方向</h2>
  * <ul>
- *   <li>{@link #panel}/{@link #button}——<b>凸起</b>：亮上左、暗下右（可点的东西）</li>
- *   <li>{@link #inset}——<b>凹陷</b>：暗上左、亮下右（槽位、列表底、输入框）</li>
+ *   <li>{@link #background} —— 每屏一张，含面板边框、槽位凹陷、列表底、分隔线</li>
+ *   <li>按钮 / 阶级方块 / 箭头 —— 三屏共用的精灵表 {@link GuiSprites#WIDGETS}</li>
  * </ul>
  *
- * <p>全部坐标由调用方给绝对像素（已含 {@code leftPos/topPos}），本类不做居中。
+ * <h2>仍然保留的颜色常量</h2>
+ *
+ * <p>文字颜色不属于贴图（文字是动态的），所以下面这些常量继续用。
  */
 public final class GuiRender {
     private GuiRender() {}
-
-    /** 面板底色。原版 GUI 的标准灰。 */
-    public static final int PANEL = 0xFFC6C6C6;
-    /** 凸起亮边。 */
-    public static final int BEVEL_LIGHT = 0xFFFFFFFF;
-    /** 凸起暗边。 */
-    public static final int BEVEL_DARK = 0xFF555555;
-    /** 凹陷区底色。 */
-    public static final int INSET_BG = 0xFF8B8B8B;
-    /** 凹陷边（比凸起暗边更深，才压得下去）。 */
-    public static final int INSET_EDGE = 0xFF373737;
-    /** 按钮按下/悬停时的底色。 */
-    public static final int BUTTON_HOVER = 0xFFD8D8D8;
-    /** 按钮禁用底色。 */
-    public static final int BUTTON_OFF = 0xFF9E9E9E;
 
     public static final int TEXT = 0x404040;
     public static final int TEXT_DIM = 0x707070;
     public static final int TEXT_OFF = 0xA0A0A0;
     public static final int TEXT_BAD = 0xA00000;
     public static final int TEXT_OK = 0x106010;
+    public static final int TEXT_WHITE = 0xFFFFFF;
 
     /** 行悬停叠色。 */
     public static final int HOVER_TINT = 0x30FFFFFF;
     /** 行「已选中」叠色。 */
     public static final int SELECTED_TINT = 0x4080FF80;
 
-    /** 凸起面板：亮上左、暗下右。 */
-    public static void panel(GuiGraphics graphics, int x, int y, int w, int h) {
-        graphics.fill(x, y, x + w, y + h, PANEL);
-        graphics.fill(x, y, x + w, y + 1, BEVEL_LIGHT);
-        graphics.fill(x, y, x + 1, y + h, BEVEL_LIGHT);
-        graphics.fill(x + w - 1, y, x + w, y + h, BEVEL_DARK);
-        graphics.fill(x, y + h - 1, x + w, y + h, BEVEL_DARK);
+    // ── 背景 ────────────────────────────────────────────────────────────
+
+    /**
+     * 贴一整张背景。尺寸必须与 PNG 完全一致（不缩放）。
+     *
+     * <p>⚠️ <b>必须用带「贴图尺寸」的重载。</b>简版 {@code blit(tex, x, y, u, v, w, h)}
+     * 内部<b>假定贴图是 256×256</b>；我们的背景宽 260 / 340，超过 256 的部分
+     * UV 会<b>回绕</b>，画面表现为「面板被重复平铺、中间一条竖缝」。
+     * 这个 bug 在源码里完全看不出来，只有截图才暴露。
+     *
+     * <p>因为背景是 1:1 绘制的，贴图尺寸就等于绘制尺寸。
+     */
+    public static void background(GuiGraphics graphics, ResourceLocation texture,
+                                  int x, int y, int w, int h) {
+        graphics.blit(texture, x, y, 0, 0, w, h, w, h);
     }
 
-    /** 凹陷区：暗上左、亮下右。槽位与列表底用它。 */
-    public static void inset(GuiGraphics graphics, int x, int y, int w, int h) {
-        graphics.fill(x, y, x + w, y + h, INSET_BG);
-        graphics.fill(x, y, x + w, y + 1, INSET_EDGE);
-        graphics.fill(x, y, x + 1, y + h, INSET_EDGE);
-        graphics.fill(x + w - 1, y, x + w, y + h, BEVEL_LIGHT);
-        graphics.fill(x, y + h - 1, x + w, y + h, BEVEL_LIGHT);
+    // ── 按钮 ────────────────────────────────────────────────────────────
+
+    private static void sprite(GuiGraphics graphics, GuiSprites.Sprite sprite, int x, int y) {
+        graphics.blit(sprite.texture(), x, y, sprite.u(), sprite.v(), sprite.w(), sprite.h());
     }
 
-    /** 按钮：凸起；悬停更亮、禁用变灰。 */
-    public static void button(GuiGraphics graphics, int x, int y, int w, int h,
-                              boolean hovered, boolean enabled) {
-        int body = !enabled ? BUTTON_OFF : (hovered ? BUTTON_HOVER : PANEL);
-        graphics.fill(x, y, x + w, y + h, body);
-        int light = enabled ? BEVEL_LIGHT : 0xFFB8B8B8;
-        int dark = enabled ? BEVEL_DARK : 0xFF6E6E6E;
-        graphics.fill(x, y, x + w, y + 1, light);
-        graphics.fill(x, y, x + 1, y + h, light);
-        graphics.fill(x + w - 1, y, x + w, y + h, dark);
-        graphics.fill(x, y + h - 1, x + w, y + h, dark);
+    /** 宽按钮（灌注）。 */
+    public static void wideButton(GuiGraphics g, int x, int y, boolean hovered, boolean enabled) {
+        sprite(g, !enabled ? GuiSprites.WIDE_OFF
+                : (hovered ? GuiSprites.WIDE_HOVER : GuiSprites.WIDE_NORMAL), x, y);
+    }
+
+    /** 中按钮（图鉴）。 */
+    public static void midButton(GuiGraphics g, int x, int y, boolean hovered, boolean enabled) {
+        sprite(g, !enabled ? GuiSprites.MID_OFF
+                : (hovered ? GuiSprites.MID_HOVER : GuiSprites.MID_NORMAL), x, y);
+    }
+
+    /** 小方按钮（等级 −/+）。 */
+    public static void squareButton(GuiGraphics g, int x, int y, boolean hovered, boolean enabled) {
+        sprite(g, !enabled ? GuiSprites.SQUARE_OFF
+                : (hovered ? GuiSprites.SQUARE_HOVER : GuiSprites.SQUARE_NORMAL), x, y);
+    }
+
+    /** 微按钮（滚动）。 */
+    public static void miniButton(GuiGraphics g, int x, int y, boolean hovered, boolean enabled) {
+        sprite(g, !enabled ? GuiSprites.MINI_OFF
+                : (hovered ? GuiSprites.MINI_HOVER : GuiSprites.MINI_NORMAL), x, y);
     }
 
     /**
-     * 阶级方块（chip）——「有哪几档可选」的可见表达。
+     * 阶级方块。
      *
-     * <p>v1 用两个小三角表示阶级，玩家看不出总共几档、当前在哪档。
-     * 改成并排的方块后：<b>亮 = 可选，暗 = 未解锁，高亮 = 当前选中</b>。
+     * @param unlocked 数据包是否铺了这一档<b>且</b>图鉴已解锁
+     * @param selected 是否是当前选中的那一档
      */
-    public static void chip(GuiGraphics graphics, int x, int y, int w, int h,
-                            boolean unlocked, boolean selected, boolean hovered) {
-        int body;
+    public static void chip(GuiGraphics g, int x, int y, boolean unlocked, boolean selected, boolean hovered) {
+        GuiSprites.Sprite s;
         if (!unlocked) {
-            body = 0xFF6E6E6E;
+            s = GuiSprites.CHIP_LOCKED;
         } else if (selected) {
-            body = 0xFF6FA86F;
+            s = GuiSprites.CHIP_SELECTED;
+        } else if (hovered) {
+            s = GuiSprites.CHIP_HOVER;
         } else {
-            body = hovered ? BUTTON_HOVER : PANEL;
+            s = GuiSprites.CHIP_AVAILABLE;
         }
-        graphics.fill(x, y, x + w, y + h, body);
-        int light = !unlocked ? 0xFF8A8A8A : BEVEL_LIGHT;
-        int dark = !unlocked ? 0xFF4A4A4A : BEVEL_DARK;
-        graphics.fill(x, y, x + w, y + 1, light);
-        graphics.fill(x, y, x + 1, y + h, light);
-        graphics.fill(x + w - 1, y, x + w, y + h, dark);
-        graphics.fill(x, y + h - 1, x + w, y + h, dark);
+        sprite(g, s, x, y);
     }
 
-    /**
-     * 给<b>每一个</b>菜单槽位画凹陷底。
-     *
-     * <h2>⚠️ 自己画面板就必须自己画槽位</h2>
-     *
-     * <p>原版 {@code AbstractContainerScreen.renderBg} 会 blit 一张 GUI 贴图，
-     * 而<b>槽位的凹陷底是画在那张贴图里的</b>。我们既然用代码画面板、
-     * 不 blit 贴图，槽位就会变成「看不见的空格子」——物品放进去才显形，
-     * 玩家根本不知道往哪放。这个 bug 源码里完全看不出来，只有截图才暴露。
-     *
-     * @param slots 菜单的全部槽位（含玩家背包），{@code Slot.x/y} 是相对面板的坐标
-     */
-    public static void slotBackgrounds(GuiGraphics graphics, java.util.List<net.minecraft.world.inventory.Slot> slots,
-                                       int leftPos, int topPos) {
-        for (net.minecraft.world.inventory.Slot slot : slots) {
-            inset(graphics, leftPos + slot.x - 1, topPos + slot.y - 1, 18, 18);
-        }
+    /** 箭头。贴图是 9×5，按 12×12 的按钮居中放置。 */
+    public static void arrow(GuiGraphics g, int buttonX, int buttonY, boolean up, boolean enabled) {
+        GuiSprites.Sprite s = up
+                ? (enabled ? GuiSprites.ARROW_UP : GuiSprites.ARROW_UP_OFF)
+                : (enabled ? GuiSprites.ARROW_DOWN : GuiSprites.ARROW_DOWN_OFF);
+        sprite(g, s, buttonX + 2, buttonY + 4);
     }
 
-    /** 一条细分隔线（凹陷感），用于分区。 */
-    public static void divider(GuiGraphics graphics, int x, int y, int w) {
-        graphics.fill(x, y, x + w, y + 1, BEVEL_DARK);
-        graphics.fill(x, y + 1, x + w, y + 2, BEVEL_LIGHT);
-    }
+    // ── 文字 ────────────────────────────────────────────────────────────
 
     /** 把文本水平居中在 {@code [x, x+w)} 区间内。 */
     public static void centered(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                net.minecraft.network.chat.Component text,
-                                int x, int y, int w, int color, boolean shadow) {
+                                Component text, int x, int y, int w, int color, boolean shadow) {
         graphics.drawString(font, text, x + (w - font.width(text)) / 2, y, color, shadow);
     }
 }

@@ -85,7 +85,7 @@ final class UEJeiRecipes {
                 int gate = Math.min(stage.requiredLevel(), sourceMax);
 
                 // ── ① 附魔进阶：物品 + 进阶书 ──
-                // 左槽用「刚好够门槛」的等级：原生阶比存储等级，已进阶比曲线等级（同 AscensionLogic）。
+                // 左槽用「刚好够门槛」的等级：基础阶比存储等级，已进阶比曲线等级（同 AscensionLogic）。
                 out.add(new AnvilDisplay(AnvilDisplay.Kind.ASCEND,
                         List.of(staged(item, ench, root, fromStageId,
                                 from == LineageTier.NATIVE ? gate : 1, gate)),
@@ -190,7 +190,7 @@ final class UEJeiRecipes {
                 ench.value().description(), gate, sourceMax);
     }
 
-    /** 源阶段上限：原生阶取原版 max_level，已进阶取该阶级阶段条目的 max_level（同 AscensionLogic）。 */
+    /** 源阶段上限：基础阶取原版 max_level，已进阶取该阶级阶段条目的 max_level（同 AscensionLogic）。 */
     private static int sourceMax(HolderLookup.RegistryLookup<StageDefinition> stages,
                                  Holder<Enchantment> ench, ResourceLocation root,
                                  LineageTier from, int fallback) {

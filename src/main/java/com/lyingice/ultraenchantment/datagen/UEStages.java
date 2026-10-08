@@ -205,7 +205,8 @@ public final class UEStages {
         UEStageEffects.assertUniqueAttributeIds(stageId, effects);
 
         StageDefinition stage = new StageDefinition(lineage.root(), tier, nextStage(lineage, tier),
-                requiredLevel, definition, effects);
+                requiredLevel, definition, effects,
+                java.util.Optional.ofNullable(stageSpec.levelLock()));
         return new GeneratedStage(stageId, stage, vanillaEffects, scaled, patches);
     }
 

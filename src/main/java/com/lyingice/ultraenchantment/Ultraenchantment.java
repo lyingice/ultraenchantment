@@ -21,7 +21,9 @@ import com.lyingice.ultraenchantment.registry.UELootModifiers;
 import com.lyingice.ultraenchantment.registry.UEProfessions;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
@@ -30,7 +32,10 @@ public class Ultraenchantment {
     public static final String MODID = "ultraenchantment";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public Ultraenchantment(IEventBus modEventBus) {
+    public Ultraenchantment(IEventBus modEventBus, ModContainer container) {
+        // 附魔台「进阶」的数值（阿卡那加成 / 量子稳定倍率 / 等级上限系数）。
+        container.registerConfig(ModConfig.Type.COMMON, UEConfig.SPEC);
+
         // ── mod bus：注册与数据生成 ──
         UEItems.ITEMS.register(modEventBus);
         UEComponents.COMPONENTS.register(modEventBus);
@@ -64,6 +69,8 @@ public class Ultraenchantment {
         NeoForge.EVENT_BUS.register(AnvilEvents.INSTANCE);
         // 铁砧取件：交付载体书的「剩菜书」（服务端，槽位清空前）。
         NeoForge.EVENT_BUS.register(AnvilTakeEvents.INSTANCE);
+        // 神化宝典兼容（拆解 / 高级拆解 / 提取）：后置处理，只有装了神化才真的做事。
+        NeoForge.EVENT_BUS.register(com.lyingice.ultraenchantment.compat.apotheosis.ApothTomes.INSTANCE);
         // 砂轮链路：受保护附魔守护 + 祛咒石。
         NeoForge.EVENT_BUS.register(GrindstoneEvents.INSTANCE);
         // 显示层：把附魔行改写成带阶级的样子。

@@ -292,7 +292,7 @@ public final class TooltipEvents {
      *
      * @return {@code [浅色, 深色]}
      */
-    private static int[] overCapColors(AscensionTier tier) {
+    static int[] overCapColors(AscensionTier tier) {
         return switch (tier) {
             case ADVANCED -> new int[] { 0x5555FF, 0x0000AA };   // BLUE ⇄ DARK_BLUE
             case SUPER    -> new int[] { 0xFF55FF, 0xAA00AA };   // LIGHT_PURPLE ⇄ DARK_PURPLE
@@ -350,7 +350,7 @@ public final class TooltipEvents {
      *       等级超过神化配置上限时，返回 {@code "🌟 " + 原名}。</li>
      * </ol>
      *
-     * <p>而我们的结算层<b>必然</b>让两者不一致——进阶后原生附魔被清零、注入的是合成 holder，
+     * <p>而我们的结算层<b>必然</b>让两者不一致——进阶后基础附魔被清零、注入的是合成 holder，
      * 于是实测得到 {@code nbtLevel=5 / realLevel=0} → 走等级差分支。
      *
      * <h2>现在的判据</h2>

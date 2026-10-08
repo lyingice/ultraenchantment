@@ -11,6 +11,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.CommonHooks;
 
@@ -70,7 +71,7 @@ public final class StageLookup {
     /**
      * 取某条谱系在某个阶级的阶段条目 id。
      *
-     * <p><b>不做「表头」过滤</b>——这与 {@code AscensionLogic} 里「原生阶只能走链头」的规矩
+     * <p><b>不做「表头」过滤</b>——这与 {@code AscensionLogic} 里「基础阶只能走链头」的规矩
      * 是两件事：那条规矩约束的是<b>进阶书</b>（数据包若把 next 接到跳阶位置，书就应当不生效），
      * 这里服务的是<b>创造旁路直接授予</b>（规格 §5.2：白装备可以直接上究极，本就允许跳阶）。
      */
@@ -140,6 +141,44 @@ public final class StageLookup {
      */
     public static int displayLevelCap(LineageTier tier, ResourceLocation root, int vanillaMaxLevel) {
         return maxLevelOf(lookup(), tier, root, Math.max(1, vanillaMaxLevel));
+    }
+
+    /**
+     * 该谱系该阶级的<b>等级锁（超限上限）</b>——数据包可选的 {@code level_lock}。
+     *
+     * <p>装了神化时原版上限被抬高、附魔获得「超限」能力；有些附魔不该无限超限，
+     * 数据包就给它们设这道<b>绝对天花板</b>。
+     *
+     * @return 锁值；<b>未设锁返回 0</b>（0 表示「不锁」，因为等级下限是 1）
+     */
+    public static int levelLockOf(LineageTier tier, ResourceLocation root) {
+        HolderLookup.RegistryLookup<StageDefinition> lookup = lookup();
+        if (lookup == null) {
+            return 0;
+        }
+        for (Holder.Reference<StageDefinition> holder : lookup.listElements().toList()) {
+            StageDefinition stage = holder.value();
+            if (stage.tier() == tier && stage.root().equals(root)) {
+                return stage.levelLock().orElse(0);
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * <b>有效上限</b>＝ {@code min(神化上限, 等级锁)}。
+     *
+     * <p>没有等级锁时就是神化上限；神化缺席时 {@code ApothCaps.vanillaCapOf} 原样返回
+     * {@code datapackMax}，行为与从前一字不差。
+     *
+     * @param datapackMax 数据包给该阶级的 {@code max_level}（超限的基准线）
+     */
+    public static int effectiveCap(Holder<Enchantment> ench, LineageTier tier,
+                                   ResourceLocation root, int datapackMax) {
+        int cap = com.lyingice.ultraenchantment.compat.apotheosis.ApothCaps
+                .vanillaCapOf(ench, datapackMax);
+        int lock = levelLockOf(tier, root);
+        return lock > 0 ? Math.min(cap, lock) : cap;
     }
 
     /**

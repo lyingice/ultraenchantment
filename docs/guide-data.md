@@ -20,7 +20,7 @@
 |---|---|
 | **阶段条目** | 「某条谱系的某一阶」。住在数据包注册表 **ultraenchantment:enchantment** 里，**它不是附魔**，不进 minecraft:enchantment。 |
 | **谱系（lineage）** | 一条原版附魔的成长线。字段 **root** 永远指向那个原版附魔，例如 **minecraft:sharpness**。 |
-| **阶级（tier）** | 原生阶 / 高阶(advanced) / 超级(super) / 究极(ultra)。**原生阶没有阶段条目**，它只是「还没进阶」这个状态的代称。 |
+| **阶级（tier）** | 基础阶 / 高阶(advanced) / 超级(super) / 究极(ultra)。**基础阶没有阶段条目**，它只是「还没进阶」这个状态的代称。 |
 
 一条谱系最多三个条目，用 **next** 串成链：advanced → super → ultra →（无，即终点）。
 
@@ -56,7 +56,7 @@
 
 | 阶级 | 公式 | 1级 | 5级（满级） |
 |---|---|---|---|
-| 原生（原版） | 1 + 0.5×(n-1) | 1 | 3 |
+| 基础（原版） | 1 + 0.5×(n-1) | 1 | 3 |
 | 高阶 | **3 + 1×(n-1)** | 3 | 7 |
 | 超级 | **6 + 1.5×(n-1)** | 6 | 12 |
 | 究极 | **10 + 2.5×(n-1)** | 10 | 20 |
@@ -218,7 +218,7 @@ data/ultraenchantment/ultraenchantment/enchantment/<阶级>/<附魔名>.json
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | root | ✅ | 谱系根源，必须是真实存在的附魔 id。进阶时用来定位物品上那条原版附魔。 |
-| tier | ✅ | advanced / super / ultra。（**没有 native**——原生阶不是条目。） |
+| tier | ✅ | advanced / super / ultra。（**没有 native**——基础阶不是条目。） |
 | next | ❌ | 下一阶的条目 id；缺省 = 本条即谱系终点。**必须是真实存在的条目**，写错会让进阶卡死。 |
 | required_level | ✅ | 进阶到本条所需的 tierLevel（≥1）。实际门槛取 min(它, 来源阶级上限)，所以不会死锁。 |
 | definition | ✅ | 见下。 |

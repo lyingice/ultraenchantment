@@ -37,18 +37,54 @@ public class UELang extends LanguageProvider {
         // ── 方块名（v3.4）──
         //
         // 键的形态由 Block.getDescriptionId() 决定：block.<命名空间>.<路径>。
-        add("block." + Ultraenchantment.MODID + ".enchantment_library",
-                this.chinese ? "附魔图书馆" : "Enchantment Library");
+        add("block." + Ultraenchantment.MODID + ".advanced_enchantment_library",
+                this.chinese ? "进阶附魔图书馆" : "Advanced Enchantment Library");
         add("block." + Ultraenchantment.MODID + ".ascension_table",
                 this.chinese ? "附魔进阶台" : "Ascension Table");
 
         // ── 图书馆界面（v3.5）──
-        add("container." + Ultraenchantment.MODID + ".enchantment_library",
-                this.chinese ? "附魔图书馆" : "Enchantment Library");
-        add("container." + Ultraenchantment.MODID + ".enchantment_library.empty",
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library",
+                this.chinese ? "进阶附魔图书馆" : "Advanced Enchantment Library");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.empty",
                 this.chinese ? "空——把铭刻书放进左侧格子" : "Empty — put an inscribed book in the left slot");
-        add("container." + Ultraenchantment.MODID + ".enchantment_library.hint",
-                this.chinese ? "放入铭刻书" : "Insert a book");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.hint",
+                this.chinese ? "放入书" : "Insert a book");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.col.enchantment",
+                this.chinese ? "附魔" : "Enchantment");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.col.tier",
+                this.chinese ? "阶级" : "Tier");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.col.level",
+                this.chinese ? "等级" : "Lv");
+        // 行内的花费数字（「4 点」）。余量不够时整段标红。
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.cost",
+                this.chinese ? "%s 点" : "%s");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.status.output_busy",
+                this.chinese ? "输出槽里还有书，先把它拿走" : "Take the book out of the output slot first");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.status.not_enough",
+                this.chinese ? "等级单位不够" : "Not enough level units");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.status.no_tier",
+                this.chinese ? "这一档在数据包里没有阶段条目"
+                        : "No stage entry for this tier");
+        // 取出按钮的悬停明细：取什么 / 花多少 / 有多少 / 取完剩多少
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.tip.extract.title",
+                this.chinese ? "取出「%s」%s 级" : "Extract %s lv.%s");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.tip.extract.cost",
+                this.chinese ? "花费 %s 点 · %s等级单位" : "Costs %s %s level units");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.tip.extract.stock",
+                this.chinese ? "图书馆有 %s 点 · 取出后剩 %s 点" : "%s stored · %s left after");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.tip.extract.short",
+                this.chinese ? "不够：还差 %s 点" : "Short by %s");
+        add("tooltip." + Ultraenchantment.MODID + ".library.contents",
+                this.chinese ? "库存" : "Contents");
+        // ⚠️ v5 删掉了 energy.…​.ascension（阶级单位点数）——「阶级」不再是点数，
+        //    而是进阶书库存。玩家可见的只有 level 这一族。
+        add("energy." + Ultraenchantment.MODID + ".level",
+                this.chinese ? "等级单位" : "Level units");
+        // 图书馆能量条第二行：进阶书库存（升阶的钥匙）
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.strip.books",
+                this.chinese ? "进阶书" : "Ascension books");
+        add("container." + Ultraenchantment.MODID + ".advanced_enchantment_library.stock.generic",
+                this.chinese ? "通用 ×%s" : "Any ×%s");
 
         // ── 进阶台界面（v3.7）──
         add("container." + Ultraenchantment.MODID + ".ascension_table",
@@ -63,14 +99,58 @@ public class UELang extends LanguageProvider {
                 this.chinese ? "灌注" : "Apply");
         add("container." + Ultraenchantment.MODID + ".ascension_table.hint",
                 this.chinese ? "放入待灌注物品" : "Insert an item");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.reset",
+                this.chinese ? "重置" : "Reset");
+        add("container." + Ultraenchantment.MODID + ".codex.hint",
+                this.chinese ? "点阶级名或方块可切换名称" : "Click a tier to switch names");
         add("container." + Ultraenchantment.MODID + ".ascension_table.col.enchantment",
                 this.chinese ? "附魔" : "Enchantment");
         add("container." + Ultraenchantment.MODID + ".ascension_table.col.tier",
                 this.chinese ? "阶级" : "Tier");
         add("container." + Ultraenchantment.MODID + ".ascension_table.col.level",
                 this.chinese ? "等级" : "Level");
-        add("container." + Ultraenchantment.MODID + ".ascension_table.col.cost",
-                this.chinese ? "花费" : "Cost");
+        // v5：这一列不再是「花多少点数」，而是「要几本进阶书」。
+        // ⚠️ 别叫「钥匙」——那是设计内部打的比方，玩家看到的是「进阶书」这个实物。
+        //    「书耗」还和右边的「级耗」成对，一眼看得出是同一类东西。
+        add("container." + Ultraenchantment.MODID + ".ascension_table.col.key_book",
+                this.chinese ? "书耗" : "Books");
+        // ⚠️ 只有「N 本」一种写法。缺的时候靠【红字 + 悬停明细】表达，
+        //    不再写「缺 N 本」——那多出 13px，会把整列顶出面板边框。
+        add("container." + Ultraenchantment.MODID + ".ascension_table.book_count",
+                this.chinese ? "%s 本" : "%s book(s)");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.col.level_cost",
+                this.chinese ? "级耗" : "Level");
+
+        // ── 花费列的悬停明细（要什么 / 环内共多少 / 扣完剩多少）──
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.book.need",
+                this.chinese ? "需要 %s 本 · %s进阶书" : "Needs %s x %s book");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.book.stock",
+                this.chinese ? "环内图书馆共 %s 本（定向 %s · 通用 %s）"
+                        : "Nearby libraries: %s (%s targeted, %s generic)");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.book.left",
+                this.chinese ? "消耗后剩余 %s 本" : "%s left after");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.book.short",
+                this.chinese ? "还差 %s 本" : "Short by %s");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.book.none",
+                this.chinese ? "这一档不需要进阶书" : "No book needed");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.level.need",
+                this.chinese ? "需要 %s 点 · %s等级单位" : "Needs %s %s level units");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.level.refund",
+                this.chinese ? "退还 %s 点 · %s等级单位" : "Refunds %s %s level units");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.level.stock",
+                this.chinese ? "环内图书馆共 %s 点" : "Nearby libraries: %s");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.level.left",
+                this.chinese ? "这一笔之后剩余 %s 点" : "%s left after");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.level.short",
+                this.chinese ? "还差 %s 点" : "Short by %s");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.tip.level.none",
+                this.chinese ? "不需要等级单位" : "Nothing needed");
+        add("container." + Ultraenchantment.MODID + ".codex.button",
+                this.chinese ? "图鉴" : "Codex");
+        add("container." + Ultraenchantment.MODID + ".codex.col.enchantment",
+                this.chinese ? "附魔" : "Enchantment");
+        add("container." + Ultraenchantment.MODID + ".codex.empty",
+                this.chinese ? "空" : "Empty");
         add("container." + Ultraenchantment.MODID + ".ascension_table.status.ok",
                 this.chinese ? "已灌注" : "Applied");
         add("container." + Ultraenchantment.MODID + ".ascension_table.status.no_item",
@@ -85,6 +165,16 @@ public class UELang extends LanguageProvider {
                 this.chinese ? "被其它模组取消" : "Cancelled by another mod");
         add("container." + Ultraenchantment.MODID + ".ascension_table.status.no_library",
                 this.chinese ? "附近没有附魔图书馆" : "No enchantment library nearby");
+        // 点暗色阶级方块时的两种「为什么点不动」——不区分它们，玩家只会觉得界面坏了
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.tier_locked",
+                this.chinese ? "该阶级未解锁：把它对应的书存进图书馆"
+                        : "Tier locked: deposit the matching book in a library");
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.tier_missing",
+                this.chinese ? "这条附魔没有这一档" : "This enchantment has no such tier");
+        // v5：升阶的唯一代价是书，缺了就做不了
+        add("container." + Ultraenchantment.MODID + ".ascension_table.status.no_key_book",
+                this.chinese ? "缺少对应阶级的进阶书：把它存进图书馆"
+                        : "Missing the matching ascension book");
 
         // ── 村民职业名 ──
         //
@@ -112,9 +202,14 @@ public class UELang extends LanguageProvider {
         for (AscensionTier tier : AscensionTier.values()) {
             add(tierKey(tier), tierName(tier));
         }
-        // 原生阶：LineageTier 独有（AscensionTier 刻意不含它），但进阶台的阶级切换要显示它。
-        // ⚠️ 漏了这条，进阶台里那一档会直接显示未翻译的键名。
-        add("tier." + Ultraenchantment.MODID + ".native", this.chinese ? "原生" : "Native");
+        // 基础阶：LineageTier 独有（AscensionTier 刻意不含它），但进阶台 / 图鉴 / 图书馆都要显示它。
+        // ⚠️ 漏了这条，那一档会直接显示未翻译的键名。
+        // ⚠️ 玩家看到的用词是【基础】，不是【基础】——「基础」是设计内部的叫法
+        //    （指「原版附魔本身所处的档位」），对玩家来说它只是阶梯的第一档。
+        //    四档读作：基础 → 高阶 → 超级 → 究极。
+        //    代码里的枚举仍叫 {@link com.lyingice.ultraenchantment.content.LineageTier#NATIVE}
+        //    —— 那是内部标识，不进界面。
+        add("tier." + Ultraenchantment.MODID + ".native", this.chinese ? "基础" : "Basic");
 
         // ── 进阶附魔书 tooltip（四套格式的标题与标签）──
         addTooltips();
@@ -165,9 +260,10 @@ public class UELang extends LanguageProvider {
         return lineageTierEn(tier) + " " + lineage.enName();
     }
 
+    /** 阶梯名里的阶级前缀。与 {@code tier.ultraenchantment.*} 用同一套词（见上方的术语说明）。 */
     private static String lineageTierCn(LineageTier tier) {
         return switch (tier) {
-            case NATIVE -> "原生";
+            case NATIVE -> "基础";
             case ADVANCED -> "高阶";
             case SUPER -> "超级";
             case ULTRA -> "究极";
@@ -176,7 +272,7 @@ public class UELang extends LanguageProvider {
 
     private static String lineageTierEn(LineageTier tier) {
         return switch (tier) {
-            case NATIVE -> "Native";
+            case NATIVE -> "Basic";
             case ADVANCED -> "Advanced";
             case SUPER -> "Super";
             case ULTRA -> "Ultra";
