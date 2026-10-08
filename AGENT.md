@@ -490,6 +490,24 @@ return null;   // ← 专用服务器上就走这里
 > 标签包在配置阶段就到了，那时 level 可能还没有。用 `event.getRegistryAccess()`
 > 三种环境一次都对。
 
+#### P0-17 · 容器点击**两侧都会跑**，兼容钩子返回的 Holder 必须按侧取
+
+原版 `MultiPlayerGameMode.handleInventoryMouseClick` 除了发 `ServerboundContainerClickPacket`，
+**还会在本机把 `menu.clicked(...)` 跑一遍**（客户端预测）。于是挂在别人菜单上的注入
+**在客户端也会执行**。
+
+实测（2026-10，附魔编辑台）：我们「把载体书放进去」的钩子返回 `EnchantmentInstance`，
+里面的 `Holder<Enchantment>` 是用**服务端**注册表取的；客户端那份菜单拿它去
+`registry.getResourceKey(holder.value()).get()`（对方的 `EnchantmentUtils.translateEnchantment`）
+反查不到 ⇒ **`NoSuchElementException`，客户端直接崩**（crash report: `mouseReleased event handler`）。
+
+铁律：
+1. 任何要**返回 Holder** 的兼容代码，注册表按**那一侧**取 —— 工具现成：
+   `UELookups.enchantmentsForItemWrites(clientSide)`；
+2. **写组件只在服务端做**（客户端栈里塞服务端 Holder ⇒ 发包 `Can't find id for` ⇒ 掉线，见 P0-16）；
+3. 判侧别用**菜单/世界自己的** `world.isClientSide()`，**不要**用 `FMLEnvironment.dist` ——
+   集成服务器上两侧同时在跑，`dist` 永远说「是客户端」。
+
 ---
 
 ### P1 —— 会导致行为不符合规格
@@ -1675,6 +1693,35 @@ v5 把升阶的代价换成了「消耗一本进阶书」，于是同一个判�
 
 ---
 
+#### P2-XX · `RandomSource.create(连续种子)` 的首次 `nextDouble()` 会挤在一起
+
+写探针时习惯用 `RandomSource.create(i)` 造「可复现的随机」。但**连续种子**的**第一次**
+`nextDouble()` 并不均匀：实测种子 500..519 全部落在 **0.685~0.758**（20/20 都 ≥ 0.5），
+900..919 全在 ~0.72；同一时刻无种子源 200 次里 ≥0.5 的有 113 次（正常）。
+
+后果：一个「50% 应该中一半」的用例会被测成 **0/200**，看起来像功能坏了 ——
+2026-10 就为这个白查了一轮（最后靠「把日志里的概率打出来」才发现概率是 50.0%）。
+
+规矩：
+1. **验证概率/分布一律用无种子源** `RandomSource.create()`，跑足够多次；
+2. `create(seed)` 只用于「要固定结果」的场合，**不要拿连续种子做统计**；
+3. 概率类断言失败时，**先把实际概率打出来**再怀疑代码。
+
+#### P1-XX · 别在「别人的方法返回后」才去读它中途会被改写的字段
+
+神化附魔台的 `stats` 就是活例子：它的 `clickMenuButton` 结尾会走
+`slotsChanged() → gatherStats()`，而那个方法用 `access.evaluate(...)`（access 可能是 NULL）
+⇒ `stats` 会在**同一次调用中途**被重新赋值。于是：
+
+1. 我在 `clickMenuButton` HEAD 把 `stats` 修好（`this.stats = fresh`）；
+2. 它自己的代码在中间又把它写回去（INVALID）；
+3. 我在 RETURN 读 `this.stats` ⇒ **读到的是被覆盖后的空值** ⇒ 概率恒 0%，日志显示
+   `位阶=0.0 阿卡那=0.0 量子化=0.0`。
+
+规矩：**要用的值在 HEAD 就算好、缓存在自己的 `@Unique` 字段里**；RETURN 读「它中途可能被改的字段」
+一律不可信，实在要读就在 RETURN **自己重算**一次（两层保险）。
+判断「空值」用它的 `INVALID` 特征（这里：三项全 0），别用 `== null` —— 它从来不是 null。
+
 ### P2 —— 会浪费大量时间的坑
 
 #### P2-1 · 首次构建的 NeoForm 反编译可达一小时
@@ -1720,16 +1767,23 @@ loaderVersion="[1,)"
 实测（服务端探针，2026-10）：超级配方能吃**究极石**（把玩家做好的东西降级），
 究极配方能吃**高阶石** ⇒ **直接跳级，省掉整整一圈哭泣的黑曜石**。
 
-正解：用 NeoForge 自带的自定义原料（`DataComponentIngredient`）：
+**两条正解**：
+
+1. **改成多个物品**（本模组祛咒石采用的做法，2026-10）——中心格写物品 id 就天然只认那一种，
+   根本不需要组件匹配。**能改物品就别绕**。
+2. **确实必须保持单物品时**，用 NeoForge 自带的自定义原料（`DataComponentIngredient`）：
 
 ```json
-"Y": { "type": "neoforge:components", "items": "ultraenchantment:curative_stone",
-       "components": { "ultraenchantment:curative_tier": "advanced" } }
+"Y": { "type": "neoforge:components", "items": "ultraenchantment:xxx",
+       "components": { "ultraenchantment:yyy": "zzz" } }
 ```
 
 `items` + `components` 必填，`strict` 可选（默认非严格 = 只要求列出的组件匹配）。
 
 **教训**：原料的匹配语义必须用探针**正反两面**钉住 —— 只断言「中心吃高阶石」是不够的，
+还要断言「中心**不**吃究极石」。第一版只写了正面断言，跑出来一片绿。
+
+
 还要断言「中心**不**吃究极石」。第一版只写了正面断言，跑出来一片绿。
 
 `run/eula.txt` 要改成 `eula=true`；局域网调试可把 `run/server.properties` 的 `online-mode` 设 false。
@@ -1919,6 +1973,18 @@ com.lyingice.ultraenchantment
 ## 8. 变更日志
 
 | 日期 | 变更 |
+| 2026-10 | **✅ 修复确认 + 按作者要求清掉调试日志**。作者实测日志坐实修复生效：`[UE] 神化台面数值取不到（对方 stats 为 INVALID），已自行兜底重算 ⇒ 位阶=100.0 阿卡那=100.0 量子化=100.0` 紧跟 `附魔台进阶判定：行=2 … 神化=true ⇒ 概率=100.0%` —— 作者的台子确实是满配（位阶/阿卡那/量子化 全 100）⇒ 概率 100% ⇒ 必出，与「好像成功了」一致。**随后按作者要求移除调试日志**：删掉 `logAscensionRolls` 配置项与每次判定那行 INFO（那是给排查用的，定位完就该走），只在「兜底真的发生」时保留**一条整个会话只报一次**的 INFO（对方这个 bug 每次点击都会触发，不做去重会刷屏）。**⚠️ 删除时踩了一次自己的坑**：用「按行号窗口读取 → 整段替换」的方式删 javadoc，结果**多删了一个字段声明**（`VANILLA_RATE_ROW_1`）⇒ 编译报「找不到符号」两处，靠错误行号反查补回。教训：**删代码不要按行窗口整段替换，用「最小唯一片段」做 old_string**。
+| 2026-10 | **神化台面数值兜底（两层）—— 上一版被它自己覆盖了**。作者复测两次仍不进阶，日志还是 `位阶=0.0 阿卡那=0.0 量子化=0.0 ⇒ 概率=0.0%`。查明：我在 `clickMenuButton` **HEAD** 把 `stats` 修好之后，它自己的代码在**同一次调用中途**又会经过 `slotsChanged() → gatherStats()`（同样是 `access.evaluate`，access 为 NULL）把它**写回 INVALID**，而我在 **RETURN** 才读 `stats` ⇒ 读到的是被覆盖后的空值。**修法（两层）**：(a) HEAD 修好时**同时缓存**到自己的 `@Unique` 字段；(b) RETURN 若读到空值，先用缓存，缓存也没有就**就地用 `player.level() + pos` 重算**。另外加了一行 `[UE] 台面数值兜底（结尾）：…` 日志，下次一眼能看出兜底有没有生效。**已记成 §3 P1-XX**（规矩：要用的值在 HEAD 缓存；RETURN 读「它中途可能被改的字段」不可信；判空用它的 INVALID 特征而不是 null）。**⚠️ 提醒作者：改完必须重新构建并重启客户端**，跑着的游戏里还是旧类。
+| 2026-10 | **🔴 找到「满配也永不进阶」的真根因（神化台面数值恒为 0）**。判定日志一次就定位：`行=2 附魔能力/位阶=0.0 阿卡那=0.0 量子化=0.0 量子稳定=false 神化=true ⇒ 概率=0.0%` —— 走的是神化路径，但**三个数值全是 0**。读对方源码：`ApothEnchantmentMenu.gatherStats()` 是 `this.access.evaluate((world, pos) -> { this.stats = gatherStats(world, pos); ... }).orElse(this)`，而它的**第一个构造函数传的正是 `ContainerLevelAccess.NULL`** ⇒ 那个 lambda **根本不执行** ⇒ `stats` 永远停在 `EnchantmentTableStats.INVALID`（位阶/阿卡那/量子化 全 0）⇒ 我们算出的概率**恒为 0%**。**修法**：`ApothEnchantmentMenuMixin` 在 `clickMenuButton` HEAD 做兜底 —— `stats` 看起来是空（三项全 0）时，用 **`player.level()` + `pos`** 直接调 `EnchantmentTableStats.gatherStats` 重算并写回（同一个 API，只是绕开那个可能为 NULL 的 `access`）；只在「空」时覆盖，不跟它自己的同步打架。**顺带**：它自己的 `clickMenuButton` 也是读这个 `stats` 的 ⇒ 兜底之后**它的附魔等级也会恢复正常**（此前大概率也一直在用 0 位阶）。**验证**：服务端探针 —— 无书架的台子位阶 0（反例）、**摆满书架后位阶 30**、用它算第 3 行概率 **15%**（不再是 0）。**⚠️ 我的断言写错了**：原版书架 15 点上限不适用于神化（它算两圈，实测 32 个书架 ⇒ 位阶 30），所以「位阶 100」需要更好的书架。
+| 2026-10 | **附魔台进阶：加判定日志 + 编辑台写回后立刻重建网格**。作者反馈「满位阶满阿卡那仍不触发，只有 `/ue guarantee` 才出进阶」。**① 先证明代码算得对**：新增配置 `logAscensionRolls`（默认开），每次判定写一行 —— `[UE] 附魔台进阶判定：行=2 附魔能力/位阶=100.0 阿卡那=100.0 量子化=100.0 量子稳定=false 神化=true ⇒ 概率=100.0%`。服务端探针实测：**满配（位阶100+阿卡那100）20/20 必出**、**半配（位阶100、无阿卡那）106/200 ≈ 50%**、**位阶 0 ⇒ 0/50 永不触发**、指令仍可强制 —— 机制本身没问题，所以游戏里不触发一定是**运行时某一项为 0 或配置文件没更新**，日志会直接指出是哪一项。**② ⚠️ 我自己又被随机源坑了一轮**：上一版探针用 `RandomSource.create(500+i)`（连续种子）测 50%，得到「0/200」，差点当成 bug 去改代码；实测连续种子的**首次** `nextDouble()` 全挤在 0.685~0.758（20/20 ≥ 0.5）。已记成 §3 **P2-XX**（规矩：验概率必须用无种子源；断言失败先把实际概率打出来）。**③ 编辑台**：`addEnchantment` 的**两个重载都显式写描述符**注入（只写方法名遇重载时落到哪个不确定），并在写回成功后**立刻调用它自己的** `genEnchantedBookCache()` + `updateEnchantedBookSlots()` 重建右侧网格（作者反馈「放进去后右侧不同步，拿走再放回才对」）。
+| 2026-10 | **右侧网格同步 + 概率锚点定稿**。**① 网格不同步**（作者：放进载体书后物品成了进阶形态，但右侧书槽仍是普通书，拿走物品再放回才刷新）。原因：右侧网格是 `genEnchantedBookCache()` **按物品现算的缓存**（物品附魔 → 逐条做成书 → 铺进槽位），我们写回进阶记录之后**没人去重建它**。修法：在菜单对账（`clicked` / `quickMoveStack` / `removed` 之后）里，只要有改动就调用**它自己的**两个公开刷新方法 `genEnchantedBookCache()` + `updateEnchantedBookSlots()`（前者内部先 `enchantmentsOnCurrentTool.clear()`，幂等；都是它自己在槽位变化时用的那一套，不碰槽 0 的物品）。**② 概率按作者给的三个锚点定稿**：无神化 **15 点附魔能力 + 第 3 行 ⇒ 30%** ⇒ 每点 `0.30/15 = 0.02`；有神化 **位阶 100 + 第 3 行 ⇒ 50%** ⇒ 每点 `0.50/100 = 0.005`；**阿卡那 100 ⇒ +50%** ⇒ 每点 `0.005`（与位阶那条**相加** ⇒ 位阶 100 + 阿卡那 100 = **100% 满配必出**）。第 1/2 行按同一比率衰减（无神化 1 : 2 : 4；有神化 1 : 2.5 : 5）⇒ 默认值最终为：`vanillaRateRow1/2/3 = 0.005 / 0.010 / 0.020`、`apothicRateRow1/2/3 = 0.001 / 0.0025 / 0.005`、`arcanaBonusPerPoint = 0.005`。**⚠️ 本轮发现 `UEConfig.java` 里的这七个值与我上次写入的不符**（作者手动改过），已按锚点整段重写。**⚠️ 已有存档的 `config/ultraenchantment-common.toml` 不会被新默认值覆盖** —— 必须删掉该文件（或手改这七个键）才生效，探针也是先删 `run/config/...toml` 才验的。**验证**：服务端探针 **14/14** —— 无神化 15 点第 3/2/1 行 = 30% / 15% / 7.5%、10 点第 3 行 = 20%、无神化不吃阿卡那（反例）；神化位阶 100 的 50% / 25% / 10%；阿卡那 100 = +50%、位阶 50 + 阿卡那 100 = 75%、满配 = 100%、半配 = 25%（反例）；量子稳定 ×1.5 仍然生效且封顶 1.0。
+| 2026-10 | **编辑台「外面的书放进去」链路 + 神化曲线等级恒为 1（三个根因）**。**① 书放进槽位不走 addEnchantment**：作者实测「外部载体书放进槽位后物品上仍是普通附魔」。查明「放进槽位」这一步不经过 `addEnchantment`（那是点网格条目才走的），所以挂在它上面的写回钩子根本不触发。补两刀：(a) 书槽 mixin 增加 `setByPlayer` 的 TAIL —— 放进来的是载体书就立刻把条目落到槽 0 的物品上；(b) 菜单对账时**扫一遍所有槽位**，槽里放着载体书就落到物品上。同时把 `applyTo` 改成**从物品自己的附魔组件里取 Holder**（不再按 id 查注册表）⇒ 写回去的 Holder 天然属于这一侧，客户端路径也不会踩 P0-17。**② 神化曲线等级恒为 1 —— 三个独立原因**：(a) `TableAscension.Params` **根本没有 quanta 字段**，而我把 `params.arcana()` 当 quanta 传进了 `AscensionChance.level` ⇒ 量子化从未生效、阿卡那反倒顶替了它；已补 `quanta` 字段 + `Params.vanilla()/apothic()` 两个工厂，阿卡那不再兼任。(b) `stats` 由 `slotsChanged` 里的 `gatherStats()` 填，若那一刻槽位没变过就可能停在 `INVALID`（**位阶 0 ⇒ 等级上限 1 ⇒ 曲线等级恒 1**）；神化菜单 mixin 现在在 `clickMenuButton` HEAD 先 `gatherStats()` 刷新一次。(c) ⚠️**最隐蔽的一个**：原来是「先在 [1, 位阶/3] 里掷、最后再用该阶曲线上限夹结果」——位阶 90 时掷出 1..30 而锋利高阶的曲线上限只有 5 ⇒ **六分之五的结果都被夹成 5**（实测端到端平均 4.65/5，几乎恒顶格），量子化与 `levelDivisor` 几乎失效。改成**先把上限夹到 min(该阶曲线上限, 位阶/levelDivisor)、再在 [1,上限] 内掷** ⇒ 位阶决定「能掷多高」、量子化决定「掷得多高」。**验证**：服务端探针 **12/12** —— Params 真的带 quanta（且 vanilla 工厂的 arcana 为 0）、纯函数「位阶 90 上限到 30」且量子化 100 把平均从 15.3 抬到 22.0、端到端**基线 3.06 / 只给阿卡那 3.06 / 给满量子 4.14**（含两条反例：基线不再几乎顶格、等级不超过阶上限 5）。**⚠️ 提醒**：曲线等级的上限受**该阶的 `max_level`**（沿用根源附魔原版值，锋利高阶 = 5）约束，所以位阶再高也不会超过它 —— 这是既有设计（§7 第 1 条），不是 bug。
+| 2026-10 | **编辑台：网格里的进阶条目改成我们的载体书（这才是「放进去」的真正入口）**。作者反馈「还是只有原版附魔书 / 进阶书放进去只出来普通附魔」。根因查清：网格来自 `genEnchantedBookCache()`，它把物品的**每条附魔各做成一册原版附魔书**存进字段 `enchantmentsOnCurrentTool`，再铺进网格槽位（槽位是 `itemHandler` 的一部分）；而**玩家点选的就是网格里这些书** —— 点原版书时 `getEnchantmentInstanceFromEnchantedBook` 给出的是「根附魔 @ 原版等级」，`addEnchantment` 写进物品的也只是普通附魔；而我们的 `applyTo` 只认**载体书载荷**（原版书没有载荷）⇒ 什么都不写 ⇒ **出来就是普通附魔**。修法：新增 `AscensionBookIO.inscriptionFor(item, vanillaBook)`，并在 `genEnchantedBookCache` 的 RETURN 处把**有进阶记录的条目替换成对应阶级的载体书**（阶级与曲线等级都跟物品上的记录走），整条链路这才自洽：**网格显示载体书 → 点它 → 读出载荷 → 写回进阶记录**；顺带「为什么还是只有原版附魔书」也一并解决（网格里显示的就是我们那本书的图标）。⚠️ 这个替换**不碰注册表 Holder**（只读物品组件 + 造我们自己的物品），所以**两侧都跑也安全**，不会重蹈 P0-17。**验证**：服务端探针 **13/13** —— 进阶条目换成载体书、阶级 = 超级、等级 = 物品上的曲线等级 4、只含那一条；反例：普通附魔不换、已是载体书不重复处理、无记录物品不换；链路：从替换后的书读出实例 → `applyTo` 写回「超级 + 曲线 4」。
+| 2026-10 | **神化侧同类配置项 + 修掉自定义附魔台的客户端崩溃**。**① 神化侧配置**（作者要求「仿照刚刚给的原版参数，按有神化的实际情况加类似项」）：新增 **15 个键** —— (a) **条数** = 位阶分档表：`apothicEternaBand1/2/3`（默认 30/45/90）＋ 四档的 `apothicCountBand{1..4}Min/Max`（默认 1/1、1/2、1/3、2/3），等价于原来的「≤30→1；30~45→1..2；45~90→1..3；≥90→2..3」；(b) **目标阶级权重** `apothicTierAdvanced/Super/Ultra`（默认 **1/0/0 = 只进一阶**，保持既有行为；想跳阶照无神化那样填）；(c) **等级系数** `apothicLevelFactorAdvanced/Super/Ultra`（默认 **全 1.0**，乘在量子化等级上；想复刻「阶级越高越不吃加成」就填 0.6/0.4/0.2）。同时把两条路径的「掷目标阶级 → 落到实际存在的阶段」**统一成一个函数** `TableAscension.stageFor`（都带「至少进一阶 + 缺阶回退」）。**② 修掉崩溃（根因在册为 §3 P0-17）**：作者用编辑台当场崩客户端，`crash-2026-10-08_17.53.36-client.txt` 的栈是 `EnchantmentUtils.translateEnchantment(:22) → addEnchantment → clicked`，异常 `NoSuchElementException`。查他们字节码：`translateEnchantment` 是 `registry.getResourceKey(enchantment).get()`；而**原版容器点击在客户端也会本地跑一遍**（`MultiPlayerGameMode.handleInventoryMouseClick` 的预测），我在客户端那条路径上返回了**服务端注册表的 Holder**（`UELookups` 类文档正好警告过这件事）⇒ 客户端注册表反查不到 ⇒ `.get()` 抛。修法：`getEnchantmentInstanceFromEnchantedBook` 钩子改成按 `this.world.isClientSide()` 取注册表；`addEnchantment` 钩子的**写组件只在服务端做**（客户端写会踩 P0-16 那类掉线）。**验证**：服务端探针 **16/16** —— 位阶分档（30→1 / 40→1..2 / 60→1..3 / 120→2..3 且见过 3）、默认权重下 2 万次全掷到高阶（= 只进一阶）、三个等级系数默认 1.0、端到端「神化路径仍只到高阶且曲线等级 ≥1」、toml 里四组键齐全（含无神化那三组）。**⚠️ 客户端那条路径只能靠代码推理 + 崩溃栈定位，没有客户端点击实测**（跑不动真人点击），请作者复测。
+| 2026-10 | **无神化进阶：条数 / 阶级权重 / 等级系数全量可配 ＋ 编辑台书槽放行载体书**（作者四条要求）。**① 条数可配**：`vanillaCountMin` / `vanillaCountMax`（默认 **1..2**），替代原来写死的「恒 1 条」。**② 等级系数按阶级可配**：`vanillaLevelFactorAdvanced/Super/Ultra`（默认 **0.60 / 0.40 / 0.20**）—— 进阶后的**曲线等级 = 这条附魔当前等级 × 目标阶级系数**（至少 1，且不超过该阶曲线上限）。语义：**阶级越高越稀有、越不受附魔能力影响**（作者最初发错方向「越高越高」，随后更正为「也越低」）。**③ 目标阶级权重可配**：`vanillaTierAdvanced/Super/Ultra`（默认 **70% / 25% / 5%**）—— 无神化不再「只进一阶」，掷到哪一档就进哪一档；**缺阶回退**：目标档没条目时向上找，再退到「比当前高且存在」的最高档（例如 `protection` 只有高阶 ⇒ 永远只到高阶），**绝不凭空造条目**；已是最高档则不进阶。**④ 附魔编辑台：书槽放行我们的载体书**。根因（反编译实证）：它的两个书槽的 `mayPlace` **先判物品类型**再问菜单 —— `stack.getItem() == Items.ENCHANTED_BOOK && !handler.getStackInSlot(0).isEmpty() && (Config.ignoreEnchantmentLevelLimit || menu.checkCanPlaceEnchantedBook(stack))` ⇒ 我们的书是另一个物品，**第一关就被拒**，上一轮只钩 `checkCanPlaceEnchantedBook` **根本轮不到**。新增 `mixin/compat/EnchantingCustomBookSlotMixin`（`targets` 指向两个匿名书槽内部类），HEAD 拦下：是我们的载体书就按它其余前置条件（台里已有物品）给结果。**验证**：服务端探针 **17/17** —— 条数恒在 1..2 且两种都出现、**20 万次抽样实测分布 70.0 / 25.0 / 5.0%**、等级系数 10→6 / 10→4 / 10→2（含「基础 1 级也不低于 1」反例）、端到端「曲线等级 = 基础 4 × 该阶级系数」、**缺阶回退：protection 400 次永远只到高阶**、前提断言 `super/protection` 确实不存在。**顺带补上一处验证漏洞**：此前只验「服务器能启动」，那**不足以**排除「mixin 被门控静默跳过」；本次改用启动日志里的 `[UE-compat] 「X」兼容补丁：…已安装，启用` 逐条核对，**五个 compat mixin 全部启用**。
+| 2026-10 | **附魔编辑台兼容（续）：让我们的载体书（铭刻书）能进出那个台子**。作者澄清需求 = 「能从里面拿下进阶附魔书（对应的铭刻），也能放进去进阶附魔书」。反编译实证它的两个方向都只认 `minecraft:enchantments`：**拿下** = `exportAllEnchantments()` 把物品附魔导出成 **`Items.ENCHANTED_BOOK`** 塞进背包并清空槽位（进阶身份丢）；**放进去** = `checkCanPlaceEnchantedBook` / `getEnchantmentInstanceFromEnchantedBook` 只读原版组件（我们的书在它眼里是**空书**，直接拒绝）。新增 `logic/AscensionBookIO`（载体书 ↔ 原版附魔的翻译）+ 在 `EnchantingCustomTableMixin` 上挂**四个新钩子**：① `exportAllEnchantments` HEAD —— 能表达就导出**载体书**（同阶级合成一本）；跨阶级/混基础阶时导出「**原版书 + 我们的进阶组件**」兜底（身份不丢）；纯基础阶时**不插手**（交给它原样处理）；② `checkCanPlaceEnchantedBook` HEAD —— 我们的书放行；③ `getEnchantmentInstanceFromEnchantedBook` HEAD —— 把载荷翻译成「根附魔 + 书上等级」的实例列表；④ `addEnchantment` RETURN —— 它写完原版附魔后把进阶记录补上（**只对物品上确实已有的条目**生效，避免无中生有）。为拿台子的槽位与玩家，用 `@Shadow` 了它的两个私有字段 `itemHandler` / `entity`（`exportAllEnchantments()` 无参，没法从上下文取；改名会在**加载期**报错，不是静默失效）。**验证**：服务端探针 **22/22** —— 认书（载体书 / 原版书 / 空物品三态）、读到正确实例（根附魔 + 等级）、放进去写入记录且存储等级回到阶上限、**反例·物品上没有那条附魔就不许写**、拿出来得到正确阶级与条目的载体书、**反例·跨阶级导不出载体书（走原版书兜底且带组件）**、**反例·纯基础阶双方都不插手**、**反例·记录还在但附魔已被删掉的不导出**；mixin 的 shadow 与五个注入点由 `runServer` 正常启动证明。**⚠️ 探针第三次踩同一个数据包坑**：跨阶级用例又拿了 `protection`（它**只有 `advanced` 一阶**，`super/protection` 不存在），`orElseThrow` 抛异常 —— 已改用 `knockback` 并把原因写进探针注释。**已知边界**：编辑台「放入」写的是**原版附魔等级**，所以载体书里的曲线等级会先按原版等级落到物品、再被 `writeAscension` 归一（存储等级 = 该阶上限）——这是既有不变量，不是 bug。
+| 2026-10 | **附魔编辑台（Enchantment Custom Table）兼容：让它的编辑对进阶附魔生效**。**① 定位**：`build.gradle` 里早已挂着 `implementation "maven.modrinth:4TCEiWXa:mXjCNAFv"`（注释「祛魔编辑台兼容」）但一直没实现 —— 那其实是 **Enchantment Custom Table 1.1.7**（modid `enchantment_custom_table`），它有两个台子：`enchanting_custom_table`（改物品上的附魔）与 `enchantment_conversion_table`（专管附魔书的槽位/翻页）。本轮做前者。**② 问题**：它只改 `minecraft:enchantments`、不认我们的 `ascension` ⇒（a）删掉一条进阶附魔后我们的记录还在，玩家之后**再加回**同名附魔（哪怕 1 级）就会把进阶形态**复活**；（b）改等级被我们的结算层覆盖，**编辑像没生效**。**③ 做法**：新增 `logic/AscensionReconcile`（把记录与物品现实对齐）+ `mixin/compat/EnchantingCustomTableMixin`（compat 配置 + `enchantment_custom_table` 门控，挂在它的 `clicked` / `quickMoveStack` / `removed` 之后，遍历 `AbstractContainerMenu.slots` 对账 —— **不碰对方内部字段名**，改名换实现也不跟丢）。反编译确认它的网络包（`EnchantingCustomTableNetData`）只承载**翻页/导出**三种操作，真正的增删改走**容器点击**（它重写了 `clicked`），所以钩这里覆盖面最全。**④ 对账规则（以编辑台为准）**：删掉的 ⇒ 删记录；**改等级的 ⇒ 删记录**（这条退回普通附魔，等级就是玩家设的那个）；没动过的 ⇒ 原样保留；新加的 ⇒ 不管。**为什么「改等级 ⇒ 退回普通附魔」而不是「当成新的曲线等级」**：编辑台界面显示的是**原版存储等级**（我们把它钉在该阶上限，见 `writeAscension`），它无法表达我们的曲线等级；若把玩家的编辑解释成曲线等级，我们随后会把存储等级写回阶上限 ⇒ 玩家屏幕上的数字**跳回去**（看起来仍然是「改了没用」），而且玩家设**超限等级**时还会被我们夹掉。**以编辑台为准**最可预测：你设什么就是什么，代价是这条附魔不再是进阶形态（要保留进阶形态改等级，走升级书 / 图书馆那条路）。**验证**：服务端探针 **15/15** —— 未动过则不动、删一条只掉那一条（反例·**不误伤另一条**）、改等级退回普通且**玩家设的值原样保留**、无组件不凭空写组件、单条未动不改；并确认**编辑台模组在开发环境确实加载**（若没加载，mixin 会被门控跳过，等于没测）。
+| 2026-10 | **三档祛咒石改成三个物品 + 进阶概率全量配置化 + 测试指令**。**① 祛咒石 = 三个物品**（作者要求）：`curative_stone`（高阶）/ `super_curative_stone`（超级）/ `ultra_curative_stone`（究极），后两者**继承**前者（`CurativeStoneItem` → `SuperCurativeStoneItem` / `UltraCurativeStoneItem`，档位由类固定，放在 `content` 包）。**为什么必须改**：单物品 + `curative_tier` 组件靠 `custom_model_data` 换贴图，而 1.21.1 的原版原料**比不了组件**（§3 P1-50）⇒「超级 = 高阶石 + 哭泣黑曜石」「究极 = 超级石 + 金块」这两条配方**没法只认上一级**（究极能拿高阶石跳级）。改成三个物品后，配方中心直接写物品 id 就天然只认上一级，**不再需要自定义原料**，JEI 也**不再需要子类型解释器**（三档天然分开列）。顺带删掉 `curative_tier` 组件、`singleLayerTiered` 模型 helper、JEI 的 `STONE_SUBTYPE`/`stoneKey`，并把语言键改成三个名字（`UEModels` 里三个物品各用自己的阶级贴图）。**⚠️ 存档影响**：旧存档里带 `curative_tier: super/ultra` 的祛咒石现在会被当作**高阶**祛咒石（组件不再被读取）。**② 进阶概率全量配置化**（作者要求）：`UEConfig` 新增 `vanillaRateRow1/2/3`（0.001/0.002/0.004）与 `apothicRateRow1/2/3`（0.001/0.0025/0.005），连同原有的 `arcanaBonusPerPoint` / `stableMultiplier` / `levelDivisor` —— **所有**数值都在 `config/ultraenchantment-common.toml` 可改，调成 1.0 即 100%（测试用）。`AscensionChance` 里的两个硬编码数组已删除，改为读配置。**③ 测试指令**（作者要求）：`/ultraenchantment guarantee <n>`（别名 `/ue`，OP 2 级）—— 接下来 n 次**确实产生进阶**的附魔台操作必定触发；无参查询、0 清除。次数存玩家附件 `guaranteed_ascensions`（存盘 + 死亡保留），**只有真的进阶了才扣一次**（附几次白板不浪费）。**验证**：服务端探针 **40/40** —— 三档物品与「档位→物品」反查、三条配方产出与「中心只认上一级」的跨档反例、配置默认值与 toml 键存在、指令的设/扣/清零与「没进阶不扣次数」反例。**④ 第 3 条（祛魔编辑台兼容）**：查明是 Modrinth 的 **Enchantment Custom Table**（`enchantment_custom_table` 1.1.7，build.gradle 里早已挂 `implementation` 依赖但兼容未做），它有两个台子 —— `enchanting_custom_table`（改物品上的附魔）与 `enchantment_conversion_table`（专管附魔书：`getEnchantedBook` / `pickEnchantedBook` / 翻页）。**具体要兼容哪种行为待作者确认**。
 | 2026-10 | **三条祛咒石配方**（作者给的形状）。祛咒石是**一个物品 + `curative_tier` 组件**的三个形态，所以三条配方都是 `XXX/XYX/XXX`：① **高阶** = 8 × 附魔之瓶 围 **石头标签**（`c:stones`，已核实 NeoForge 确实有这个物品标签）；② **超级** = 8 × 哭泣的黑曜石 围 **高阶**祛咒石；③ **究极** = 8 × 金块 围 **超级**祛咒石。产出用 `result.components` 指定阶级。**⚠️ 本轮踩到并已记进 §3 的坑（P1-50）**：1.21.1 的原料**比不了组件** —— 中心格写 `{"item":..., "components": {...}}` **不报错但被静默忽略**，中心照样吃任意阶级 ⇒ 究极配方能拿高阶石**跳级**（省一圈哭泣黑曜石），超级配方能把究极石**降级**。改用 NeoForge 自带的自定义原料 `{"type":"neoforge:components","items":...,"components":{...}}`（`DataComponentIngredient`）后恢复正常。**注意这个坑是探针抓到的**：第一版只断言了「中心吃对的那个阶级」（全绿），补上「中心**不**吃其它阶级」的反例才暴露。**验证**：服务端探针 **17/17**（三条配方存在、产出阶级正确、材料数量 8/1、`c:stones` 覆盖石头与深板岩且不吃泥土、三条跨阶级反例）。**副产品**：为它临时写的自定义原料类已删除（NeoForge 自带的不必自己造）。
 | 2026-10 | **宝典产出改为「我们的载体书」+ 文档整理**。**① 产出改写**：神化三类宝典原本产出**原版附魔书**（只带 `minecraft:enchantments`），进阶身份要么丢、要么只能以「原版书 + 我们的组件」这种四不像存在。现在分两条路：**幸存条目全是进阶的** ⇒ 产出换成**我们的载体书**（`advanced_enchanted_book` + 铭刻载荷；图书馆/铁砧/剩菜机制里的一等公民，零丢失），**跨多个进阶阶级**时条目最多的一组占产出、其余各阶级在取件时各补一本（复用既有的「剩菜书」机制）；**夹杂基础阶** ⇒ 产出保持原版附魔书（基础阶没有别的家），但把进阶身份写进 `ascension` 组件带走。全基础阶时**完全不改写**，神化行为零变化。**② 取件逻辑收成一条**：「武器上有、却不在产出里的进阶记录 ⇒ 各补一本铭刻书」——一条规则同时覆盖「被拆解宝典随机丢掉的那一半」（作者方案 B）与「跨阶级没装进产出的那部分」，**不用反推神化的随机数、不用跨事件存状态**（判定全部现场可读，沿用 `AnvilTakeEvents` 的「同一份输入重跑一遍」）。**⚠️ 顺带否掉一条看似省事的路**：「让载体书直接承载基础阶」——`BookSpecs.Inscription.tier` 是**书级单值**，改它要动 `mergeBooks`（合并要求同阶级，改后基线阶+高阶合并成什么？）与**组件 codec**（存档格式），代价远大于收益。**③ 已知缺口（未修，等作者定）**：混合情形产出原版附魔书，而 `LibraryMenu` 存入分支只看「是 `enchanted_book` + 有附魔」⇒ **不读 `ascension` 组件**、一律按基础阶入库，进阶身份会在存入时丢。修法二选一：存入分支认组件（小），或上面那条（大）。**验证**：服务端探针 **29/29** —— 全进阶→载体书、跨阶级补发、混合→原版书+组件（含「组件里没有基础阶那条」的反例）、全基础阶不改写、提取清武器、拆解返还。**④ 文档整理**（作者要求「保持工程向纯洁性」）：§7 删掉已完成条目（祛咒石贴图、代理确认）并重新编号、把配方锁死写成一条；头部陈旧的「v4 提案·尚未动代码」改成实情（v5 起已是书库存+等级单位）；README「配方与战利品尚未接入」改成实情；`docs/ascension-effects-v3.md` 的「阻塞 3 处」改成「均已落盘」并压缩。
 | 2026-10 | **`ascension_table.json` 一并锁定**（作者追加明令）。至此**两个配方文件都被锁死**：`advanced_enchantment_library_from_apoth.json`（8 哭泣黑曜石 + 神化魔咒图书馆 → 我们的进阶附魔图书馆）与 `ascension_table.json`（8 经验瓶 + 高级灌注台 → 进阶台，`enchantinginfuser` 门控）。**此后不得再有任何相关改动**，理由见 §7 第 11 条。 |

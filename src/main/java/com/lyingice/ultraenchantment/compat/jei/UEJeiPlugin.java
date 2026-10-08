@@ -81,20 +81,6 @@ public class UEJeiPlugin implements IModPlugin {
         }
     };
 
-    /** 祛咒石：按阶级区分。 */
-    private static final ISubtypeInterpreter<ItemStack> STONE_SUBTYPE = new ISubtypeInterpreter<>() {
-        @Override
-        public Object getSubtypeData(ItemStack stack, UidContext context) {
-            return stoneKey(stack);
-        }
-
-        @Override
-        public String getLegacyStringSubtypeInfo(ItemStack stack, UidContext context) {
-            return stoneKey(stack);
-        }
-    };
-
-    @Override
     public ResourceLocation getPluginUid() {
         return PLUGIN_UID;
     }
@@ -131,13 +117,14 @@ public class UEJeiPlugin implements IModPlugin {
         // 铁砧是三类操作的共同催化剂；书本身也放上去，方便「拿着书按 R」时能跳到这里。
         registration.addRecipeCatalysts(UEJeiRecipeTypes.ANVIL,
                 Items.ANVIL, Items.CHIPPED_ANVIL, Items.DAMAGED_ANVIL,
-                UEItems.ADVANCED_ENCHANTED_BOOK.get(), UEItems.CURATIVE_STONE.get());
+                UEItems.ADVANCED_ENCHANTED_BOOK.get(), UEItems.CURATIVE_STONE.get(),
+                UEItems.SUPER_CURATIVE_STONE.get(), UEItems.ULTRA_CURATIVE_STONE.get());
     }
 
     @Override
     public void registerItemSubtypes(ISubtypeRegistration registration) {
         registration.registerSubtypeInterpreter(UEItems.ADVANCED_ENCHANTED_BOOK.get(), BOOK_SUBTYPE);
-        registration.registerSubtypeInterpreter(UEItems.CURATIVE_STONE.get(), STONE_SUBTYPE);
+        // 祛咒石三档是三个物品，JEI 天然分开列 —— 不再需要子类型解释器。
     }
 
     /**
@@ -274,11 +261,6 @@ public class UEJeiPlugin implements IModPlugin {
             case UPGRADE -> "upgrade|" + json(BookSpecs.Upgrade.CODEC,
                     stack.get(UEComponents.UPGRADE_SPEC.get()));
         };
-    }
-
-    private static String stoneKey(ItemStack stack) {
-        var tier = stack.get(UEComponents.CURATIVE_TIER.get());
-        return tier == null ? "curative|none" : "curative|" + tier.id();
     }
 
     /** 用数据组件自己的 codec 序列化成 JSON 当键：稳定、可读、不可能漏字段。 */

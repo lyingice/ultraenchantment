@@ -57,18 +57,6 @@ public final class UEComponents {
                     .networkSynchronized(BookSpecs.Upgrade.STREAM_CODEC)
                     .build());
 
-    /**
-     * 祛咒石的目标档位。
-     *
-     * <p>类型是 {@link AscensionTier}（必非基础阶）——祛咒石只作用于已进阶的附魔，
-     * 「基础阶祛咒石」是无意义的概念。
-     */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<AscensionTier>> CURATIVE_TIER =
-            COMPONENTS.register("curative_tier", () -> DataComponentType.<AscensionTier>builder()
-                    .persistent(AscensionTier.CODEC)
-                    .networkSynchronized(AscensionTier.STREAM_CODEC)
-                    .build());
-
     // ── 物品读写便捷方法 ────────────────────────────────────────────────
     // 放在这里而不是 AscensionData：content 包保持纯数据、不反向依赖 registry 包。
 
@@ -87,9 +75,14 @@ public final class UEComponents {
         }
     }
 
-    /** 读取祛咒石的档位；组件缺失时按 {@link AscensionTier#ADVANCED} 处理。 */
+    /**
+     * 读取祛咒石的档位 —— <b>档位来自物品本身</b>（三个物品，见 {@code CurativeStoneItem}）。
+     *
+     * <p>不是祛咒石时兜底 {@link AscensionTier#ADVANCED}：调用方应先确认物品类型
+     * （{@code UEItems.isCurativeStone}），这里只保证不返回 null 引起 NPE。
+     */
     public static AscensionTier curativeTierOf(ItemStack stack) {
-        AscensionTier tier = stack.get(CURATIVE_TIER.get());
+        AscensionTier tier = com.lyingice.ultraenchantment.content.CurativeStoneItem.tierOf(stack);
         return tier == null ? AscensionTier.ADVANCED : tier;
     }
 }

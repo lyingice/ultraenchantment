@@ -50,7 +50,11 @@ public class UECompatMixinPlugin implements IMixinConfigPlugin {
             // 神化附魔台的「进阶」注入：目标类只存在于 Apothic Enchanting 里
             "ApothEnchantmentMenuMixin", "apothic_enchanting",
             // 9 种装备宝典的搬运补丁
-            "TomeItemMixin", "apothic_enchanting");
+            "TomeItemMixin", "apothic_enchanting",
+            // 附魔编辑台（Enchantment Custom Table）：让它的编辑对进阶附魔生效
+            "EnchantingCustomTableMixin", "enchantment_custom_table",
+            // 编辑台的书槽：放行我们的载体书（它的 mayPlace 先判物品类型，轮不到菜单那一关）
+            "EnchantingCustomBookSlotMixin", "enchantment_custom_table");
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {

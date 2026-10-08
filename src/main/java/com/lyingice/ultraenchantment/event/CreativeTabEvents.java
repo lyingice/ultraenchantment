@@ -367,12 +367,9 @@ public final class CreativeTabEvents {
         return book;
     }
 
+    /** 祛咒石三档现在是三个物品，直接取对应物品即可（不再需要组件 + custom_model_data）。 */
     private static ItemStack curativeStone(AscensionTier tier) {
-        ItemStack stone = new ItemStack(UEItems.CURATIVE_STONE.get());
-        stone.set(UEComponents.CURATIVE_TIER.get(), tier);
-        // 祛咒石是单层模型，谓词直接编码阶级。
-        stone.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(tier.asViewTier().modelData()));
-        return stone;
+        return new ItemStack(UEItems.curativeStoneOf(tier));
     }
 
     // 书的构造（物品 + 载荷 + 材质谓词）统一走 BookFactory，本类不再自己拼 custom_model_data。

@@ -1,4 +1,4 @@
-// 1.21.1	2026-10-04T14:53:08.7990313	Item Models: ultraenchantment
+// 1.21.1	2026-10-08T17:10:26.082526	Item Models: ultraenchantment
 3227a8ec223111bc46473e64775b2dbbb8e6aad1 assets/ultraenchantment/models/item/advanced_enchanted_book.json
 efe38da52400453b2133806b599ea0817d09b0a8 assets/ultraenchantment/models/item/advanced_enchanted_book_ascension_advanced.json
 56c84dc56bcb91a86f4ce4f93cb958a3cbfd3941 assets/ultraenchantment/models/item/advanced_enchanted_book_ascension_super.json
@@ -8,6 +8,6 @@ b3002f327d2adab64ec480577699de1e0b040cc6 assets/ultraenchantment/models/item/adv
 f6b94bf5c1f1bc6afb790bca97dcdbfa2b4c31b7 assets/ultraenchantment/models/item/advanced_enchanted_book_upgrade_advanced.json
 30cc3be3bd2cb31ee724337859ac7861be1d449e assets/ultraenchantment/models/item/advanced_enchanted_book_upgrade_super.json
 fc4c2a2f6b9d7d7d5bfb0893ce54750569ed256d assets/ultraenchantment/models/item/advanced_enchanted_book_upgrade_ultra.json
-eef9ebd7c6d7abfc28de71477949c9fa0a43ca28 assets/ultraenchantment/models/item/curative_stone.json
-c1dcd1914e969a9622b3388dd2b8280c3b8bad88 assets/ultraenchantment/models/item/curative_stone_super.json
-0a8b296c742946131a1181b76a4202b152fee098 assets/ultraenchantment/models/item/curative_stone_ultra.json
+42d6529e1423587af1eb30d91363fc10d8b9c232 assets/ultraenchantment/models/item/curative_stone.json
+c1dcd1914e969a9622b3388dd2b8280c3b8bad88 assets/ultraenchantment/models/item/super_curative_stone.json
+0a8b296c742946131a1181b76a4202b152fee098 assets/ultraenchantment/models/item/ultra_curative_stone.json

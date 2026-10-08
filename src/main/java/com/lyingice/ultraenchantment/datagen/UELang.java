@@ -32,7 +32,9 @@ public class UELang extends LanguageProvider {
         // 进阶附魔书是**一个**物品，三大科目共用同一个本地化键。
         // 这与原版 enchanted_book / smithing_template 的做法一致。
         add(itemKey("advanced_enchanted_book"), this.chinese ? "进阶附魔书" : "Advanced Enchanted Book");
-        add(itemKey("curative_stone"), this.chinese ? "祛咒石" : "Curative Stone");
+        add(itemKey("curative_stone"), this.chinese ? "高阶祛咒石" : "Curative Stone");
+        add(itemKey("super_curative_stone"), this.chinese ? "超级祛咒石" : "Super Curative Stone");
+        add(itemKey("ultra_curative_stone"), this.chinese ? "究极祛咒石" : "Ultra Curative Stone");
 
         // ── 方块名（v3.4）──
         //

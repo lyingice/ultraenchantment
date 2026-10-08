@@ -56,14 +56,42 @@ public final class UEItems {
                     () -> new TieredItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
 
     /**
-     * 祛咒石——单例物品，三档阶级由 {@code curative_tier} + {@code custom_model_data} 区分。
+     * 祛咒石——<b>三个物品</b>（高阶 / 超级 / 究极），不是单物品 + 组件。
+     *
+     * <p>理由见 {@link com.lyingice.ultraenchantment.content.CurativeStoneItem} 类文档：
+     * 1.21.1 的原版原料比不了组件，单物品形态下「只认上一级」的升级配方根本写不出来
+     * （AGENT.md §3 P1-50）。
      *
      * <p>16 点耐久使其成为「可损坏物品」，这正是它能被放入原版砂轮第二输入槽的原因
      * （槽位的 {@code mayPlace} 判定为 {@code isDamageableItem()}）。
      */
     public static final DeferredHolder<Item, Item> CURATIVE_STONE =
             ITEMS.register("curative_stone",
-                    () -> new TieredItem(new Item.Properties().stacksTo(1).durability(16).rarity(Rarity.UNCOMMON)));
+                    () -> new com.lyingice.ultraenchantment.content.CurativeStoneItem(
+                            com.lyingice.ultraenchantment.content.AscensionTier.ADVANCED, stoneProperties(Rarity.UNCOMMON)));
+
+    /** 超级祛咒石（继承高阶）。 */
+    public static final DeferredHolder<Item, Item> SUPER_CURATIVE_STONE =
+            ITEMS.register("super_curative_stone",
+                    () -> new com.lyingice.ultraenchantment.content.SuperCurativeStoneItem(stoneProperties(Rarity.RARE)));
+
+    /** 究极祛咒石（继承高阶）。 */
+    public static final DeferredHolder<Item, Item> ULTRA_CURATIVE_STONE =
+            ITEMS.register("ultra_curative_stone",
+                    () -> new com.lyingice.ultraenchantment.content.UltraCurativeStoneItem(stoneProperties(Rarity.EPIC)));
+
+    private static Item.Properties stoneProperties(Rarity rarity) {
+        return new Item.Properties().stacksTo(1).durability(16).rarity(rarity);
+    }
+
+    /** 某档位对应的祛咒石物品（三档全在；基础阶无意义）。 */
+    public static Item curativeStoneOf(com.lyingice.ultraenchantment.content.AscensionTier tier) {
+        return switch (tier) {
+            case ADVANCED -> CURATIVE_STONE.get();
+            case SUPER -> SUPER_CURATIVE_STONE.get();
+            case ULTRA -> ULTRA_CURATIVE_STONE.get();
+        };
+    }
 
     // ── 方块物品（v3.4 新增：图书馆 + 进阶台）────────────────────────────
     //
@@ -120,6 +148,7 @@ public final class UEItems {
 
     /** 判断是不是祛咒石。 */
     public static boolean isCurativeStone(ItemStack stack) {
-        return !stack.isEmpty() && stack.is(CURATIVE_STONE.get());
+        return !stack.isEmpty()
+                && stack.getItem() instanceof com.lyingice.ultraenchantment.content.CurativeStoneItem;
     }
 }

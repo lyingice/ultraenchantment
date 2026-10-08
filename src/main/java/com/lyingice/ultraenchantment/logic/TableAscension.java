@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.logic;
 
+import com.lyingice.ultraenchantment.content.AscensionTier;
 import com.lyingice.ultraenchantment.content.LineageTier;
 import com.lyingice.ultraenchantment.content.StageDefinition;
 import com.lyingice.ultraenchantment.registry.UEComponents;
@@ -46,7 +47,19 @@ public final class TableAscension {
      * @param stable  量子稳定（无神化恒 false）
      * @param apothic 这一笔是不是神化的附魔台
      */
-    public record Params(int row, double power, double arcana, boolean stable, boolean apothic) {}
+    public record Params(int row, double power, double arcana, double quanta,
+                         boolean stable, boolean apothic) {
+
+        /** 无神化：没有阿卡那/量子化/量子稳定可言。 */
+        public static Params vanilla(int row, double power) {
+            return new Params(row, power, 0.0D, 0.0D, false, false);
+        }
+
+        /** 有神化：四个数值都来自 {@code EnchantmentTableStats}。 */
+        public static Params apothic(int row, double eterna, double arcana, double quanta, boolean stable) {
+            return new Params(row, eterna, arcana, quanta, stable, true);
+        }
+    }
 
     /** 附魔写入<b>之前</b>拍一张快照：附魔 → 等级。 */
     public static Map<Holder<Enchantment>, Integer> snapshot(ItemStack stack) {
@@ -66,13 +79,15 @@ public final class TableAscension {
      *
      * @param before    {@link #snapshot} 的结果（附魔前）
      * @param random    随机源 —— <b>可注入</b>，探针要能钉死它
-     * @param keepLevel 等级策略：{@code true} = 保持原等级（无神化的「等级归一」），
-     *                  {@code false} = 按量子化随机（神化）
      * @return 实际进阶了几条
+     *
+     * <p><b>等级与条数两套规则</b>（都来自 {@link AscensionChance} / {@code UEConfig}）：
+     * 无神化 = 条数 {@code vanillaCountMin..Max}（默认 1..2）、目标阶级按权重 70/25/5、
+     * 等级 = 当前等级 × 该阶级系数（60/40/20%，阶级越高越不吃附魔能力）；
+     * 神化 = 按位阶分档定条数、按量子化定等级。
      */
     public static int apply(Level level, ItemStack stack, @Nullable Player player, Params params,
-                            Map<Holder<Enchantment>, Integer> before, RandomSource random,
-                            boolean keepLevel) {
+                            Map<Holder<Enchantment>, Integer> before, RandomSource random) {
         if (level.isClientSide || stack.isEmpty()) {
             return 0;
         }
@@ -104,34 +119,109 @@ public final class TableAscension {
             return 0;
         }
 
-        // ③ 掷概率
-        if (random.nextDouble() >= AscensionChance.chance(params.row(), params.power(),
-                params.arcana(), params.stable(), params.apothic())) {
+        // ③ 掷概率。指令给的「必进阶」次数直接跳过这一掷（用在测试低概率机制时）。
+        boolean guaranteed = player != null
+                && com.lyingice.ultraenchantment.registry.UEAttachments.guaranteedAscensions(player) > 0;
+        double chance = AscensionChance.chance(params.row(), params.power(), params.arcana(),
+                params.stable(), params.apothic());
+        if (!guaranteed && random.nextDouble() >= chance) {
             return 0;
         }
 
-        // ④ 进阶几条：无神化恒 1；神化按位阶随机（不够的按作者要求作废）
-        int want = params.apothic() ? AscensionChance.count(params.power(), random) : 1;
+        // ④ 进阶几条：无神化可配 min..max（默认 1..2）；神化按位阶随机（不够的按作者要求作废）
+        int want = params.apothic()
+                ? AscensionChance.count(params.power(), random)
+                : AscensionChance.vanillaCount(random);
         int done = 0;
         for (int i = 0; i < Math.min(want, pool.size()); i++) {
             Map.Entry<Holder<Enchantment>, Integer> picked = pool.remove(random.nextInt(pool.size()));
-            Optional<ResourceLocation> next = nextStageOf(stack, picked.getKey());
             ResourceLocation rootId = UERoots.rootOf(picked.getKey().value()).orElse(null);
-            if (next.isEmpty() || rootId == null) {
+            if (rootId == null) {
                 continue;
             }
-            Optional<LineageTier> tier = UERoots.lineageTier(UERoots.tierOfStage(next.get()));
-            if (tier.isEmpty()) {
+            ResourceLocation currentStage = UEComponents.ascensionOf(stack).stages().get(rootId);
+            LineageTier currentTier = currentStage == null
+                    ? LineageTier.NATIVE
+                    : UERoots.lineageTier(UERoots.tierOfStage(currentStage)).orElse(LineageTier.NATIVE);
+            // 两条路径共用同一套「掷目标阶级 → 落到实际存在的阶段」：
+            // 无神化按 70/25/5；神化默认 1/0/0（等价于旧的「只进一阶」）。
+            AscensionTier rolled = params.apothic()
+                    ? AscensionChance.apothicTier(random)
+                    : AscensionChance.vanillaTier(random);
+            Optional<ResourceLocation> next = stageFor(lookup, rootId, currentTier, rolled);
+            if (next.isEmpty()) {
+                continue;
+            }
+            ResourceLocation stageId = next.get();
+            Optional<LineageTier> tier = UERoots.lineageTier(UERoots.tierOfStage(stageId));
+            if (tier.isEmpty() || tier.get() == LineageTier.NATIVE) {
                 continue;
             }
             int maxLevel = StageLookup.maxLevelOf(lookup, tier.get(), rootId, 0);
-            int target = keepLevel
-                    ? Math.max(1, picked.getValue())
-                    : AscensionChance.level(params.power(), params.arcana(), random);
-            AscensionLogic.writeAscension(stack, picked.getKey(), rootId, next.get(), maxLevel, target);
+            if (maxLevel <= 0) {
+                continue;
+            }
+            AscensionTier targetTier = AscensionTier.values()[tier.get().ordinal() - 1];
+            int target;
+            if (params.apothic()) {
+                // 神化：等级先由量子化给出，再乘该阶级的等级系数（默认 1.0 = 不变）
+                // 上限 = min(该阶曲线上限, 位阶推出的上限)，**先夹上限再掷**（否则结果几乎全被夹到顶格）
+                int cap = Math.min(maxLevel, AscensionChance.levelCapFromEterna(params.power()));
+                int raw = AscensionChance.level(cap, params.quanta(), random);
+                target = (int) Math.max(1, Math.round(raw * AscensionChance.apothicLevelFactor(targetTier)));
+            } else {
+                // 无神化：等级 = 这条附魔**当前等级** × 目标阶级系数（阶级越高越不吃附魔能力）
+                int base = currentStage == null
+                        ? Math.max(1, picked.getValue())
+                        : Math.max(1, UEComponents.ascensionOf(stack).tierLevelOf(rootId));
+                target = AscensionChance.vanillaLevel(base, targetTier);
+            }
+            AscensionLogic.writeAscension(stack, picked.getKey(), rootId, stageId, maxLevel,
+                    Math.min(target, Math.max(1, maxLevel)));
             done++;
         }
+        // 只有「确实进阶了」才扣一次：附了几次没料的白板不该白白消耗玩家的次数。
+        if (guaranteed && done > 0) {
+            com.lyingice.ultraenchantment.registry.UEAttachments.setGuaranteedAscensions(
+                    player, com.lyingice.ultraenchantment.registry.UEAttachments.guaranteedAscensions(player) - 1);
+        }
         return done;
+    }
+
+    /**
+     * 掷到的目标阶级 → 落到<b>实际存在</b>的阶段（两条路径共用）。
+     *
+     * <p>规则：
+     * <ol>
+     *   <li>目标至少比当前高一阶（绝不原地不动、绝不降级）；</li>
+     *   <li>从目标档往上找第一个存在条目的阶级；</li>
+     *   <li>目标档完全没铺（数据包只铺了部分阶级，例如 {@code protection} 只有高阶）时，
+     *       退到「比当前高、且存在」的最高档 —— <b>保住进阶，但不凭空造条目</b>；</li>
+     *   <li>都不存在 ⇒ 这条不进阶。</li>
+     * </ol>
+     */
+    private static Optional<ResourceLocation> stageFor(
+            HolderLookup.RegistryLookup<StageDefinition> lookup, ResourceLocation rootId,
+            LineageTier currentTier, AscensionTier rolledTier) {
+        LineageTier lowest = currentTier.next().orElse(null);
+        if (lowest == null) {
+            return Optional.empty();                       // 已是最高档
+        }
+        LineageTier rolled = rolledTier.asLineageTier();
+        LineageTier want = rolled.ordinal() >= lowest.ordinal() ? rolled : lowest;
+        for (LineageTier tier = want; tier != null; tier = tier.next().orElse(null)) {
+            Optional<ResourceLocation> stage = StageLookup.stageIdOf(lookup, rootId, tier);
+            if (stage.isPresent()) {
+                return stage;
+            }
+        }
+        LineageTier best = null;
+        for (LineageTier tier = lowest; tier != null; tier = tier.next().orElse(null)) {
+            if (StageLookup.stageIdOf(lookup, rootId, tier).isPresent()) {
+                best = tier;
+            }
+        }
+        return best == null ? Optional.empty() : StageLookup.stageIdOf(lookup, rootId, best);
     }
 
     /**

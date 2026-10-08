@@ -118,6 +118,8 @@
     "entity.minecraft.villager.ultraenchantment.advanced_enchanter": "Advanced Enchanter",
     "item.ultraenchantment.advanced_enchanted_book": "Advanced Enchanted Book",
     "item.ultraenchantment.curative_stone": "Curative Stone",
+    "item.ultraenchantment.super_curative_stone": "Super Curative Stone",
+    "item.ultraenchantment.ultra_curative_stone": "Ultra Curative Stone",
     "jei.ultraenchantment.action.ascend": "Enchantment Ascension",
     "jei.ultraenchantment.action.merge": "Enchantment Merging",
     "jei.ultraenchantment.action.upgrade": "Enchantment Upgrade",

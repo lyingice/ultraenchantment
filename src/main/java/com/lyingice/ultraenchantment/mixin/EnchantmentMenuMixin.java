@@ -79,8 +79,8 @@ public abstract class EnchantmentMenuMixin {
                 }
             }
             TableAscension.apply(level, stack, player,
-                    new TableAscension.Params(buttonId, power, 0.0D, false, false),
-                    before, level.random, true);
+                    TableAscension.Params.vanilla(buttonId, power),
+                    before, level.random);
         });
     }
 }

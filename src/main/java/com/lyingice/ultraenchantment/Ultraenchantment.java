@@ -79,6 +79,8 @@ public class Ultraenchantment {
         NeoForge.EVENT_BUS.register(BookTooltipEvents.INSTANCE);
         // 交易：附魔进阶师的交易表（1.21.1 无数据包交易，只能走这个事件）。
         NeoForge.EVENT_BUS.register(VillagerTradeEvents.INSTANCE);
+        // 指令：/ultraenchantment guarantee <n>（测试附魔台进阶用）。
+        NeoForge.EVENT_BUS.addListener(com.lyingice.ultraenchantment.command.UECommands::register);
 
         // 可选兼容：提示框渲染栈。未安装时这里什么都不做（不加载对方任何类）。
         com.lyingice.ultraenchantment.compat.tooltip.TooltipStackCompat.init();

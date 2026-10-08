@@ -54,8 +54,10 @@ public class UEModels extends ItemModelProvider {
 
     @Override
     protected void registerModels() {
-        // 祛咒石：单层，阶级切换贴图
-        singleLayerTiered("curative_stone", STONE_TEXTURE);
+        // 祛咒石：三个物品，各用自己阶级的贴图（不再靠 custom_model_data 切档）
+        stoneModel("curative_stone", UETier.ADVANCED);
+        stoneModel("super_curative_stone", UETier.SUPER);
+        stoneModel("ultra_curative_stone", UETier.ULTRA);
 
         // 进阶附魔书：单物品，三科目 × 三阶级
         //
@@ -127,25 +129,10 @@ public class UEModels extends ItemModelProvider {
         }
     }
 
-    /** 单层模型：layer0 随阶级切换。基础模型名即物品名，因此无 {@code custom_model_data} 时显示高阶。 */
-    private void singleLayerTiered(String itemName, String layer0Suffix) {
-        ItemModelBuilder base = singleTexture(
-                itemName,
-                mcLoc("item/generated"),
-                "layer0",
-                modLoc("item/" + UETier.ADVANCED.id() + layer0Suffix));
-
-        for (UETier tier : UETier.values()) {
-            if (tier == UETier.ADVANCED) {
-                continue;
-            }
-            ItemModelBuilder variant = singleTexture(
-                    variantName(itemName, tier),
-                    mcLoc("item/generated"),
-                    "layer0",
-                    modLoc("item/" + tier.id() + layer0Suffix));
-            base.override().predicate(CUSTOM_MODEL_DATA, tier.modelData()).model(variant).end();
-        }
+    /** 祛咒石：一个物品一个模型，贴图按物品自己的阶级取（{@code <tier>_curative_stone}）。 */
+    private void stoneModel(String itemName, UETier tier) {
+        singleTexture(itemName, mcLoc("item/generated"), "layer0",
+                modLoc("item/" + tier.id() + STONE_TEXTURE));
     }
 
     private ItemModelBuilder doubleLayer(String modelName, UETier tier, String layer0Suffix, String overlayTexture) {

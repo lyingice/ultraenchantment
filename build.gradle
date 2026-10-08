@@ -153,6 +153,11 @@ dependencies {
     // Enchanting Infuser + PuzzlesLib：编译期与开发运行期都带上。
     compileOnly enchantingInfuser
     runtimeOnly enchantingInfuser
+    //祛魔编辑台兼容
+    implementation "maven.modrinth:4TCEiWXa:mXjCNAFv"
+    //附魔描述
+    compileOnly "maven.modrinth:UVtY3ZAC:2khC341p"
+    compileOnly "maven.modrinth:uy4Cnpcm:QqntcTCS"
 }
 
 // runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。

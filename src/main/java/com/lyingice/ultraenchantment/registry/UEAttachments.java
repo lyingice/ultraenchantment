@@ -40,4 +40,29 @@ public final class UEAttachments {
                     .sync(CodexData.STREAM_CODEC)
                     .copyOnDeath()
                     .build());
+
+    /**
+     * <b>「必进阶」剩余次数</b>（测试/调试用）。
+     *
+     * <p>由指令 {@code /ultraenchantment guarantee <n>} 设置：接下来 n 次**确实产生了进阶**的
+     * 附魔台操作必定触发，不必再和低概率对赌。
+     *
+     * <p>存盘 + 死亡保留：测试期间重登、死一次都不该丢。
+     */
+    public static final Supplier<AttachmentType<Integer>> GUARANTEED_ASCENSIONS =
+            ATTACHMENT_TYPES.register("guaranteed_ascensions", () -> AttachmentType
+                    .builder(() -> 0)
+                    .serialize(com.mojang.serialization.Codec.INT)
+                    .copyOnDeath()
+                    .build());
+
+    /** 读「必进阶」剩余次数（没有附件时 0）。 */
+    public static int guaranteedAscensions(net.minecraft.world.entity.player.Player player) {
+        return player.getData(GUARANTEED_ASCENSIONS);
+    }
+
+    /** 写「必进阶」剩余次数（负数按 0 处理）。 */
+    public static void setGuaranteedAscensions(net.minecraft.world.entity.player.Player player, int count) {
+        player.setData(GUARANTEED_ASCENSIONS, Math.max(0, count));
+    }
 }

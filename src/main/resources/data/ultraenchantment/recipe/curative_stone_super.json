@@ -3,13 +3,7 @@
   "category": "misc",
   "key": {
     "X": { "item": "minecraft:crying_obsidian" },
-    "Y": {
-      "type": "neoforge:components",
-      "items": "ultraenchantment:curative_stone",
-      "components": {
-        "ultraenchantment:curative_tier": "advanced"
-      }
-    }
+    "Y": { "item": "ultraenchantment:curative_stone" }
   },
   "pattern": [
     "XXX",
@@ -18,9 +12,6 @@
   ],
   "result": {
     "count": 1,
-    "id": "ultraenchantment:curative_stone",
-    "components": {
-      "ultraenchantment:curative_tier": "super"
-    }
+    "id": "ultraenchantment:super_curative_stone"
   }
 }
