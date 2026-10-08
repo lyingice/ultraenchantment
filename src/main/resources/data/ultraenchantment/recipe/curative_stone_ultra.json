@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "X": { "item": "minecraft:gold_block" },
+    "Y": {
+      "type": "neoforge:components",
+      "items": "ultraenchantment:curative_stone",
+      "components": {
+        "ultraenchantment:curative_tier": "super"
+      }
+    }
+  },
+  "pattern": [
+    "XXX",
+    "XYX",
+    "XXX"
+  ],
+  "result": {
+    "count": 1,
+    "id": "ultraenchantment:curative_stone",
+    "components": {
+      "ultraenchantment:curative_tier": "ultra"
+    }
+  }
+}

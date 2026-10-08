@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "X": { "item": "minecraft:experience_bottle" },
+    "Y": { "tag": "c:stones" }
+  },
+  "pattern": [
+    "XXX",
+    "XYX",
+    "XXX"
+  ],
+  "result": {
+    "count": 1,
+    "id": "ultraenchantment:curative_stone",
+    "components": {
+      "ultraenchantment:curative_tier": "advanced"
+    }
+  }
+}
