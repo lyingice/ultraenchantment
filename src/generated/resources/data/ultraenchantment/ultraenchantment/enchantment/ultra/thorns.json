@@ -53,5 +53,26 @@
     },
     "required_level": 3,
     "root": "minecraft:thorns",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "damage_reflect",
+            "chance": {
+                "base": 0.4,
+                "per_level": 0.15
+            }
+        },
+        {
+            "type": "be_attacked",
+            "effects": [
+                {
+                    "duration": {
+                        "base": 100.0,
+                        "per_level": 20.0
+                    },
+                    "effect": "minecraft:weakness"
+                }
+            ]
+        }
+    ]
 }

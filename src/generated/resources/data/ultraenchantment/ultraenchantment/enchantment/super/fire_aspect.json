@@ -18,18 +18,6 @@
         "weight": 2
     },
     "effects": {
-        "minecraft:damage": [
-            {
-                "effect": {
-                    "type": "minecraft:add",
-                    "value": {
-                        "type": "minecraft:linear",
-                        "base": 0.5,
-                        "per_level_above_first": 0.25
-                    }
-                }
-            }
-        ],
         "minecraft:post_attack": [
             {
                 "affected": "victim",
@@ -52,12 +40,28 @@
             {
                 "affected": "victim",
                 "effect": {
-                    "type": "minecraft:ignite",
-                    "duration": {
+                    "type": "minecraft:apply_mob_effect",
+                    "max_amplifier": {
                         "type": "minecraft:linear",
-                        "base": 40.0,
-                        "per_level_above_first": 20.0
-                    }
+                        "base": 0.0,
+                        "per_level_above_first": 0.0
+                    },
+                    "max_duration": {
+                        "type": "minecraft:linear",
+                        "base": 5.0,
+                        "per_level_above_first": 5.0
+                    },
+                    "min_amplifier": {
+                        "type": "minecraft:linear",
+                        "base": 0.0,
+                        "per_level_above_first": 0.0
+                    },
+                    "min_duration": {
+                        "type": "minecraft:linear",
+                        "base": 5.0,
+                        "per_level_above_first": 5.0
+                    },
+                    "to_apply": "ultraenchantment:fire_vulnerability"
                 },
                 "enchanted": "attacker"
             }
@@ -66,5 +70,14 @@
     "next": "ultraenchantment:ultra/fire_aspect",
     "required_level": 2,
     "root": "minecraft:fire_aspect",
-    "tier": "super"
+    "tier": "super",
+    "ue_effects": [
+        {
+            "type": "inferno_might",
+            "multiplier": {
+                "base": 0.5,
+                "per_level": 0.5
+            }
+        }
+    ]
 }

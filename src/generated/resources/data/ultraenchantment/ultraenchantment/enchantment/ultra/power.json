@@ -51,5 +51,20 @@
     },
     "required_level": 5,
     "root": "minecraft:power",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "real_damage",
+            "cap": {
+                "base": 0.5
+            },
+            "chance": {
+                "base": 0.5
+            },
+            "ratio": {
+                "base": 0.2,
+                "per_level": 0.08
+            }
+        }
+    ]
 }

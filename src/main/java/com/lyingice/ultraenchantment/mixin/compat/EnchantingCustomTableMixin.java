@@ -121,14 +121,15 @@ public abstract class EnchantingCustomTableMixin {
         if (item.isEmpty()) {
             return;
         }
-        ItemStack book = AscensionBookIO.exportFrom(item);
-        if (book.isEmpty()) {
-            book = AscensionBookIO.plainExport(item);
-        }
-        if (book.isEmpty()) {
+        // 1.0：普通附魔与进阶附魔拆成两类书——基础阶进原版附魔书，
+        // 进阶阶按阶级各进一本载体书。绝不再把两者混在同一本原版书里。
+        var books = AscensionBookIO.exportAll(item);
+        if (books.isEmpty()) {
             return;                              // 纯基础阶 ⇒ 交给它原样处理
         }
-        this.entity.getInventory().placeItemBackInInventory(book);
+        for (ItemStack book : books) {
+            this.entity.getInventory().placeItemBackInInventory(book);
+        }
         this.itemHandler.setStackInSlot(0, ItemStack.EMPTY);
         this.entity.level().playSound(null, this.entity.blockPosition(),
                 SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.BLOCKS, 1.0F, 1.0F);

@@ -18,18 +18,6 @@
         "weight": 5
     },
     "effects": {
-        "minecraft:armor_effectiveness": [
-            {
-                "effect": {
-                    "type": "minecraft:add",
-                    "value": {
-                        "type": "minecraft:linear",
-                        "base": -0.05,
-                        "per_level_above_first": -0.05
-                    }
-                }
-            }
-        ],
         "minecraft:damage": [
             {
                 "effect": {
@@ -58,9 +46,103 @@
                     }
                 }
             }
+        ],
+        "minecraft:post_attack": [
+            {
+                "affected": "victim",
+                "effect": {
+                    "type": "minecraft:apply_mob_effect",
+                    "max_amplifier": {
+                        "type": "minecraft:linear",
+                        "base": 5.0,
+                        "per_level_above_first": 1.0
+                    },
+                    "max_duration": {
+                        "type": "minecraft:linear",
+                        "base": 0.05,
+                        "per_level_above_first": 0.0
+                    },
+                    "min_amplifier": {
+                        "type": "minecraft:linear",
+                        "base": 5.0,
+                        "per_level_above_first": 1.0
+                    },
+                    "min_duration": {
+                        "type": "minecraft:linear",
+                        "base": 0.05,
+                        "per_level_above_first": 0.0
+                    },
+                    "to_apply": "minecraft:instant_health"
+                },
+                "enchanted": "attacker",
+                "requirements": {
+                    "condition": "minecraft:entity_properties",
+                    "entity": "this",
+                    "predicate": {
+                        "type": "#minecraft:undead"
+                    }
+                }
+            },
+            {
+                "affected": "victim",
+                "effect": {
+                    "type": "minecraft:apply_mob_effect",
+                    "max_amplifier": {
+                        "type": "minecraft:linear",
+                        "base": 0.0,
+                        "per_level_above_first": 1.0
+                    },
+                    "max_duration": {
+                        "type": "minecraft:linear",
+                        "base": 0.05,
+                        "per_level_above_first": 0.0
+                    },
+                    "min_amplifier": {
+                        "type": "minecraft:linear",
+                        "base": 0.0,
+                        "per_level_above_first": 1.0
+                    },
+                    "min_duration": {
+                        "type": "minecraft:linear",
+                        "base": 0.05,
+                        "per_level_above_first": 0.0
+                    },
+                    "to_apply": "minecraft:instant_damage"
+                },
+                "enchanted": "attacker",
+                "requirements": {
+                    "condition": "minecraft:inverted",
+                    "term": {
+                        "condition": "minecraft:entity_properties",
+                        "entity": "this",
+                        "predicate": {
+                            "type": "#minecraft:undead"
+                        }
+                    }
+                }
+            }
         ]
     },
     "required_level": 5,
     "root": "minecraft:smite",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "real_damage",
+            "bonus": {
+                "base": 0.05,
+                "per_level": 0.05
+            },
+            "cap": {
+                "base": 0.6
+            },
+            "chance": {
+                "base": 0.5
+            },
+            "ratio": {
+                "base": 0.3,
+                "per_level": 0.1
+            }
+        }
+    ]
 }

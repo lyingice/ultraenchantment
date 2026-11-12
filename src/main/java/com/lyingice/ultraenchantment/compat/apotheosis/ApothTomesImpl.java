@@ -24,6 +24,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
 import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
 
@@ -58,9 +59,9 @@ import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
  *       它在图书馆、铁砧、剩菜机制里都是一等公民，<b>零丢失</b>。
  *       跨多个进阶阶级时，条目最多的那一组占产出（并列取低阶级，保证确定性），
  *       其余各阶级在<b>取件时</b>各补一本——这正是本模组既有的「剩菜书」机制。</li>
- *   <li><b>夹杂基础阶</b> ⇒ 产出<b>保持他们的原版附魔书</b>（基础阶内容没有别的家），
- *       但把进阶身份写进 {@code ascension} 组件一起带走。
- *       ⚠️ 这一路要求下游（图书馆存入）<b>认这个组件</b>；见 §「已知缺口」。</li>
+ *   <li><b>夹杂基础阶</b> ⇒ 产出<b>保持他们的原版附魔书</b>，但<b>只保留基础阶条目</b>；
+ *       进阶条目在取件时各补一本载体书。这样产出从源头就是「普通书 + 进阶书」两个纯形态，
+ *       不会再把进阶身份写进原版书的 {@code ascension} 组件（1.0 起彻底消灭这种混合态）。</li>
  * </ol>
  *
  * <p>全是基础阶（普通原版装备）时<b>不做任何改写</b>：产出行维持原版附魔书，
@@ -71,13 +72,6 @@ import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
  * <p>他们的 {@code updateAnvil}/{@code updateRepair} 都是从<b>同一批 NeoForge 事件</b>里
  * 被调用的。我们用 {@code EventPriority.LOW}（跑在他们之后）挂同一批事件即可原地后置，
  * 不碰他们的类结构，也不怕他们改内部实现。
- *
- * <h2>⚠️ 已知缺口（未修，等作者定）</h2>
- *
- * <p>情况 2 产出的是原版附魔书。{@code LibraryMenu} 的存入分支只看
- * 「是 {@code minecraft:enchanted_book} + 有附魔」⇒ 一律按<b>基础阶</b>入库，
- * <b>不读 {@code ascension} 组件</b>，进阶身份会在存入时丢掉。
- * 修法二选一：让存入分支认组件（小），或让载体书能装基础阶（大，要动合并语义与存档格式）。
  */
 final class ApothTomesImpl {
     private ApothTomesImpl() {}
@@ -115,7 +109,10 @@ final class ApothTomesImpl {
         if (advanced == survivors.size()) {
             event.setOutput(inscribedBook(primaryTier(groups), groups.get(primaryTier(groups))));
         } else {
-            attachRecords(base, weapon, survivors);
+            // 混合情形（基础阶 + 进阶阶）：产出保留原版附魔书，但**只留基础阶条目**。
+            // 进阶条目由取件阶段各补一本载体书（下方 onAnvilRepair 的通用规则），
+            // 于是「普通书 + 进阶书」从产出这一刻就是分开的，不会再形成混合态。
+            stripAdvanced(base, weapon, survivors);
         }
     }
 
@@ -213,23 +210,27 @@ final class ApothTomesImpl {
         return groups;
     }
 
-    /** 把武器上的进阶记录（限于幸存谱系）附到原版产出书上，让它跟着书走。 */
-    private static void attachRecords(ItemStack base, ItemStack weapon,
+    /**
+     * 混合产出的拆分：从原版产出书里<b>删掉进阶阶条目</b>，只留基础阶。
+     *
+     * <p>进阶条目并没有消失——{@link #onAnvilRepair} 会按「武器上有、产出里没有」的
+     * 通用规则给它们各补一本载体书。这样普通书与进阶书从产出起就是两个物品。
+     */
+    private static void stripAdvanced(ItemStack base, ItemStack weapon,
                                       Set<ResourceLocation> survivors) {
         AscensionData data = UEComponents.ascensionOf(weapon);
-        AscensionData target = UEComponents.ascensionOf(base);
-        boolean changed = false;
-        for (ResourceLocation root : survivors) {
-            ResourceLocation stage = data.stages().get(root);
-            if (stage == null) {
-                continue;
-            }
-            target = target.with(root, stage, Math.max(1, data.tierLevelOf(root)));
-            changed = true;
+        if (data.stages().isEmpty()) {
+            return;
         }
-        if (changed) {
-            UEComponents.setAscension(base, target);
-        }
+        ItemEnchantments.Mutable table =
+                new ItemEnchantments.Mutable(EnchantmentHelper.getEnchantmentsForCrafting(base));
+        table.removeIf(holder -> {
+            ResourceLocation root = UERoots.rootOf(holder.value()).orElse(null);
+            return root != null && survivors.contains(root) && data.stages().containsKey(root);
+        });
+        EnchantmentHelper.setEnchantments(base, table.toImmutable());
+        // 产出是原版附魔书；绝不能在这里再盖一个 ascension 组件（那正是要消灭的混合态）。
+        base.remove(UEComponents.ASCENSION.get());
     }
 
     /**

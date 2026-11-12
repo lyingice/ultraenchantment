@@ -4,6 +4,7 @@ import com.lyingice.ultraenchantment.Ultraenchantment;
 import com.lyingice.ultraenchantment.content.BookSpecs;
 import com.lyingice.ultraenchantment.content.StageDefinition;
 import com.lyingice.ultraenchantment.logic.BookFactory;
+import com.lyingice.ultraenchantment.logic.BookSplit;
 import com.lyingice.ultraenchantment.logic.InscriptionLogic;
 import com.lyingice.ultraenchantment.logic.StageLookup;
 import com.lyingice.ultraenchantment.logic.UELookups;
@@ -14,6 +15,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.AnvilRepairEvent;
@@ -58,9 +60,31 @@ public final class AnvilTakeEvents {
     public void onAnvilRepair(AnvilRepairEvent event) {
         try {
             deliverLeftovers(event);
+            deliverTranscriptionSplit(event);
         } catch (RuntimeException | LinkageError t) {
             Ultraenchantment.LOGGER.error("Leftover book delivery failed", t);
         }
+    }
+
+    /**
+     * 转印的「普通 / 进阶拆分」交付。
+     *
+     * <p>混合的原版附魔书 + 进阶书 → 铁砧只转印<b>基础阶</b>条目（见
+     * {@code AnvilEvents#applyTranscription}），进阶阶条目在取件时各返还一本载体书。
+     * 判定与产出阶段同源：右边是进阶书、左边是带进阶记录的原版书、产出确实是我们的载体书。
+     */
+    private void deliverTranscriptionSplit(AnvilRepairEvent event) {
+        if (event.getRight().get(UEComponents.ASCENSION_SPEC.get()) == null) {
+            return;
+        }
+        ItemStack left = event.getLeft();
+        if (!left.is(Items.ENCHANTED_BOOK)
+                || UEComponents.ascensionOf(left).stages().isEmpty()
+                || event.getOutput().isEmpty()
+                || !event.getOutput().is(UEItems.ADVANCED_ENCHANTED_BOOK.get())) {
+            return;
+        }
+        BookSplit.give(event.getEntity(), BookSplit.advancedOnly(left));
     }
 
     private void deliverLeftovers(AnvilRepairEvent event) {

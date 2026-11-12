@@ -54,5 +54,26 @@
     "next": "ultraenchantment:ultra/thorns",
     "required_level": 3,
     "root": "minecraft:thorns",
-    "tier": "super"
+    "tier": "super",
+    "ue_effects": [
+        {
+            "type": "damage_reflect",
+            "chance": {
+                "base": 0.25,
+                "per_level": 0.1
+            }
+        },
+        {
+            "type": "be_attacked",
+            "effects": [
+                {
+                    "duration": {
+                        "base": 80.0,
+                        "per_level": 20.0
+                    },
+                    "effect": "minecraft:weakness"
+                }
+            ]
+        }
+    ]
 }

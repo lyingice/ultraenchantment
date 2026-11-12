@@ -17,18 +17,6 @@
         "weight": 5
     },
     "effects": {
-        "minecraft:damage": [
-            {
-                "effect": {
-                    "type": "minecraft:add",
-                    "value": {
-                        "type": "minecraft:linear",
-                        "base": 4.0,
-                        "per_level_above_first": 4.0
-                    }
-                }
-            }
-        ],
         "minecraft:knockback": [
             {
                 "effect": {
@@ -48,23 +36,23 @@
                     "type": "minecraft:apply_mob_effect",
                     "max_amplifier": {
                         "type": "minecraft:linear",
-                        "base": 0.0,
-                        "per_level_above_first": 1.0
+                        "base": 3.0,
+                        "per_level_above_first": 0.0
                     },
                     "max_duration": {
                         "type": "minecraft:linear",
-                        "base": 5.0,
-                        "per_level_above_first": 5.0
+                        "base": 10.0,
+                        "per_level_above_first": 10.0
                     },
                     "min_amplifier": {
                         "type": "minecraft:linear",
-                        "base": 0.0,
-                        "per_level_above_first": 1.0
+                        "base": 3.0,
+                        "per_level_above_first": 0.0
                     },
                     "min_duration": {
                         "type": "minecraft:linear",
-                        "base": 5.0,
-                        "per_level_above_first": 5.0
+                        "base": 10.0,
+                        "per_level_above_first": 10.0
                     },
                     "to_apply": "minecraft:slowness"
                 },
@@ -74,5 +62,20 @@
     },
     "required_level": 2,
     "root": "minecraft:knockback",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "kinetic_damage",
+            "ratio": {
+                "base": 0.4,
+                "per_level": 0.3
+            }
+        },
+        {
+            "type": "swap_position",
+            "chance": {
+                "base": 0.5
+            }
+        }
+    ]
 }

@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.datagen;
 
+import com.lyingice.ultraenchantment.Ultraenchantment;
 import com.lyingice.ultraenchantment.content.LineageTier;
 import com.lyingice.ultraenchantment.content.StageDefinition;
 import java.util.ArrayList;
@@ -155,7 +156,97 @@ public final class UEStages {
         }
 
         assertChainsResolve(generated);
+        assertUEEffectsValid(generated);
         return List.copyOf(generated);
+    }
+
+    /**
+     * 自检：`ue_effects` 的值域必须在「运行时能正确 clamp」的范围内。
+     *
+     * <p>虽然运行时也会 clamp，但把越界值提前到 datagen 报错，能避免作者写出
+     * 「看着是 80% 实际被压到 50%」这种静默失真——数值的含义必须在写下的地方就成立。
+     */
+    private static void assertUEEffectsValid(List<GeneratedStage> generated) {
+        for (GeneratedStage entry : generated) {
+            for (com.lyingice.ultraenchantment.content.UEEffect effect : entry.stage().ueEffects()) {
+                validateEffect(entry.id(), effect);
+            }
+        }
+    }
+
+    private static void validateEffect(ResourceLocation stageId,
+                                       com.lyingice.ultraenchantment.content.UEEffect effect) {
+        switch (effect) {
+            case com.lyingice.ultraenchantment.content.UEEffect.DamageDodge dodge ->
+                    requireUnit(stageId, "damage_dodge.chance", dodge.chance());
+            case com.lyingice.ultraenchantment.content.UEEffect.DamageReflect reflect ->
+                    requireUnit(stageId, "damage_reflect.chance", reflect.chance());
+            case com.lyingice.ultraenchantment.content.UEEffect.BypassIframes bypass ->
+                    requireUnit(stageId, "bypass_iframes.chance", bypass.chance());
+            case com.lyingice.ultraenchantment.content.UEEffect.PercentDamage percent ->
+                    requireMin(stageId, "percent_damage.ratio", percent.ratio(), 0.0f);
+            case com.lyingice.ultraenchantment.content.UEEffect.ScalingDamage scaling -> {
+                requireMin(stageId, "scaling_damage.base", scaling.base(), 0.0f);
+                requireMin(stageId, "scaling_damage.per_entity", scaling.perEntity(), 0.0f);
+                if (scaling.radius() <= 0.0) {
+                    throw new IllegalStateException("阶段 " + stageId + " 的 scaling_damage.radius 必须为正");
+                }
+            }
+            case com.lyingice.ultraenchantment.content.UEEffect.RealDamage real -> {
+                requireUnit(stageId, "real_damage.chance", real.chance());
+                requireUnit(stageId, "real_damage.cap", real.cap());
+                requireMin(stageId, "real_damage.ratio", real.ratio(), 0.0f);
+                requireMin(stageId, "real_damage.bonus", real.bonus(), 0.0f);
+            }
+            case com.lyingice.ultraenchantment.content.UEEffect.Hemophagia hemophagia ->
+                    requireUnit(stageId, "hemophagia.ratio", hemophagia.ratio());
+            case com.lyingice.ultraenchantment.content.UEEffect.DoubleProtection protection ->
+                    requireMin(stageId, "double_protection.reduction", protection.reduction(), 0.0f);
+            case com.lyingice.ultraenchantment.content.UEEffect.SwapPosition swap ->
+                    requireUnit(stageId, "swap_position.chance", swap.chance());
+            case com.lyingice.ultraenchantment.content.UEEffect.MultiJump multi -> {
+                if (multi.jumps().at(1) < 0.0f) {
+                    throw new IllegalStateException("阶段 " + stageId + " 的 multi_jump.jumps 不能为负");
+                }
+            }
+            case com.lyingice.ultraenchantment.content.UEEffect.StripBuffs strip -> {
+                if (strip.count().at(1) < 0.0f) {
+                    throw new IllegalStateException("阶段 " + stageId + " 的 strip_buffs.count 不能为负");
+                }
+            }
+            case com.lyingice.ultraenchantment.content.UEEffect.KineticDamage kinetic ->
+                    requireMin(stageId, "kinetic_damage.ratio", kinetic.ratio(), 0.0f);
+            case com.lyingice.ultraenchantment.content.UEEffect.InfernoMight inferno ->
+                    requireMin(stageId, "inferno_might.multiplier", inferno.multiplier(), 0.0f);
+            case com.lyingice.ultraenchantment.content.UEEffect.SweepDamage sweep -> {
+                requireMin(stageId, "sweep_damage.per_target", sweep.perTarget(), 0.0f);
+                if (sweep.baseTargets() < 1) {
+                    throw new IllegalStateException("阶段 " + stageId + " 的 sweep_damage.base_targets 必须 ≥ 1");
+                }
+            }
+            default -> {
+                // 其余效果（施加状态效果 / 破防 / 自动拾取 / 战利品复制）没有可越界的标量，无需校验。
+            }
+        }
+    }
+
+    private static void requireUnit(ResourceLocation stageId, String field,
+                                    com.lyingice.ultraenchantment.content.Growth growth) {
+        if (growth.base() < 0.0f || growth.base() > 1.0f) {
+            throw new IllegalStateException("阶段 " + stageId + " 的 " + field
+                    + " 基值必须在 [0,1]，实际 " + growth.base());
+        }
+        if (growth.perLevel() < 0.0f) {
+            throw new IllegalStateException("阶段 " + stageId + " 的 " + field + " 每级增量不能为负");
+        }
+    }
+
+    private static void requireMin(ResourceLocation stageId, String field,
+                                   com.lyingice.ultraenchantment.content.Growth growth, float min) {
+        if (growth.base() < min) {
+            throw new IllegalStateException("阶段 " + stageId + " 的 " + field
+                    + " 基值不得小于 " + min + "，实际 " + growth.base());
+        }
     }
 
     private static GeneratedStage build(LineageTable.Lineage lineage, LineageTier tier,
@@ -206,7 +297,8 @@ public final class UEStages {
 
         StageDefinition stage = new StageDefinition(lineage.root(), tier, nextStage(lineage, tier),
                 requiredLevel, definition, effects,
-                java.util.Optional.ofNullable(stageSpec.levelLock()));
+                java.util.Optional.ofNullable(stageSpec.levelLock()),
+                stageSpec.ueEffects());
         return new GeneratedStage(stageId, stage, vanillaEffects, scaled, patches);
     }
 

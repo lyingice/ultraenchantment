@@ -39,6 +39,8 @@ public class Ultraenchantment {
         // ── mod bus：注册与数据生成 ──
         UEItems.ITEMS.register(modEventBus);
         UEComponents.COMPONENTS.register(modEventBus);
+        // 标记类状态效果（火焰易伤 / 灼烧之殇）。
+        com.lyingice.ultraenchantment.registry.UEMobEffects.MOB_EFFECTS.register(modEventBus);
         // 方块与方块实体（v3.4：附魔图书馆 + 附魔进阶台）。
         // ⚠️ 方块**永远注册**，不做条件注册——见 UEBlocks 类文档（存档安全）。
         UEBlocks.BLOCKS.register(modEventBus);
@@ -81,6 +83,18 @@ public class Ultraenchantment {
         NeoForge.EVENT_BUS.register(VillagerTradeEvents.INSTANCE);
         // 指令：/ultraenchantment guarantee <n>（测试附魔台进阶用）。
         NeoForge.EVENT_BUS.addListener(com.lyingice.ultraenchantment.command.UECommands::register);
+
+        // ── `ue:*` 扩展效果：挂在生命周期事件上的那部分 ──
+        // 伤害管线（闪避 / 增伤 / 双重保护 / 真实伤害 / 吸血 / 反伤 / 无敌帧穿透 / 换位 / 濒死免疫）。
+        NeoForge.EVENT_BUS.register(com.lyingice.ultraenchantment.event.UECombatEvents.INSTANCE);
+        // 盾牌（格挡反击 / 破防触发；破防那一刻由 PlayerDisableShieldMixin 回调）。
+        NeoForge.EVENT_BUS.register(com.lyingice.ultraenchantment.event.UEShieldEvents.INSTANCE);
+        // 多段跳（服务端权威；客户端按键上报走 UENetwork 的 AirJumpPayload）。
+        NeoForge.EVENT_BUS.register(com.lyingice.ultraenchantment.event.UEMovementEvents.INSTANCE);
+        // 自动拾取（丢弃即回收 / 原主人即时拾取）。
+        NeoForge.EVENT_BUS.register(com.lyingice.ultraenchantment.event.UEPickupEvents.INSTANCE);
+        // 弹射物加速（实体加入世界时把初速度乘上倍率）。
+        NeoForge.EVENT_BUS.register(com.lyingice.ultraenchantment.event.UEProjectileEvents.INSTANCE);
 
         // 可选兼容：提示框渲染栈。未安装时这里什么都不做（不加载对方任何类）。
         com.lyingice.ultraenchantment.compat.tooltip.TooltipStackCompat.init();

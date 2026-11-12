@@ -37,5 +37,10 @@
     },
     "required_level": 4,
     "root": "minecraft:feather_falling",
-    "tier": "advanced"
+    "tier": "advanced",
+    "ue_effects": [
+        {
+            "type": "multi_jump"
+        }
+    ]
 }

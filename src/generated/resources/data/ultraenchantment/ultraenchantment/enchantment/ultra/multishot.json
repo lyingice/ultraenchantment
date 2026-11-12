@@ -67,5 +67,14 @@
         ]
     },
     "root": "minecraft:multishot",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "projectile_speed",
+            "multiplier": {
+                "base": 1.5,
+                "per_level": 0.25
+            }
+        }
+    ]
 }

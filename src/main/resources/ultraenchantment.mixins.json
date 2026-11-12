@@ -8,6 +8,7 @@
   },
   "mixins": [
     "RepairItemRecipeMixin",
-    "EnchantmentMenuMixin"
+    "EnchantmentMenuMixin",
+    "PlayerDisableShieldMixin"
   ]
 }

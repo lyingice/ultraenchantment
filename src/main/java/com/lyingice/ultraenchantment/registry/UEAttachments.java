@@ -65,4 +65,28 @@ public final class UEAttachments {
     public static void setGuaranteedAscensions(net.minecraft.world.entity.player.Player player, int count) {
         player.setData(GUARANTEED_ASCENSIONS, Math.max(0, count));
     }
+
+    /**
+     * <b>多段跳的剩余空中跳跃次数</b>（`ue:multi_jump`）。
+     *
+     * <p>只在服务端维护：客户端只负责「把跳跃键被按下的那一刻」上报给服务端，
+     * 由服务端判定「还能不能跳」并施加位移。这样跳跃次数不会被客户端改包刷爆。
+     *
+     * <p>不必存盘：落地即重置，玩家重登时自然会重新落地。死亡也不保留
+     * （{@code copyOnDeath} 反而会让重生后凭空多出几段跳）。
+     */
+    public static final Supplier<AttachmentType<Integer>> AIR_JUMPS_LEFT =
+            ATTACHMENT_TYPES.register("air_jumps_left", () -> AttachmentType
+                    .builder(() -> 0)
+                    .build());
+
+    /** 读多段跳剩余次数。 */
+    public static int airJumpsLeft(net.minecraft.world.entity.player.Player player) {
+        return player.getData(AIR_JUMPS_LEFT);
+    }
+
+    /** 写多段跳剩余次数。 */
+    public static void setAirJumpsLeft(net.minecraft.world.entity.player.Player player, int count) {
+        player.setData(AIR_JUMPS_LEFT, Math.max(0, count));
+    }
 }

@@ -14,6 +14,7 @@ import com.lyingice.ultraenchantment.logic.UEEnchantRegistry;
 import com.lyingice.ultraenchantment.logic.UEEvents;
 import com.lyingice.ultraenchantment.logic.UERoots;
 import com.lyingice.ultraenchantment.logic.BookFactory;
+import com.lyingice.ultraenchantment.logic.BookSplit;
 import com.lyingice.ultraenchantment.logic.InscriptionLogic;
 import com.lyingice.ultraenchantment.logic.ItemMergeLogic;
 import com.lyingice.ultraenchantment.logic.StageLookup;
@@ -411,7 +412,13 @@ public final class AnvilEvents {
         }
         HolderLookup.RegistryLookup<StageDefinition> stages = StageLookup.lookup();
         HolderLookup.RegistryLookup<Enchantment> enchants = CommonHooks.resolveLookup(Registries.ENCHANTMENT);
-        InscriptionLogic.transcribe(stages, enchants, vanillaBook, toTier, creative).ifPresent(t -> {
+        // 1.0：混合书只转印普通附魔。进阶记录保留在原书里，由取件阶段拆成载体书返还；
+        // 若把整本书一起转印，进阶条目会以「目标阶级 1 级」重新落一遍，等于降级。
+        ItemStack baseBook = BookSplit.baseOnly(vanillaBook);
+        if (baseBook.isEmpty()) {
+            return;
+        }
+        InscriptionLogic.transcribe(stages, enchants, baseBook, toTier, creative).ifPresent(t -> {
             event.setOutput(BookFactory.inscription(t.payload()));
             event.setCost(t.cost());
             event.setMaterialCost(1);

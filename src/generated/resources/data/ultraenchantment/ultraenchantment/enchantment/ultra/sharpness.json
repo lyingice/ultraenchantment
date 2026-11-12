@@ -24,22 +24,10 @@
                     "type": "minecraft:add",
                     "value": {
                         "type": "minecraft:linear",
-                        "base": -0.05,
-                        "per_level_above_first": -0.05
+                        "base": -0.25,
+                        "per_level_above_first": -0.1
                     }
                 }
-            }
-        ],
-        "minecraft:attributes": [
-            {
-                "amount": {
-                    "type": "minecraft:linear",
-                    "base": 0.2,
-                    "per_level_above_first": 0.1
-                },
-                "attribute": "minecraft:generic.attack_damage",
-                "id": "ultraenchantment:ascension/attack_damage_total",
-                "operation": "add_multiplied_total"
             }
         ],
         "minecraft:damage": [
@@ -57,5 +45,24 @@
     },
     "required_level": 5,
     "root": "minecraft:sharpness",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "real_damage",
+            "ratio": {
+                "base": 0.2,
+                "per_level": 0.2
+            }
+        },
+        {
+            "type": "hemophagia",
+            "ratio": {
+                "base": 0.15,
+                "per_level": 0.05
+            }
+        },
+        {
+            "type": "self_vulnerability"
+        }
+    ]
 }

@@ -1,8 +1,10 @@
 package com.lyingice.ultraenchantment.mixin.compat;
 
 import com.lyingice.ultraenchantment.content.AscensionData;
+import com.lyingice.ultraenchantment.logic.BookSplit;
 import com.lyingice.ultraenchantment.registry.UEComponents;
 import dev.shadowsoffire.apothic_enchanting.objects.TomeItem;
+import java.util.List;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -49,5 +51,19 @@ public abstract class TomeItemMixin {
         if (UEComponents.ascensionOf(result).stages().isEmpty()) {
             UEComponents.setAscension(result, source);
         }
+
+        // 1.0：宝典产出也只保留「普通书 + 载体书」两种纯形态。
+        // 进阶记录全部落到载体书上，原版书只装基础阶附魔。
+        BookSplit.Split split = BookSplit.of(result);
+        if (!split.hasAdvanced()) {
+            return;
+        }
+        List<ItemStack> books = split.all();
+        if (books.isEmpty()) {
+            return;
+        }
+        ItemStack primary = books.get(0);
+        BookSplit.give(player, books.subList(1, books.size()));
+        cir.setReturnValue(new InteractionResultHolder<>(cir.getReturnValue().getResult(), primary));
     }
 }

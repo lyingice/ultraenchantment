@@ -12,6 +12,7 @@
     "compat.ApothEnchantmentMenuMixin",
     "compat.TomeItemMixin",
     "compat.EnchantingCustomTableMixin",
-    "compat.EnchantingCustomBookSlotMixin"
+    "compat.EnchantingCustomBookSlotMixin",
+    "compat.EnchantingCustomBookSlotApplyMixin"
   ]
 }

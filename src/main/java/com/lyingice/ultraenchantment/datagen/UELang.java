@@ -36,6 +36,19 @@ public class UELang extends LanguageProvider {
         add(itemKey("super_curative_stone"), this.chinese ? "超级祛咒石" : "Super Curative Stone");
         add(itemKey("ultra_curative_stone"), this.chinese ? "究极祛咒石" : "Ultra Curative Stone");
 
+        // ── 标记类状态效果与动能伤害的死亡消息 ──
+        add("effect." + Ultraenchantment.MODID + ".fire_vulnerability",
+                this.chinese ? "火焰易伤" : "Fire Vulnerability");
+        add("effect." + Ultraenchantment.MODID + ".burn_agony",
+                this.chinese ? "灼烧之殇" : "Burn Agony");
+        add("death.attack.kinetic",
+                this.chinese ? "%1$s 被无形的动能撕碎" : "%1$s was torn apart by kinetic force");
+        add("death.attack.kinetic.player",
+                this.chinese ? "%1$s 被 %2$s 的动能冲击击杀" : "%1$s was killed by %2$s's kinetic strike");
+        add("death.attack.kinetic.item",
+                this.chinese ? "%1$s 被 %2$s 用 %3$s 的动能冲击击杀"
+                        : "%1$s was killed by %2$s wielding %3$s");
+
         // ── 方块名（v3.4）──
         //
         // 键的形态由 Block.getDescriptionId() 决定：block.<命名空间>.<路径>。

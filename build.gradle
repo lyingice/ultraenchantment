@@ -9,7 +9,9 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = mod_id
+    // 发布包名：UltraEnchantment-main-neo-1.21.1-1.0-release.jar
+    // archivesName 负责前半段，version 负责 1.0，jar 的 classifier 负责 -release。
+    archivesName = "UltraEnchantment-main-neo-${minecraft_version}"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -167,12 +169,33 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 // 注意：expand 底层是 Groovy 模板引擎，会把它看到的任何“美元号+花括号”片段
 // 当作表达式求值——资源文件里出现非占位符的该类写法会让构建以模板解析失败报错。
 processResources {
+    // ⚠️ 必须把参与展开的属性声明成任务的**输入**。
+    //    否则改了 gradle.properties（例如把 mod_version 从 0.1.0 提到 0.2.0）时，
+    //    Gradle 只看模板文件没变，就判定本任务 UP-TO-DATE、直接复用旧的展开结果 ——
+    //    表现就是「jar 文件名已经是 0.2.0，游戏里却还显示 0.1.0」。
+    var expandProperties = [
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_version            : mod_version,
+            mod_group_id           : mod_group_id,
+            mod_authors            : mod_authors,
+            mod_license            : mod_license,
+            mod_description        : mod_description,
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range
+    ]
+    inputs.properties(expandProperties)
+
     filesMatching('META-INF/neoforge.mods.toml') {
         expand project.properties
     }
 }
 
 jar {
+    // 发布包固定以 -release 结尾。
+    archiveClassifier = 'release'
     manifest {
         attributes([
                 "Specification-Title"     : mod_id,

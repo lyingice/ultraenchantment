@@ -54,7 +54,9 @@ public class UECompatMixinPlugin implements IMixinConfigPlugin {
             // 附魔编辑台（Enchantment Custom Table）：让它的编辑对进阶附魔生效
             "EnchantingCustomTableMixin", "enchantment_custom_table",
             // 编辑台的书槽：放行我们的载体书（它的 mayPlace 先判物品类型，轮不到菜单那一关）
-            "EnchantingCustomBookSlotMixin", "enchantment_custom_table");
+            "EnchantingCustomBookSlotMixin", "enchantment_custom_table",
+            // $3 书槽的 setByPlayer：放书即写入进阶记录（$4 没有这个方法，故单独一个 mixin）
+            "EnchantingCustomBookSlotApplyMixin", "enchantment_custom_table");
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {

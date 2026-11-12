@@ -40,12 +40,28 @@
             {
                 "affected": "victim",
                 "effect": {
-                    "type": "minecraft:ignite",
-                    "duration": {
+                    "type": "minecraft:apply_mob_effect",
+                    "max_amplifier": {
                         "type": "minecraft:linear",
-                        "base": 40.0,
-                        "per_level_above_first": 20.0
-                    }
+                        "base": 0.0,
+                        "per_level_above_first": 0.0
+                    },
+                    "max_duration": {
+                        "type": "minecraft:linear",
+                        "base": 5.0,
+                        "per_level_above_first": 5.0
+                    },
+                    "min_amplifier": {
+                        "type": "minecraft:linear",
+                        "base": 0.0,
+                        "per_level_above_first": 0.0
+                    },
+                    "min_duration": {
+                        "type": "minecraft:linear",
+                        "base": 5.0,
+                        "per_level_above_first": 5.0
+                    },
+                    "to_apply": "ultraenchantment:fire_vulnerability"
                 },
                 "enchanted": "attacker"
             }

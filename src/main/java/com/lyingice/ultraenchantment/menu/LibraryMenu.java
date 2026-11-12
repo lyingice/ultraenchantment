@@ -8,6 +8,7 @@ import com.lyingice.ultraenchantment.content.CodexData;
 import com.lyingice.ultraenchantment.content.LineageTier;
 import com.lyingice.ultraenchantment.content.StageDefinition;
 import com.lyingice.ultraenchantment.logic.BookFactory;
+import com.lyingice.ultraenchantment.logic.BookSplit;
 import com.lyingice.ultraenchantment.logic.EnergyMath;
 import com.lyingice.ultraenchantment.logic.StageLookup;
 import com.lyingice.ultraenchantment.logic.UERoots;
@@ -328,6 +329,8 @@ public class LibraryMenu extends AbstractContainerMenu {
         List<CodexData.UnlockedTier> unlocks = new ArrayList<>();
         // 「见过这条原版附魔」——手里有过它的书就算见过。基础阶不凭空解锁（作者要求）。
         List<ResourceLocation> nativeRoots = new ArrayList<>();
+        // 混合书拆分出的载体书：不占图书馆库存，存完书后直接还给玩家。
+        List<ItemStack> sideBooks = new ArrayList<>();
 
         BookSpecs.Inscription insc = stack.get(UEComponents.INSCRIPTION_SPEC.get());
         BookSpecs.Upgrade upgrade = stack.get(UEComponents.UPGRADE_SPEC.get());
@@ -335,19 +338,40 @@ public class LibraryMenu extends AbstractContainerMenu {
 
         if (isVanillaEnchantedBook(stack)) {
             // 原版附魔书 = 基础阶的书：产出「等级单位·基础」，并让这些谱系记为「见过」
+            //
+            // 1.0：如果这本书还带着进阶记录（历史遗留 / 第三方模组产出），先拆成
+            // 「普通书 + 载体书」——普通书的部分照常折算成等级单位，载体书原样还给玩家。
+            // 以前这里只看 stored_enchantments，进阶记录会被当成基础阶一起吞掉。
+            BookSplit.Split split = BookSplit.of(stack);
+            ItemStack baseBook = split.vanilla();
             int sum = 0;
-            for (var e : EnchantmentHelper.getEnchantmentsForCrafting(stack).entrySet()) {
-                ResourceLocation rootId = e.getKey().unwrapKey().map(k -> k.location()).orElse(null);
-                if (rootId == null) {
-                    continue;
+            if (!baseBook.isEmpty()) {
+                for (var e : EnchantmentHelper.getEnchantmentsForCrafting(baseBook).entrySet()) {
+                    ResourceLocation rootId = e.getKey().unwrapKey().map(k -> k.location()).orElse(null);
+                    if (rootId == null) {
+                        continue;
+                    }
+                    sum += EnergyMath.levelToPoints(e.getIntValue());
+                    nativeRoots.add(rootId);
                 }
-                sum += EnergyMath.levelToPoints(e.getIntValue());
-                nativeRoots.add(rootId);
             }
-            if (sum <= 0) {
+            if (sum > 0) {
+                yields.add(Yield.ofLevel(LineageTier.NATIVE, sum));
+            }
+            for (ItemStack advancedBook : split.advanced()) {
+                BookSpecs.Inscription spec = advancedBook.get(UEComponents.INSCRIPTION_SPEC.get());
+                if (spec != null) {
+                    for (BookSpecs.Inscription.Entry entry : spec.entries()) {
+                        unlocks.add(new CodexData.UnlockedTier(entry.enchantment(), spec.tier()));
+                        nativeRoots.add(entry.enchantment());
+                    }
+                }
+                sideBooks.add(advancedBook);
+            }
+            // 既没有基础阶能量、也没有可返还的载体书 ⇒ 这本书没有可吸收的内容。
+            if (yields.isEmpty() && sideBooks.isEmpty()) {
                 return;
             }
-            yields.add(Yield.ofLevel(LineageTier.NATIVE, sum));
         } else if (insc != null && !insc.isEmpty()) {
             // 铭刻书：对标原版附魔书，是「具体附魔 + 等级」的载体
             LineageTier tier = insc.tier().asLineageTier();
@@ -411,6 +435,11 @@ public class LibraryMenu extends AbstractContainerMenu {
             }
         }
         this.input.setItem(0, ItemStack.EMPTY);
+
+        // 混合书拆出的载体书：图书馆不收进阶形态（它只收「升级素材」），
+        // 因此原样还给玩家。这一步必须在输入槽清空之后、且只在全部校验通过后执行，
+        // 避免「库满了却已经把书发出去」。
+        BookSplit.give(this.player, sideBooks);
 
         this.onDeposited(unlocks, nativeRoots);
     }

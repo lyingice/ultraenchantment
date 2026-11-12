@@ -4,37 +4,41 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0e3b9ac5-0f1b-4e6b-aa76-47c235adc229" name="更改" comment="0.2版本第二次内容更新">
+    <list default="true" id="0e3b9ac5-0f1b-4e6b-aa76-47c235adc229" name="更改" comment="0.2版本第三次内容更新">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AGENT.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENT.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/gui-textures.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/enchantment-effects.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/enchantment-effects.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/.cache/313a5a16a306eb7a317efc359f7bb55211425a68" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/.cache/313a5a16a306eb7a317efc359f7bb55211425a68" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/generated/resources/.cache/a9cd6a5be28d0dd646f07bfb99fc69ecfa37e903" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/.cache/a9cd6a5be28d0dd646f07bfb99fc69ecfa37e903" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/.cache/ae4702a4bf536179b12dc920501f84788ae61794" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/.cache/ae4702a4bf536179b12dc920501f84788ae61794" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/.cache/c5f2da28f9dc1887653a4a4d2229ce3bfa0c3b63" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/.cache/c5f2da28f9dc1887653a4a4d2229ce3bfa0c3b63" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/en_us.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/en_us.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/zh_cn.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/lang/zh_cn.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/models/item/curative_stone.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/models/item/curative_stone.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/models/item/curative_stone_super.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/generated/resources/assets/ultraenchantment/models/item/curative_stone_ultra.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/feather_falling.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/feather_falling.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/fire_protection.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/fire_protection.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/protection.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/protection.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/thorns.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/thorns.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/unbreaking.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/advanced/unbreaking.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/super/thorns.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/super/thorns.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/impaling.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/impaling.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/knockback.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/knockback.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/looting.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/looting.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/multishot.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/multishot.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/piercing.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/piercing.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/power.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/power.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/sharpness.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/sharpness.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/smite.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/smite.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/sweeping_edge.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/sweeping_edge.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/thorns.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/generated/resources/data/ultraenchantment/ultraenchantment/enchantment/ultra/thorns.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/UEConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/UEConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/Ultraenchantment.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/Ultraenchantment.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/compat/jei/UEJeiPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/compat/jei/UEJeiPlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UELang.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UELang.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UEModels.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UEModels.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/CreativeTabEvents.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/event/CreativeTabEvents.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/AscensionChance.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/AscensionChance.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/TableAscension.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/logic/TableAscension.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/EnchantmentMenuMixin.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/EnchantmentMenuMixin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/UECompatMixinPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/UECompatMixinPlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/compat/ApothEnchantmentMenuMixin.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/mixin/compat/ApothEnchantmentMenuMixin.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/content/StageDefinition.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/content/StageDefinition.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/LineageTable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/LineageTable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UEEffectDoc.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UEEffectDoc.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UEStages.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/datagen/UEStages.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/registry/UEAttachments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/registry/UEAttachments.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/registry/UEComponents.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/registry/UEComponents.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/registry/UEItems.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/lyingice/ultraenchantment/registry/UEItems.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/data/ultraenchantment/recipe/curative_stone.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/data/ultraenchantment/recipe/curative_stone.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/data/ultraenchantment/recipe/curative_stone_super.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/data/ultraenchantment/recipe/curative_stone_super.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/data/ultraenchantment/recipe/curative_stone_ultra.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/data/ultraenchantment/recipe/curative_stone_ultra.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/ultraenchantment.compat.mixins.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/ultraenchantment.compat.mixins.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/ultraenchantment.mixins.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/ultraenchantment.mixins.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -198,11 +202,11 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Gradle.UltraEnchantment [runClient]" />
-      <item itemvalue="Gradle.UltraEnchantment [build]" />
       <item itemvalue="应用程序.Client" />
       <item itemvalue="应用程序.Data" />
       <item itemvalue="应用程序.Server" />
+      <item itemvalue="Gradle.UltraEnchantment [build]" />
+      <item itemvalue="Gradle.UltraEnchantment [runClient]" />
     </list>
     <recent_temporary>
       <list>
@@ -306,7 +310,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791427712051</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="0.2版本第三次内容更新">
+      <option name="closed" value="true" />
+      <created>1791459938830</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1791459938830</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -330,6 +342,7 @@
     <MESSAGE value="0.1版本第6次修正" />
     <MESSAGE value="0.2版本内容更新" />
     <MESSAGE value="0.2版本第二次内容更新" />
-    <option name="LAST_COMMIT_MESSAGE" value="0.2版本第二次内容更新" />
+    <MESSAGE value="0.2版本第三次内容更新" />
+    <option name="LAST_COMMIT_MESSAGE" value="0.2版本第三次内容更新" />
   </component>
 </project>

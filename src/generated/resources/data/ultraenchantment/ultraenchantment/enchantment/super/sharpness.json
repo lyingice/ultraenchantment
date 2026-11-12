@@ -18,16 +18,16 @@
         "weight": 10
     },
     "effects": {
-        "minecraft:attributes": [
+        "minecraft:armor_effectiveness": [
             {
-                "amount": {
-                    "type": "minecraft:linear",
-                    "base": 0.1,
-                    "per_level_above_first": 0.05
-                },
-                "attribute": "minecraft:generic.attack_damage",
-                "id": "ultraenchantment:ascension/attack_damage_total",
-                "operation": "add_multiplied_total"
+                "effect": {
+                    "type": "minecraft:add",
+                    "value": {
+                        "type": "minecraft:linear",
+                        "base": -0.05,
+                        "per_level_above_first": -0.05
+                    }
+                }
             }
         ],
         "minecraft:damage": [

@@ -85,6 +85,23 @@ public final class UEConfig {
     /** 神化路径：进阶后等级的随机上限系数 —— 上限 = max(1, 台面等级 / 这个数)（默认 3）。 */
     public static final ModConfigSpec.IntValue LEVEL_DIVISOR;
 
+    // ── `ue:*` 扩展效果的全局安全边界 ────────────────────────────────────
+    // 具体数值写在阶段 JSON 的 ue_effects 里（随附魔 / 阶级 / 等级变化）；
+    // 这里只是**上限与开关**，防止数据包写出失控值，或玩家靠叠加装备把效果堆到崩坏。
+
+    /** 真实伤害总上限（占本次伤害比例的上限）。数据包 cap 超过它会被压到它。 */
+    public static final ModConfigSpec.DoubleValue MAX_REAL_DAMAGE_CAP;
+    /** 双重保护：**单件**装备的减伤上限。多件按乘法叠加，但单件不得超过这一值。 */
+    public static final ModConfigSpec.DoubleValue MAX_DOUBLE_PROTECTION_PER_ITEM;
+    /** 真实伤害 / 反伤等相互触发的递归深度上限，超过即不再向下传导。 */
+    public static final ModConfigSpec.IntValue MAX_EFFECT_RECURSION;
+    /** 多段跳：额外跳跃次数的上限（与数据包值取小）。 */
+    public static final ModConfigSpec.IntValue MAX_MULTI_JUMPS;
+    /** 自动拾取：扫描主人掉落的半径上限。 */
+    public static final ModConfigSpec.DoubleValue AUTO_PICKUP_RADIUS;
+    /** 效果总开关：关掉后全部 `ue:*` 扩展效果不生效（调试用）。 */
+    public static final ModConfigSpec.BooleanValue UE_EFFECTS_ENABLED;
+
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         builder.comment("附魔台「进阶」的全部数值。想快速验证机制，把这些数临时调成 1.0 即可（1.0 = 100%）。")
@@ -160,6 +177,30 @@ public final class UEConfig {
         LEVEL_DIVISOR = builder
                 .comment("进阶后等级上限 = max(1, 台面等级 / 本值)")
                 .defineInRange("levelDivisor", 3, 1, 64);
+        builder.pop();
+
+        // ── `ue:*` 扩展效果的全局安全边界 ──
+        // 数值本身写在阶段 JSON 里；这里只兜住「数据包写错 / 装备叠加过头」这类失控。
+        builder.comment("扩展效果（ue:*）的全局安全边界。数值本身在阶段 JSON 的 ue_effects 里。")
+                .push("ue_effects");
+        UE_EFFECTS_ENABLED = builder
+                .comment("总开关：false 时全部 ue:* 扩展效果不生效（仅调试用）")
+                .define("enabled", true);
+        MAX_REAL_DAMAGE_CAP = builder
+                .comment("真实伤害占比总上限：数据包的 cap 超过它会被压到它（1.0 = 100%）")
+                .defineInRange("maxRealDamageCap", 1.0D, 0.0D, 1.0D);
+        MAX_DOUBLE_PROTECTION_PER_ITEM = builder
+                .comment("双重保护：单件装备的独立减伤上限（1.0 = 100%，但 UI 建议 ≤0.5）")
+                .defineInRange("maxDoubleProtectionPerItem", 0.5D, 0.0D, 1.0D);
+        MAX_EFFECT_RECURSION = builder
+                .comment("真实伤害 / 反伤等相互触发的递归深度上限")
+                .defineInRange("maxEffectRecursion", 4, 1, 32);
+        MAX_MULTI_JUMPS = builder
+                .comment("多段跳额外跳跃次数上限（与数据包值取小）")
+                .defineInRange("maxMultiJumps", 8, 0, 64);
+        AUTO_PICKUP_RADIUS = builder
+                .comment("自动拾取扫描主人掉落的半径")
+                .defineInRange("autoPickupRadius", 16.0D, 1.0D, 128.0D);
         builder.pop();
         SPEC = builder.build();
     }

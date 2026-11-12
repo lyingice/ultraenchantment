@@ -150,11 +150,27 @@ public final class UEEffectDoc implements DataProvider {
                     .append(" | ").append(stage.definition().maxLevel())
                     .append(" | ").append(stage.requiredLevel())
                     .append(" | ").append(describeMap(generated.vanillaEffects(), Set.of()))
-                    .append(" | ").append(describeMap(generated.stage().effects(), added))
+                    .append(" | ").append(describeMap(generated.stage().effects(), added, stage.ueEffects()))
                     .append(" | ").append(totals(generated.stage().effects()))
                     .append(" |\n");
         }
         return sb.toString();
+    }
+
+    /** 带 `ue:*` 扩展效果的重载：把扩展效果追加到「该阶实际公式」列末尾。 */
+    private static String describeMap(net.minecraft.core.component.DataComponentMap map,
+                                      Set<DataComponentType<?>> added,
+                                      List<com.lyingice.ultraenchantment.content.UEEffect> ueEffects) {
+        String base = describeMap(map, added);
+        if (ueEffects.isEmpty()) {
+            return base;
+        }
+        List<String> parts = new ArrayList<>(ueEffects.size());
+        for (com.lyingice.ultraenchantment.content.UEEffect effect : ueEffects) {
+            parts.add("✦ <b>[" + effect.id() + "]</b> " + escape(effect.describe()));
+        }
+        String ue = String.join("<br>", parts);
+        return base.equals("—") ? ue : base + "<br>" + ue;
     }
 
     /** 阶位加成列：逐条列出该阶级累积的补丁，并标出追加 / 覆盖。 */
@@ -224,7 +240,11 @@ public final class UEEffectDoc implements DataProvider {
             return describeAttribute(attribute);
         }
         if (element instanceof TargetedConditionalEffect<?> targeted) {
-            String where = switch (targeted.enchanted()) {
+            // 实体效果（post_attack 的点燃 / 状态效果 / 伤害）作用在 affected 上；
+            // 值效果（装备掉落率等）的语义对象是 enchanted（攻击方的掉落）。
+            boolean entityEffect = targeted.effect()
+                    instanceof net.minecraft.world.item.enchantment.effects.EnchantmentEntityEffect;
+            String where = switch (entityEffect ? targeted.affected() : targeted.enchanted()) {
                 case ATTACKER -> "攻击方";
                 case VICTIM -> "受击方";
                 case DAMAGING_ENTITY -> "伤害来源";
@@ -267,7 +287,11 @@ public final class UEEffectDoc implements DataProvider {
             return describeAllOf(allOf.effects());
         }
         if (effect instanceof net.minecraft.world.item.enchantment.effects.ApplyMobEffect mob) {
-            return "施加负面效果（时长从 " + describeLevelValue(mob.minDuration()) + " tick 起）";
+            String name = mob.toApply().get(0).unwrapKey()
+                    .map(key -> key.location().getPath())
+                    .orElse("状态效果");
+            return "施加 " + name + "（持续 " + describeLevelValue(mob.minDuration())
+                    + " 秒；强度序号 " + describeLevelValue(mob.minAmplifier()) + "，0 = I 级）";
         }
         if (effect instanceof net.minecraft.world.item.enchantment.effects.PlaySoundEffect sound) {
             return "播放音效 " + sound.soundEvent().unwrapKey().map(key -> key.location().getPath()).orElse("?");

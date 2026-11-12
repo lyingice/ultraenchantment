@@ -9,14 +9,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import net.minecraft.advancements.critereon.DamageSourcePredicate;
+import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.advancements.critereon.TagPredicate;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.predicates.DamageSourceCondition;
+import net.minecraft.world.level.storage.loot.predicates.InvertedLootItemCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+import net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
 import net.minecraft.world.level.storage.loot.providers.number.EnchantmentLevelProvider;
 import net.minecraft.core.component.DataComponentMap;
@@ -599,16 +604,55 @@ public final class UEStageEffects {
     public static Patch postAttackMobEffect(Holder<MobEffect> effect,
                                             float baseSeconds, float perLevelSeconds,
                                             float baseAmplifier, float perLevelAmplifier) {
+        return postAttackMobEffect(effect, baseSeconds, perLevelSeconds, baseAmplifier, perLevelAmplifier,
+                Optional.empty());
+    }
+
+    /**
+     * 带条件的「近战命中后施加状态效果」。
+     *
+     * <p>条件在 {@code post_attack} 的 loot context 里求值，{@code THIS} 就是受击目标。
+     * 亡灵杀手的瞬间治疗（只对亡灵）与击退的概率缓慢都走这一条。
+     */
+    public static Patch postAttackMobEffect(Holder<MobEffect> effect,
+                                            float baseSeconds, float perLevelSeconds,
+                                            float baseAmplifier, float perLevelAmplifier,
+                                            LootItemCondition.Builder condition) {
+        return postAttackMobEffect(effect, baseSeconds, perLevelSeconds, baseAmplifier, perLevelAmplifier,
+                Optional.of(condition.build()));
+    }
+
+    private static Patch postAttackMobEffect(Holder<MobEffect> effect,
+                                             float baseSeconds, float perLevelSeconds,
+                                             float baseAmplifier, float perLevelAmplifier,
+                                             Optional<LootItemCondition> requirements) {
         LevelBasedValue duration = new LevelBasedValue.Linear(baseSeconds, perLevelSeconds);
         LevelBasedValue amplifier = new LevelBasedValue.Linear(baseAmplifier, perLevelAmplifier);
+        String suffix = requirements.isEmpty() ? "" : "（仅满足条件的目标）";
         return new Append<>(EnchantmentEffectComponents.POST_ATTACK,
                 new TargetedConditionalEffect<EnchantmentEntityEffect>(
                         EnchantmentTarget.ATTACKER, EnchantmentTarget.VICTIM,
                         new ApplyMobEffect(HolderSet.direct(effect), duration, duration, amplifier, amplifier),
-                        Optional.empty()),
+                        requirements),
                 "近战命中后使目标获得 " + effectName(effect)
                         + "（持续 " + amount(baseSeconds, perLevelSeconds) + " 秒；"
-                        + "强度 " + amount(baseAmplifier + 1.0f, perLevelAmplifier) + " 级）");
+                        + "强度 " + amount(baseAmplifier + 1.0f, perLevelAmplifier) + " 级）" + suffix);
+    }
+
+    /** 受击目标属于某个实体类型标签（{@code THIS} = 受击者）。 */
+    public static LootItemCondition.Builder entityTypeCondition(TagKey<EntityType<?>> tag) {
+        return LootItemEntityPropertyCondition.hasProperties(LootContext.EntityTarget.THIS,
+                EntityPredicate.Builder.entity().of(tag));
+    }
+
+    /** 受击目标<b>不</b>属于某个实体类型标签。 */
+    public static LootItemCondition.Builder notEntityTypeCondition(TagKey<EntityType<?>> tag) {
+        return InvertedLootItemCondition.invert(entityTypeCondition(tag));
+    }
+
+    /** 按固定概率触发（每次命中独立掷骰）。 */
+    public static LootItemCondition.Builder chanceCondition(float chance) {
+        return LootItemRandomChanceCondition.randomChance(chance);
     }
 
     private static String effectName(Holder<MobEffect> effect) {

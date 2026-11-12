@@ -60,7 +60,8 @@ public record StageDefinition(
         int requiredLevel,
         Definition definition,
         DataComponentMap effects,
-        Optional<Integer> levelLock) {
+        Optional<Integer> levelLock,
+        List<UEEffect> ueEffects) {
 
     public static final Codec<StageDefinition> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ResourceLocation.CODEC.fieldOf("root").forGetter(StageDefinition::root),
@@ -73,8 +74,18 @@ public record StageDefinition(
             EnchantmentEffectComponents.CODEC.optionalFieldOf("effects", DataComponentMap.EMPTY)
                     .forGetter(StageDefinition::effects),
             // 等级锁（超限上限）：可选。缺省 = 不锁，完全交给神化的上限。
-            ExtraCodecs.POSITIVE_INT.optionalFieldOf("level_lock").forGetter(StageDefinition::levelLock)
+            ExtraCodecs.POSITIVE_INT.optionalFieldOf("level_lock").forGetter(StageDefinition::levelLock),
+            // 扩展效果（`ue:*`）：原版效果组件表达不了、必须挂在生命周期事件上的那部分。
+            // 与原版 effects 相互独立——各自由自己的执行器驱动，互不干扰。
+            UEEffect.LIST_CODEC.optionalFieldOf("ue_effects", List.of()).forGetter(StageDefinition::ueEffects)
     ).apply(instance, StageDefinition::new));
+
+    @SuppressWarnings("unused") // 兼容旧调用点（无扩展效果的阶段）——uerEffects 缺省为空表。
+    public StageDefinition(ResourceLocation root, LineageTier tier, Optional<ResourceLocation> next,
+                           int requiredLevel, Definition definition, DataComponentMap effects,
+                           Optional<Integer> levelLock) {
+        this(root, tier, next, requiredLevel, definition, effects, levelLock, List.of());
+    }
 
     /**
      * 网络同步用 codec。

@@ -126,6 +126,20 @@ public final class AscensionBookIO {
     }
 
     /**
+     * 附魔编辑台「拿下」的完整出口：把装备上的附魔拆成<b>普通书 + 载体书</b>。
+     *
+     * <p>这是 1.0 的「普通 / 进阶拆分」入口。以前这里先用 {@link #exportFrom}
+     * 试图把所有条目塞进一本载体书；只要装备上混着基础阶附魔，基础阶条目就会
+     * 无处安放（要么丢、要么塞进原版书形成混合态）。现在统一走 {@link BookSplit}：
+     * 基础阶进原版书，进阶阶按阶级各进一本载体书。
+     *
+     * @return 拆出的书；装备上没有任何进阶记录时返回空表（交给编辑台原样处理）
+     */
+    public static List<ItemStack> exportAll(ItemStack item) {
+        return BookSplit.splitEquipment(item);
+    }
+
+    /**
      * 把物品上的进阶条目导出成一本载体书（编辑台的「拿下」方向）。
      *
      * <p><b>只在「进阶条目同属一个阶级」时才成立</b>：载体书是<b>书级单值</b>阶级
@@ -133,7 +147,11 @@ public final class AscensionBookIO {
      * 原版附魔书，并把进阶身份写进 {@code ascension} 组件带走（至少不丢）。
      *
      * <p>物品上已经没有的条目（例如刚被编辑台删掉）不算数。
+     *
+     * @deprecated 1.0 起请用 {@link #exportAll(ItemStack)}：它会把基础阶与进阶阶拆开，
+     *             不会为了「装进一本载体书」而丢掉基础阶条目。
      */
+    @Deprecated
     public static ItemStack exportFrom(ItemStack item) {
         if (item.isEmpty()) {
             return ItemStack.EMPTY;
@@ -232,11 +250,12 @@ public final class AscensionBookIO {
     }
 
     /**
-     * 「拿下」的兜底形态：<b>原版附魔书 + 我们的进阶组件</b>。
+     * 「拿下」的旧兜底形态：<b>原版附魔书 + 我们的进阶组件</b>。
      *
-     * <p>用在「载体书表达不了」的场合（跨阶级 / 混着基础阶附魔）。虽然不如载体书，
-     * 但至少进阶身份<b>跟着走</b>，不会凭空蒸发。物品上没有进阶条目时返回空 ⇒ 让编辑台原样处理。
+     * @deprecated 1.0 起<b>禁止</b>再产出这种混合态（图书馆/铁砧都按基础阶处理它）。
+     *             请用 {@link #exportAll(ItemStack)}：基础阶进普通书、进阶阶进载体书。
      */
+    @Deprecated
     public static ItemStack plainExport(ItemStack item) {
         if (item.isEmpty() || UEComponents.ascensionOf(item).lineages().isEmpty()) {
             return ItemStack.EMPTY;

@@ -56,5 +56,14 @@
     },
     "required_level": 4,
     "root": "minecraft:piercing",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "bypass_iframes",
+            "chance": {
+                "base": 0.35,
+                "per_level": 0.15
+            }
+        }
+    ]
 }

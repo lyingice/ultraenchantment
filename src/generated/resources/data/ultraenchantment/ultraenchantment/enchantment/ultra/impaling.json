@@ -39,5 +39,21 @@
     },
     "required_level": 5,
     "root": "minecraft:impaling",
-    "tier": "ultra"
+    "tier": "ultra",
+    "ue_effects": [
+        {
+            "type": "strip_buffs",
+            "count": {
+                "base": 1.0,
+                "per_level": 0.5
+            }
+        },
+        {
+            "type": "percent_damage",
+            "ratio": {
+                "base": 0.1,
+                "per_level": 0.05
+            }
+        }
+    ]
 }

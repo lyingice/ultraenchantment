@@ -36,34 +36,20 @@
                 "id": "minecraft:enchantment.sweeping_edge",
                 "operation": "add_value"
             }
-        ],
-        "minecraft:damage": [
-            {
-                "effect": {
-                    "type": "minecraft:add",
-                    "value": {
-                        "type": "minecraft:linear",
-                        "base": 0.5,
-                        "per_level_above_first": 0.25
-                    }
-                }
-            }
-        ],
-        "minecraft:knockback": [
-            {
-                "effect": {
-                    "type": "minecraft:add",
-                    "value": {
-                        "type": "minecraft:linear",
-                        "base": 0.25,
-                        "per_level_above_first": 0.15
-                    }
-                }
-            }
         ]
     },
     "next": "ultraenchantment:ultra/sweeping_edge",
     "required_level": 3,
     "root": "minecraft:sweeping_edge",
-    "tier": "super"
+    "tier": "super",
+    "ue_effects": [
+        {
+            "type": "sweep_damage",
+            "base_targets": 1,
+            "per_target": {
+                "base": 0.1,
+                "per_level": 0.1
+            }
+        }
+    ]
 }
