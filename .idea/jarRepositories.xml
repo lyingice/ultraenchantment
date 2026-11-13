@@ -46,5 +46,10 @@
       <option name="name" value="Illusive Soulworks maven" />
       <option name="url" value="https://maven.theillusivec4.top/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="Latvian" />
+      <option name="name" value="Latvian" />
+      <option name="url" value="https://maven.latvian.dev/releases" />
+    </remote-repository>
   </component>
 </project>

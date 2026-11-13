@@ -3,18 +3,25 @@ package com.lyingice.ultraenchantment.client;
 import com.lyingice.ultraenchantment.Ultraenchantment;
 import com.lyingice.ultraenchantment.registry.UEBlockEntities;
 import com.lyingice.ultraenchantment.registry.UEMenus;
+import com.lyingice.ultraenchantment.starlight.client.StarlightTableRenderer;
+import com.lyingice.ultraenchantment.starlight.client.StarlightTableScreen;
+import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
 /**
- * 客户端注册。
- *
- * <p>界面只能挂在<b>客户端</b>：{@code RegisterMenuScreensEvent} 带
- * {@code Dist.CLIENT} 注解，在专用服务端上整个类不会被加载，
- * 因此引用 {@code LibraryScreen} 是安全的。
+ * 客户端注册：
+ * <ul>
+ *   <li>星图界面；</li>
+ *   <li>星光台悬浮书渲染器；</li>
+ *   <li>三张书皮模型参与烘焙——{@code EnchantedBookModelMixin} 在
+ *       {@code ItemRenderer.getModel} 返回处直接取它们。</li>
+ * </ul>
  */
 @EventBusSubscriber(modid = Ultraenchantment.MODID, value = Dist.CLIENT)
 public final class UEClientSetup {
@@ -22,14 +29,26 @@ public final class UEClientSetup {
 
     @SubscribeEvent
     public static void onRegisterScreens(RegisterMenuScreensEvent event) {
-        event.register(UEMenus.ENCHANTMENT_LIBRARY.get(), LibraryScreen::new);
-        event.register(UEMenus.ASCENSION_TABLE.get(), AscensionTableScreen::new);
+        event.register(UEMenus.STARLIGHT_TABLE.get(), StarlightTableScreen::new);
     }
 
-    /** 进阶台的悬浮书（原版同款：原版 BookModel + 原版贴图）。 */
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(UEBlockEntities.ASCENSION_TABLE.get(),
-                AscensionTableRenderer::new);
+        event.registerBlockEntityRenderer(UEBlockEntities.STARLIGHT_TABLE.get(),
+                StarlightTableRenderer::new);
+        Ultraenchantment.LOGGER.info("[starlight] starlight table renderer registered");
+    }
+
+    @SubscribeEvent
+    public static void onRegisterAdditional(ModelEvent.RegisterAdditional event) {
+        event.register(cover("enchanted_book"));
+        event.register(cover("enchanted_book_super"));
+        event.register(cover("enchanted_book_ultra"));
+        Ultraenchantment.LOGGER.info("[starlight] registered 3 enchanted book cover models");
+    }
+
+    private static ModelResourceLocation cover(String path) {
+        return ModelResourceLocation.standalone(
+                ResourceLocation.fromNamespaceAndPath(Ultraenchantment.MODID, "item/" + path));
     }
 }

@@ -1,0 +1,47 @@
+{
+  "description": {
+    "translate": "enchantment.ultraenchantment.starlight.super_sharpness_armor"
+  },
+  "supported_items": "#minecraft:enchantable/sharp_weapon",
+  "primary_items": "#minecraft:enchantable/sword",
+  "weight": 10,
+  "max_level": 5,
+  "min_cost": {
+    "base": 21,
+    "per_level_above_first": 30
+  },
+  "max_cost": {
+    "base": 41,
+    "per_level_above_first": 30
+  },
+  "anvil_cost": 5,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {
+    "minecraft:damage": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 4.0,
+            "per_level_above_first": 1.5
+          }
+        }
+      }
+    ],
+    "minecraft:armor_effectiveness": [
+      {
+        "effect": {
+          "type": "minecraft:add",
+          "value": {
+            "type": "minecraft:linear",
+            "base": 0.1,
+            "per_level_above_first": 0.05
+          }
+        }
+      }
+    ]
+  }
+}

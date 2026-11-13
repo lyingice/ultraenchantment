@@ -36,12 +36,12 @@ neoForge {
             data()
             // 1) DatagenModLoader.begin(mods,...) 的 mods 集合来自 dev launch handler 解析的
             //    --mod 程序参数。缺它时 mods=[]，DataGenerator.shouldExecute=false，
-            //    所有 provider 被静默丢弃（"All providers took: 0 ms"、无任何产出）。
+            //    所有 provider 被静默丢弃。
             programArgument '--mod'
             programArgument "${mod_id}"
 
             // 2) 输出目录：data() 默认 --gameDir 指向 run/，产物会落在 run/generated。
-            //    改为项目根，使其落在 src/generated/resources（build.gradle 已挂为资源源集）。
+            //    改为项目根，使其落在 src/generated/resources。
             programArgument '--output'
             programArgument file('src/generated/resources').absolutePath
 
@@ -50,122 +50,17 @@ neoForge {
     }
 }
 
-// ── 仓库 ──────────────────────────────────────────────────────────────
-// BlameJared  → JEI
-// Shadows'    → 神化全家桶（Apotheosis / Apothic Enchanting / Placebo / Apothic Attributes / Apothic Spawners）
-// Modrinth    → 通用兜底（神化的前置 Curios / Patchouli 只在这里）
-repositories {
-    maven {
-        name = 'BlameJared'
-        url = 'https://maven.blamejared.com'
-    }
-    maven {
-        // 神化官方文档给出的地址（注意结尾的 /releases，缺了它整个仓库 404）
-        name = 'ShadowsOfFire'
-        url = 'https://maven.shadowsoffire.dev/releases'
-    }
-    maven {
-        // Modrinth Maven：用 project slug 反查，覆盖 Curios / Patchouli 这类前置
-        name = 'Modrinth'
-        url = 'https://api.modrinth.com/maven'
-    }
-    maven {
-        name = "Illusive Soulworks maven"
-        url = "https://maven.theillusivec4.top/"
-    }
-    exclusiveContent {
-        // 只从 Modrinth 取一组固定坐标，避免它参与其它依赖的解析
-        // （该仓库对未知路径一律 404，混进通用解析会显著拖慢构建）
-        forRepository { maven { name = 'ModrinthExclusive'; url = 'https://api.modrinth.com/maven' } }
-        filter {
-            includeGroup 'maven.modrinth'
-        }
-    }
-}
-
-// ── 提示框渲染栈：传说提示框 + Iceberg + Prism ───────────────────────────
-// 三者都不在公共 maven 上（CurseForge / Modrinth 专有），所以放 libs/ 本地 jar：
-//   compileOnly → 编译期拿 API，绝不进 jar；玩家漏装也不构成运行前提
-//   runtimeOnly → 只让开发环境能真正加载它们，方便联调
-// 当前联调版本（1.21.1 / NeoForge）：
-//   legendarytooltips 1.5.5 · iceberg 1.3.2 · prism 1.0.11
-//   ⚠️ libs/ 只是开发用；升级时替换同名前缀的 jar 即可（fileTree 按前缀匹配）。
-// ⚠️ 任何 import 对方类的代码，都必须放在「确认对方已安装」之后才被加载的类里，
-//    否则未安装时 JVM 会抛 NoClassDefFoundError（见 AGENT.md P0-16 / P1-40）。
-def tooltipStack = fileTree(dir: 'libs', include: [
-        'legendarytooltips-*.jar',
-        'iceberg-*.jar',
-        'prism-*.jar',
-])
-
-// ── 神化（Apotheosis）兼容 ──────────────────────────────────────────────
-// 坐标来自神化官方文档：group 固定 dev.shadowsoffire，artifact 首字母大写，
-// 版本形如 "<mcVersion>-<modVersion>"。五个 artifact 已用 Gradle 实测全部可解析。
-//
-// 用 compileOnly：神化**不是**运行前提，玩家不装也能跑，代码里通过 isLoaded 判断后才碰它的类
-// （AGENT.md P0-16 / P1-40：任何 import 对方类的代码都必须放在确认对方已安装之后才加载的类里）。
-def apotheosis = [
-        "dev.shadowsoffire:Placebo:${placebo_version}",
-        "dev.shadowsoffire:ApothicAttributes:${apothic_attributes_version}",
-        "dev.shadowsoffire:ApothicSpawners:${apothic_spawners_version}",
-        "dev.shadowsoffire:ApothicEnchanting:${apothic_enchanting_version}",
-        "dev.shadowsoffire:Apotheosis:${apotheosis_version}",
-        // 前置：只在 Modrinth Maven 上（group = maven.modrinth，artifact = 项目 slug）
-        "maven.modrinth:patchouli:${patchouli_version}",
-        "maven.modrinth:curios:${curios_version}",
-        // Gateways to Eternity：神化声明它为 optional，但缺了它神化的 datagen 会崩
-        // （NoClassDefFoundError: dev/shadowsoffire/gateways/gate/Reward）。
-        // 只在开发环境需要——玩家侧不装它也能正常玩神化。
-        "maven.modrinth:gateways-to-eternity:${gateways_version}",
-]
-
-// ── Enchanting Infuser（附魔灌注台）兼容 ────────────────────────────────
-// 进阶附魔台的配方以它的「进阶高级附魔台」为材料，因此开发期必须能加载它。
-//
-// ⚠️ 它**强制依赖 PuzzlesLib**（neoforge.mods.toml: mandatory = true），
-//    只加本体会在启动时因缺前置而加载失败——两个都要加。
-//
-// ⚠️ 我们**不引用它的任何类**（配方里只用字符串 id），所以严格说 compileOnly 非必需；
-//    但按作者要求「编译时带上」，加着无害，也便于将来真做 API 级联动。
-//    玩家侧不装它照样能跑：方块永远注册，配方由 neoforge:mod_loaded 条件门控。
-def enchantingInfuser = [
-        "maven.modrinth:enchanting-infuser:${enchanting_infuser_version}",
-        "maven.modrinth:puzzles-lib:${puzzleslib_version}",
-]
-
+// KubeJS 是可选联动：本地 jar 只用于编译插件入口；
+// 运行期由玩家/整合包安装 KubeJS + Rhino（run/mods 已放开发用 jar）。
 dependencies {
-    compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version}"
-    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
-    runtimeOnly "mezz.jei:jei-1.21.1-neoforge:${jei_version}"
-
-    compileOnly tooltipStack
-    runtimeOnly tooltipStack
-
-    // 神化：编译期拿 API。传递依赖（Curios / Patchouli）不在 Shadows' Maven，
-    // 因而不随它进来——如果兼容代码需要引用它们的类型，单独补 compileOnly。
-    compileOnly apotheosis
-
-    // 开发期让神化真正加载（跑 client/server 时可见）。
-    // ⚠️ 需要玩家侧也装好神化及其前置，否则此处会因缺前置而加载失败；
-    //    这也是它只进 runtimeOnly、不进 jar 的原因。
-    runtimeOnly apotheosis
-
-    // Enchanting Infuser + PuzzlesLib：编译期与开发运行期都带上。
-    compileOnly enchantingInfuser
-    runtimeOnly enchantingInfuser
-    //祛魔编辑台兼容
-    implementation "maven.modrinth:4TCEiWXa:mXjCNAFv"
-    //附魔描述
-    compileOnly "maven.modrinth:UVtY3ZAC:2khC341p"
-    compileOnly "maven.modrinth:uy4Cnpcm:QqntcTCS"
+    compileOnly files("libs/kubejs-neoforge-${kubejs_version}.jar")
+    compileOnly files("libs/rhino-${rhino_version}.jar")
 }
 
 // runData 输出挂进资源源集，随 jar 打包（勿手动改 generated 文件）。
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 // 只在 neoforge.mods.toml 上做占位符展开，其它资源文件原样复制。
-// 注意：expand 底层是 Groovy 模板引擎，会把它看到的任何“美元号+花括号”片段
-// 当作表达式求值——资源文件里出现非占位符的该类写法会让构建以模板解析失败报错。
 processResources {
     filesMatching('META-INF/neoforge.mods.toml') {
         expand project.properties
