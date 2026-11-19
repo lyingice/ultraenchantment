@@ -6,6 +6,7 @@ import com.lyingice.ultraenchantment.starlight.content.TierDefinition;
 import com.lyingice.ultraenchantment.starlight.content.TreeNode;
 import com.lyingice.ultraenchantment.starlight.content.TreeDefinition;
 import com.lyingice.ultraenchantment.starlight.content.TreeEdge;
+import com.lyingice.ultraenchantment.starlight.logic.Bookshelves;
 import com.lyingice.ultraenchantment.starlight.logic.EvolutionService;
 import com.lyingice.ultraenchantment.starlight.logic.TreeIndex;
 import com.lyingice.ultraenchantment.starlight.menu.StarlightTableMenu;
@@ -75,6 +76,8 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
     private ResourceLocation selectedNode;
     private ResourceLocation hoveredNode;
     private Map<ResourceLocation, ScreenPos> lastPositions = Map.of();
+    /** 物品身上全部可进化的树；>1 时详情面板标题两侧显示切换箭头。 */
+    private List<ResourceLocation> availableTrees = List.of();
 
     /** 详情面板底部的按钮状态。 */
     private int buttonX;
@@ -115,8 +118,24 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
                 Component.translatable("gui.ultraenchantment.starlight.offering"),
                 8, 148, 0xFF062A2A, false);
         graphics.drawString(this.font,
-                Component.translatable("gui.ultraenchantment.starlight.catalyst"),
+                Component.translatable("gui.ultraenchantment.starlight.material"),
                 8, 200, 0xFF8A8AA0, false);
+
+        // 书架联动状态：左下角常驻，摆/拆书架实时刷新。
+        int shelves = this.menu.bookshelfCount();
+        graphics.drawString(this.font,
+                Component.translatable("gui.ultraenchantment.starlight.shelves",
+                        shelves, Bookshelves.MAX_SHELVES),
+                8, 212, shelves > 0 ? COLOR_CYAN : COLOR_DIM, false);
+        if (shelves > 0) {
+            graphics.drawString(this.font,
+                    Component.translatable("gui.ultraenchantment.starlight.shelf_discount",
+                            Math.round(Bookshelves.discount(shelves) * 100.0F)),
+                    8, 222, COLOR_OK, false);
+        } else {
+            drawWrapped(graphics, Component.translatable("gui.ultraenchantment.starlight.shelf_hint"),
+                    8, 222, 72, COLOR_DIM, 2);
+        }
     }
 
     // ── 主渲染 ──────────────────────────────────────────────────────────
@@ -130,7 +149,12 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
         this.hoveredNode = null;
 
         ItemStack item = this.menu.itemStack();
-        ResourceLocation treeId = TreeIndex.treeIdOf(item).orElse(null);
+        this.availableTrees = item.isEmpty() ? List.of() : TreeIndex.treeIdsOf(item);
+        if (this.currentTreeId == null || !this.availableTrees.contains(this.currentTreeId)) {
+            this.currentTreeId = this.availableTrees.isEmpty() ? null : this.availableTrees.get(0);
+            this.selectedNode = null;
+        }
+        ResourceLocation treeId = this.currentTreeId;
         TreeDefinition tree = treeId == null ? null : TreeIndex.tree(treeId).orElse(null);
 
         if (tree == null || item.isEmpty()) {
@@ -139,7 +163,6 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
                     this.leftPos + MAP_X + 10, this.topPos + MAP_Y + 12,
                     MAP_W - 20, COLOR_DIM, 6);
         } else {
-            this.currentTreeId = treeId;
             if (this.selectedNode != null && tree.node(this.selectedNode).isEmpty()) {
                 this.selectedNode = null;
             }
@@ -292,9 +315,21 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
         int x = this.leftPos + PANEL_X + 4;
         int y = this.topPos + PANEL_Y + 4;
 
+        // 标题行：◀ 树名 ▶。物品同时带多个可进阶附魔时，用两侧箭头切换谱系。
+        boolean canSwitch = this.availableTrees.size() > 1;
+        int arrowColor = canSwitch ? COLOR_CYAN : 0xFF34344A;
+        graphics.drawString(this.font, "◀", x, y, arrowColor, false);
+        Component treeName = Component.translatable(tree.display());
+        String shownTree = this.font.plainSubstrByWidth(treeName.getString(), PANEL_W - 30);
+        graphics.drawString(this.font, shownTree, x + 11, y, COLOR_CYAN, false);
+        graphics.drawString(this.font, "▶", x + PANEL_W - 8 - this.font.width("▶"), y,
+                arrowColor, false);
+        graphics.fill(x, y + 11, x + PANEL_W - 8, y + 12, 0xFF3FBDBD);
+        int lineY = y + 16;
+
         if (selected == null) {
             drawWrapped(graphics, Component.translatable("gui.ultraenchantment.starlight.select"),
-                    x, y, PANEL_W - 8, COLOR_DIM, 6);
+                    x, lineY, PANEL_W - 8, COLOR_DIM, 6);
             return;
         }
         TreeNode node = tree.node(selected).orElse(null);
@@ -311,11 +346,6 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
                 : EnchantmentHelper.getEnchantmentsForCrafting(item).getLevel(holder);
         int nodeMax = holder == null ? 0 : holder.value().getMaxLevel();
 
-        // 面板标题：星座名 + 青色分隔线。没有选中星时也不再是一块空面板。
-        graphics.drawString(this.font, Component.translatable(tree.display()), x, y, COLOR_CYAN, false);
-        graphics.fill(x, y + 11, x + PANEL_W - 8, y + 12, 0xFF3FBDBD);
-        int lineY = y + 16;
-
         graphics.drawString(this.font, name, x, lineY, COLOR_TITLE, false);
         lineY += 11;
         Component tierName = Component.translatable(tier.display());
@@ -330,7 +360,8 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
                     x, lineY, COLOR_OK, false);
             lineY += 13;
             if (nodeLevel < nodeMax) {
-                int cost = EvolutionService.upgradeCost(nodeLevel);
+                int cost = EvolutionService.upgradeCost(nodeLevel,
+                        TreeIndex.tierOrdinal(node.tier()), this.menu.bookshelfCount());
                 boolean affordable = this.minecraft.player.experienceLevel >= cost;
                 drawWrapped(graphics, Component.translatable("gui.ultraenchantment.starlight.upgrade_cost", cost),
                         x, lineY, PANEL_W - 8, affordable ? COLOR_OK : COLOR_BAD, 2);
@@ -351,21 +382,50 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
         }
 
         boolean levelOk = currentLevel >= edge.requiredLevel();
-        boolean xpOk = this.minecraft.player.experienceLevel >= edge.costLevels();
-        drawWrapped(graphics, Component.translatable("gui.ultraenchantment.starlight.requires",
-                        edge.requiredLevel()), x, lineY, PANEL_W - 8, levelOk ? COLOR_OK : COLOR_BAD, 2);
-        lineY += 20;
-        drawWrapped(graphics, Component.translatable("gui.ultraenchantment.starlight.cost",
-                        edge.costLevels()), x, lineY, PANEL_W - 8, xpOk ? COLOR_OK : COLOR_BAD, 2);
-        lineY += 20;
+        int shelves = this.menu.bookshelfCount();
+        int xpCost = EvolutionService.evolutionXp(edge, node, shelves);
+        boolean xpOk = this.minecraft.player.experienceLevel >= xpCost;
+
+        // 目标阶级的原材料：高阶 5 钻石 / 超级 2 下界合金锭 / 究极 1 下界合金块。
+        TierDefinition targetTier = TreeIndex.tier(node.tier());
+        TierDefinition.MaterialCost material = targetTier.evolutionCost().orElse(null);
+        boolean materialOk = true;
+        Component materialText = null;
+        if (material != null) {
+            net.minecraft.world.item.Item materialItem = net.minecraft.core.registries.BuiltInRegistries.ITEM
+                    .get(material.item());
+            if (materialItem == null || materialItem == net.minecraft.world.item.Items.AIR) {
+                materialOk = false;
+                materialText = Component.literal("? × " + material.count());
+            } else {
+                materialOk = this.menu.hasMaterial(materialItem, material.count());
+                materialText = Component.translatable("gui.ultraenchantment.starlight.material_cost",
+                        material.count(), new ItemStack(materialItem).getHoverName());
+            }
+        }
+
+        graphics.drawString(this.font, Component.translatable("gui.ultraenchantment.starlight.requires",
+                        edge.requiredLevel()), x, lineY, levelOk ? COLOR_OK : COLOR_BAD, false);
+        lineY += 11;
+        Component costText = shelves > 0
+                ? Component.translatable("gui.ultraenchantment.starlight.cost_discount",
+                        xpCost, Math.round(Bookshelves.discount(shelves) * 100.0F))
+                : Component.translatable("gui.ultraenchantment.starlight.cost", xpCost);
+        graphics.drawString(this.font, costText, x, lineY, xpOk ? COLOR_OK : COLOR_BAD, false);
+        lineY += 11;
         graphics.drawString(this.font, Component.translatable("gui.ultraenchantment.starlight.chance",
                         Math.round(edge.chance() * 100.0F)), x, lineY, COLOR_TEXT, false);
         lineY += 11;
         // 失败惩罚：当前节点附魔等级随机下降。分支名已在节点名里（如“超级锋利·血刃”），不再单列。
         graphics.drawString(this.font, Component.translatable("gui.ultraenchantment.starlight.failure_drop",
                         edge.failureDropMin(), edge.failureDropMax()), x, lineY, COLOR_BAD, false);
+        lineY += 11;
+        if (materialText != null) {
+            graphics.drawString(this.font, materialText, x, lineY,
+                    materialOk ? COLOR_OK : COLOR_BAD, false);
+        }
 
-        boolean canAttempt = levelOk && xpOk;
+        boolean canAttempt = levelOk && xpOk && materialOk;
         setButton(graphics, x, PANEL_W - 8, Component.translatable("gui.ultraenchantment.starlight.light"),
                 canAttempt, EvolutionActionPayload.ACTION_EVOLVE, node.id());
     }
@@ -392,6 +452,19 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // 谱系切换：详情面板标题两侧的 ◀ / ▶。
+        if (button == 0 && this.availableTrees.size() > 1) {
+            int headerX = this.leftPos + PANEL_X + 4;
+            int headerY = this.topPos + PANEL_Y + 4;
+            if (inside(mouseX, mouseY, headerX, headerY, 11, 10)) {
+                cycleTree(-1);
+                return true;
+            }
+            if (inside(mouseX, mouseY, headerX + PANEL_W - 8 - 11, headerY, 11, 10)) {
+                cycleTree(1);
+                return true;
+            }
+        }
         if (button == 0 && this.buttonEnabled && this.buttonNode != null
                 && inside(mouseX, mouseY, this.buttonX, this.buttonY, this.buttonW, this.buttonH)) {
             PacketDistributor.sendToServer(new EvolutionActionPayload(
@@ -407,6 +480,21 @@ public class StarlightTableScreen extends AbstractContainerScreen<StarlightTable
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void cycleTree(int delta) {
+        if (this.availableTrees.size() <= 1) {
+            return;
+        }
+        int index = this.availableTrees.indexOf(this.currentTreeId);
+        if (index < 0) {
+            index = 0;
+        }
+        int next = Math.floorMod(index + delta, this.availableTrees.size());
+        this.currentTreeId = this.availableTrees.get(next);
+        this.selectedNode = null;
+        this.buttonEnabled = false;
+        this.buttonNode = null;
     }
 
     private ResourceLocation nodeAt(double mouseX, double mouseY) {

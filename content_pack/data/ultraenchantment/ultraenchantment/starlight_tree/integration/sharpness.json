@@ -1,0 +1,76 @@
+{
+  "display": "enchantment.minecraft.sharpness",
+  "nodes": [
+    {
+      "id": "ultraenchantment:integration/sharpness/root",
+      "enchantment": "minecraft:sharpness",
+      "tier": "ultraenchantment:native",
+      "pos": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/sharpness/jlme_advanced",
+      "enchantment": "jlme:advanced_sharpness",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": -1.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/sharpness/jlme_supreme",
+      "enchantment": "jlme:supreme_sharpness",
+      "tier": "ultraenchantment:super",
+      "pos": {
+        "x": -1.0,
+        "y": 2.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/sharpness/fancyenchantments_advanced",
+      "enchantment": "fancyenchantments:advanced_sharpness",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": 1.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/sharpness/fancyenchantments_supreme",
+      "enchantment": "fancyenchantments:sacred_supreme_sharpness",
+      "tier": "ultraenchantment:super",
+      "pos": {
+        "x": 1.0,
+        "y": 2.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ultraenchantment:integration/sharpness/root",
+      "to": "ultraenchantment:integration/sharpness/jlme_advanced",
+      "required_level": 5,
+      "chance": 1.0
+    },
+    {
+      "from": "ultraenchantment:integration/sharpness/jlme_advanced",
+      "to": "ultraenchantment:integration/sharpness/jlme_supreme",
+      "required_level": 3,
+      "chance": 0.6
+    },
+    {
+      "from": "ultraenchantment:integration/sharpness/root",
+      "to": "ultraenchantment:integration/sharpness/fancyenchantments_advanced",
+      "required_level": 5,
+      "chance": 1.0
+    },
+    {
+      "from": "ultraenchantment:integration/sharpness/fancyenchantments_advanced",
+      "to": "ultraenchantment:integration/sharpness/fancyenchantments_supreme",
+      "required_level": 3,
+      "chance": 0.6
+    }
+  ]
+}

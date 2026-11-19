@@ -9,7 +9,7 @@ version = mod_version
 group = mod_group_id
 
 base {
-    archivesName = mod_id
+    archivesName = mod_archives_name
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -62,6 +62,8 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 // 只在 neoforge.mods.toml 上做占位符展开，其它资源文件原样复制。
 processResources {
+    // 版本号来自 gradle.properties；声明成输入，改版本时才会重新展开 mods.toml。
+    inputs.property 'mod_version', project.mod_version
     filesMatching('META-INF/neoforge.mods.toml') {
         expand project.properties
     }

@@ -2,5 +2,10 @@
   "ordinal": 2,
   "display": "tier.ultraenchantment.super",
   "color": 11758591,
-  "max_level": 5
+  "max_level": 5,
+  "evolution_cost": {
+    "item": "minecraft:netherite_ingot",
+    "count": 2
+  },
+  "evolution_xp": 10
 }

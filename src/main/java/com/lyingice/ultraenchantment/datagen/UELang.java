@@ -35,8 +35,12 @@ public class UELang extends LanguageProvider {
                 this.chinese ? "点击一颗星查看详情" : "Click a star for details");
         add("gui." + Ultraenchantment.MODID + ".starlight.offering",
                 this.chinese ? "祭品" : "Offering");
-        add("gui." + Ultraenchantment.MODID + ".starlight.catalyst",
-                this.chinese ? "催化" : "Catalyst");
+        add("gui." + Ultraenchantment.MODID + ".starlight.material",
+                this.chinese ? "材料" : "Material");
+        add("gui." + Ultraenchantment.MODID + ".starlight.material_cost",
+                this.chinese ? "%s × %s" : "%s × %s");
+        add("gui." + Ultraenchantment.MODID + ".starlight.not_enough_material",
+                this.chinese ? "材料不足" : "Not enough materials");
         add("gui." + Ultraenchantment.MODID + ".starlight.current",
                 this.chinese ? "当前节点" : "Current node");
         add("gui." + Ultraenchantment.MODID + ".starlight.upgrade",
@@ -49,6 +53,14 @@ public class UELang extends LanguageProvider {
                 this.chinese ? "需要前置等级 %s" : "Requires level %s");
         add("gui." + Ultraenchantment.MODID + ".starlight.cost",
                 this.chinese ? "消耗 %s 级经验" : "Costs %s XP levels");
+        add("gui." + Ultraenchantment.MODID + ".starlight.cost_discount",
+                this.chinese ? "经验 %s 级 (-%s%%)" : "XP %s (-%s%%)");
+        add("gui." + Ultraenchantment.MODID + ".starlight.shelves",
+                this.chinese ? "书架 %s/%s" : "Shelves %s/%s");
+        add("gui." + Ultraenchantment.MODID + ".starlight.shelf_discount",
+                this.chinese ? "经验 -%s%%" : "XP -%s%%");
+        add("gui." + Ultraenchantment.MODID + ".starlight.shelf_hint",
+                this.chinese ? "摆书架降经验" : "Shelves cut XP");
         add("gui." + Ultraenchantment.MODID + ".starlight.chance",
                 this.chinese ? "成功率 %s%%" : "Success %s%%");
         add("gui." + Ultraenchantment.MODID + ".starlight.unreachable",
@@ -81,24 +93,43 @@ public class UELang extends LanguageProvider {
         add("gui." + Ultraenchantment.MODID + ".starlight.invalid",
                 this.chinese ? "这颗星现在无法点亮" : "This star cannot be lit now");
 
-        // ── 阶级 / 星座 / 分支 / 阶段附魔 ──
+        // ── 附魔进阶总览 ──
+        add("key.categories." + Ultraenchantment.MODID,
+                this.chinese ? "附魔进阶" : "Ultra Enchantment");
+        add("key." + Ultraenchantment.MODID + ".open_index",
+                this.chinese ? "打开附魔进阶总览" : "Open Ascension Index");
+        add("gui." + Ultraenchantment.MODID + ".index.title",
+                this.chinese ? "附魔进阶总览" : "Ascension Index");
+        add("gui." + Ultraenchantment.MODID + ".index.search",
+                this.chinese ? "搜索附魔" : "Search enchantments");
+        add("gui." + Ultraenchantment.MODID + ".index.empty",
+                this.chinese ? "当前世界没有附魔进阶树" : "No ascension trees in this world");
+        add("gui." + Ultraenchantment.MODID + ".index.no_match",
+                this.chinese ? "没有匹配的附魔" : "No matching enchantment");
+        add("gui." + Ultraenchantment.MODID + ".index.path",
+                this.chinese ? "路线 %s" : "Route %s");
+        add("gui." + Ultraenchantment.MODID + ".index.edge",
+                this.chinese ? "前置 %s 级 · 成功率 %s%% · 经验 %s 级"
+                        : "Req. Lv%s · %s%% · %s XP levels");
+        add("gui." + Ultraenchantment.MODID + ".index.material",
+                this.chinese ? "%s × %s" : "%s × %s");
+        add("gui." + Ultraenchantment.MODID + ".index.max_level",
+                this.chinese ? "最高 %s 级" : "Max level %s");
+        add("gui." + Ultraenchantment.MODID + ".index.key_hint",
+                this.chinese ? "按键：%s（可在 选项 → 控制 中设置）"
+                        : "Key: %s (set it in Options → Controls)");
+        add("gui." + Ultraenchantment.MODID + ".index.unbound",
+                this.chinese ? "未绑定" : "Unbound");
+        add("gui." + Ultraenchantment.MODID + ".index.shelf_note",
+                this.chinese ? "台面书架（至多 15 个）最高减免 50% 经验"
+                        : "Bookshelves (up to 15) cut XP costs by up to 50%");
+
+        // ── 阶级 ──
+        // 具体星座 / 阶段附魔名由内容包提供（联动包使用来源模组自己的 description 键）。
         add("tier." + Ultraenchantment.MODID + ".native", this.chinese ? "基础" : "Native");
         add("tier." + Ultraenchantment.MODID + ".advanced", this.chinese ? "高阶" : "Advanced");
         add("tier." + Ultraenchantment.MODID + ".super", this.chinese ? "超级" : "Super");
         add("tier." + Ultraenchantment.MODID + ".ultra", this.chinese ? "究极" : "Ultra");
-        add("tree." + Ultraenchantment.MODID + ".sharpness", this.chinese ? "锋利座" : "Sharpness");
-        add("branch." + Ultraenchantment.MODID + ".blood", this.chinese ? "血刃" : "Blood");
-        add("branch." + Ultraenchantment.MODID + ".armor", this.chinese ? "破甲" : "Armor-breaker");
-        add("enchantment." + Ultraenchantment.MODID + ".starlight.advanced_sharpness",
-                this.chinese ? "高阶锋利" : "Advanced Sharpness");
-        add("enchantment." + Ultraenchantment.MODID + ".starlight.super_sharpness_blood",
-                this.chinese ? "超级锋利·血刃" : "Super Sharpness: Blood");
-        add("enchantment." + Ultraenchantment.MODID + ".starlight.super_sharpness_armor",
-                this.chinese ? "超级锋利·破甲" : "Super Sharpness: Armor-breaker");
-        add("enchantment." + Ultraenchantment.MODID + ".starlight.ultra_sharpness_blood",
-                this.chinese ? "究极锋利·血刃" : "Ultra Sharpness: Blood");
-        add("enchantment." + Ultraenchantment.MODID + ".starlight.ultra_sharpness_armor",
-                this.chinese ? "究极锋利·破甲" : "Ultra Sharpness: Armor-breaker");
     }
 
 }

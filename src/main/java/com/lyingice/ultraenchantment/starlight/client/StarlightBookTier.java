@@ -1,8 +1,12 @@
 package com.lyingice.ultraenchantment.starlight.client;
 
 import com.lyingice.ultraenchantment.Ultraenchantment;
+import com.lyingice.ultraenchantment.starlight.content.EvolutionData;
 import com.lyingice.ultraenchantment.starlight.content.TierDefinition;
+import com.lyingice.ultraenchantment.starlight.content.TreeNode;
+import com.lyingice.ultraenchantment.starlight.content.TreeDefinition;
 import com.lyingice.ultraenchantment.starlight.logic.TreeIndex;
+import com.lyingice.ultraenchantment.starlight.registry.StarlightComponents;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -21,11 +25,22 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 public final class StarlightBookTier {
     private StarlightBookTier() {}
 
-    /** 书上存储的阶段附魔里最高的阶级序号；没有阶段附魔返回 0。 */
+    /** 书的阶级序号；没有阶段/进化信息返回 0。非附魔书一律返回 0（不能把装备画成书）。 */
     public static int tierOf(ItemStack stack) {
         if (!stack.is(Items.ENCHANTED_BOOK)) {
             return 0;
         }
+
+        // 代码驱动阶段：书上是原附魔 + evolution 组件，阶级从组件节点取。
+        EvolutionData data = StarlightComponents.evolutionOf(stack);
+        if (data != null) {
+            TreeDefinition tree = TreeIndex.tree(data.tree()).orElse(null);
+            TreeNode node = tree == null ? null : tree.node(data.node()).orElse(null);
+            if (node != null) {
+                return TreeIndex.tier(node.tier()).ordinal();
+            }
+        }
+
         int best = 0;
         for (Holder<Enchantment> holder : EnchantmentHelper.getEnchantmentsForCrafting(stack).keySet()) {
             ResourceLocation id = holder.unwrapKey().map(ResourceKey::location).orElse(null);

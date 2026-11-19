@@ -1,0 +1,46 @@
+{
+  "display": "enchantment.minecraft.bane_of_arthropods",
+  "nodes": [
+    {
+      "id": "ultraenchantment:integration/bane_of_arthropods/root",
+      "enchantment": "minecraft:bane_of_arthropods",
+      "tier": "ultraenchantment:native",
+      "pos": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/bane_of_arthropods/jlme_advanced",
+      "enchantment": "jlme:advanced_bane_of_arthropods",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": 0.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/bane_of_arthropods/jlme_supreme",
+      "enchantment": "jlme:supreme_bane_of_arthropods",
+      "tier": "ultraenchantment:super",
+      "pos": {
+        "x": 0.0,
+        "y": 2.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ultraenchantment:integration/bane_of_arthropods/root",
+      "to": "ultraenchantment:integration/bane_of_arthropods/jlme_advanced",
+      "required_level": 5,
+      "chance": 1.0
+    },
+    {
+      "from": "ultraenchantment:integration/bane_of_arthropods/jlme_advanced",
+      "to": "ultraenchantment:integration/bane_of_arthropods/jlme_supreme",
+      "required_level": 3,
+      "chance": 0.6
+    }
+  ]
+}

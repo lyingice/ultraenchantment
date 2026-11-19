@@ -1,0 +1,61 @@
+{
+  "display": "enchantment.minecraft.protection",
+  "nodes": [
+    {
+      "id": "ultraenchantment:integration/protection/root",
+      "enchantment": "minecraft:protection",
+      "tier": "ultraenchantment:native",
+      "pos": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/protection/jlme_advanced",
+      "enchantment": "jlme:advanced_protection",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": -1.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/protection/fancyenchantments_advanced",
+      "enchantment": "fancyenchantments:advanced_protection",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": 1.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/protection/fancyenchantments_supreme",
+      "enchantment": "fancyenchantments:mountain_supreme_protection",
+      "tier": "ultraenchantment:super",
+      "pos": {
+        "x": 1.0,
+        "y": 2.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ultraenchantment:integration/protection/root",
+      "to": "ultraenchantment:integration/protection/jlme_advanced",
+      "required_level": 4,
+      "chance": 1.0
+    },
+    {
+      "from": "ultraenchantment:integration/protection/root",
+      "to": "ultraenchantment:integration/protection/fancyenchantments_advanced",
+      "required_level": 4,
+      "chance": 1.0
+    },
+    {
+      "from": "ultraenchantment:integration/protection/fancyenchantments_advanced",
+      "to": "ultraenchantment:integration/protection/fancyenchantments_supreme",
+      "required_level": 3,
+      "chance": 0.6
+    }
+  ]
+}

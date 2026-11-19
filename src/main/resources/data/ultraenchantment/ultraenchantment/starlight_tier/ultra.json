@@ -2,5 +2,10 @@
   "ordinal": 3,
   "display": "tier.ultraenchantment.ultra",
   "color": 16761095,
-  "max_level": 5
+  "max_level": 5,
+  "evolution_cost": {
+    "item": "minecraft:netherite_block",
+    "count": 1
+  },
+  "evolution_xp": 18
 }

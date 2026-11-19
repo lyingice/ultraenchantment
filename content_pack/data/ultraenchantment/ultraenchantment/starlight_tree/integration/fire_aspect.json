@@ -1,0 +1,31 @@
+{
+  "display": "enchantment.minecraft.fire_aspect",
+  "nodes": [
+    {
+      "id": "ultraenchantment:integration/fire_aspect/root",
+      "enchantment": "minecraft:fire_aspect",
+      "tier": "ultraenchantment:native",
+      "pos": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/fire_aspect/fancyenchantments_advanced",
+      "enchantment": "fancyenchantments:advanced_fire_aspect",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": 0.0,
+        "y": 1.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ultraenchantment:integration/fire_aspect/root",
+      "to": "ultraenchantment:integration/fire_aspect/fancyenchantments_advanced",
+      "required_level": 2,
+      "chance": 1.0
+    }
+  ]
+}

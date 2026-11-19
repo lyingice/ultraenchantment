@@ -1,0 +1,31 @@
+{
+  "display": "enchantment.minecraft.flame",
+  "nodes": [
+    {
+      "id": "ultraenchantment:integration/flame/root",
+      "enchantment": "minecraft:flame",
+      "tier": "ultraenchantment:native",
+      "pos": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/flame/fancyenchantments_advanced",
+      "enchantment": "fancyenchantments:advanced_flame",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": 0.0,
+        "y": 1.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ultraenchantment:integration/flame/root",
+      "to": "ultraenchantment:integration/flame/fancyenchantments_advanced",
+      "required_level": 1,
+      "chance": 1.0
+    }
+  ]
+}

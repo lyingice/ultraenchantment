@@ -97,6 +97,24 @@ public final class StarlightTooltipEvents {
 
         List<Component> tooltip = event.getToolTip();
 
+        // ①a+ 代码驱动阶段：树上多个节点共用同一个原附魔，
+        // tierOfEnchantment 只能查到第一个（native）节点；这里用当前节点的阶级覆盖行色。
+        Holder<Enchantment> currentHolder = enchants.get(
+                ResourceKey.create(Registries.ENCHANTMENT, current.enchantment())).orElse(null);
+        if (currentHolder != null) {
+            TextColor currentColor = TextColor.fromRgb(TreeIndex.tier(current.tier()).color());
+            String currentMarker = currentHolder.value().description().getString();
+            List<Component> lines = event.getToolTip();
+            for (int i = 0; i < lines.size(); i++) {
+                if (stripLeadingSymbols(lines.get(i).getString()).startsWith(currentMarker)) {
+                    MutableComponent colored = lines.get(i).copy();
+                    colored.withStyle(style -> style.withColor(currentColor));
+                    lines.set(i, colored);
+                    break;
+                }
+            }
+        }
+
         // ①b 未按 Shift：只给提示
         if (!Screen.hasShiftDown()) {
             tooltip.add(Component.translatable("tooltip.ultraenchantment.starlight.hold_shift")

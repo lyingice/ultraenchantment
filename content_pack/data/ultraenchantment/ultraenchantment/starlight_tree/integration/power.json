@@ -1,0 +1,31 @@
+{
+  "display": "enchantment.minecraft.power",
+  "nodes": [
+    {
+      "id": "ultraenchantment:integration/power/root",
+      "enchantment": "minecraft:power",
+      "tier": "ultraenchantment:native",
+      "pos": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/power/jlme_advanced",
+      "enchantment": "jlme:advanced_power",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": 0.0,
+        "y": 1.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ultraenchantment:integration/power/root",
+      "to": "ultraenchantment:integration/power/jlme_advanced",
+      "required_level": 5,
+      "chance": 1.0
+    }
+  ]
+}

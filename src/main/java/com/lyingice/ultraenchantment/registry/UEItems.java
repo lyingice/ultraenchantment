@@ -4,6 +4,7 @@ import com.lyingice.ultraenchantment.Ultraenchantment;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -19,8 +20,9 @@ public final class UEItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(Registries.ITEM, Ultraenchantment.MODID);
 
-    /** 星光附魔台的方块物品。 */
+    /** 星光附魔台的方块物品（史诗品质）。 */
     public static final DeferredHolder<Item, BlockItem> STARLIGHT_TABLE =
             ITEMS.register("starlight_table",
-                    () -> new BlockItem(UEBlocks.STARLIGHT_TABLE.get(), new Item.Properties()));
+                    () -> new BlockItem(UEBlocks.STARLIGHT_TABLE.get(),
+                            new Item.Properties().rarity(Rarity.EPIC)));
 }

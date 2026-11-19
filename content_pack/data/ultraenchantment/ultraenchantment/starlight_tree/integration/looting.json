@@ -1,0 +1,61 @@
+{
+  "display": "enchantment.minecraft.looting",
+  "nodes": [
+    {
+      "id": "ultraenchantment:integration/looting/root",
+      "enchantment": "minecraft:looting",
+      "tier": "ultraenchantment:native",
+      "pos": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/looting/jlme_advanced",
+      "enchantment": "jlme:advanced_looting",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": -1.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/looting/fancyenchantments_advanced",
+      "enchantment": "fancyenchantments:advanced_looting",
+      "tier": "ultraenchantment:advanced",
+      "pos": {
+        "x": 1.0,
+        "y": 1.0
+      }
+    },
+    {
+      "id": "ultraenchantment:integration/looting/fancyenchantments_supreme",
+      "enchantment": "fancyenchantments:greed_supreme_looting",
+      "tier": "ultraenchantment:super",
+      "pos": {
+        "x": 1.0,
+        "y": 2.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ultraenchantment:integration/looting/root",
+      "to": "ultraenchantment:integration/looting/jlme_advanced",
+      "required_level": 3,
+      "chance": 1.0
+    },
+    {
+      "from": "ultraenchantment:integration/looting/root",
+      "to": "ultraenchantment:integration/looting/fancyenchantments_advanced",
+      "required_level": 3,
+      "chance": 1.0
+    },
+    {
+      "from": "ultraenchantment:integration/looting/fancyenchantments_advanced",
+      "to": "ultraenchantment:integration/looting/fancyenchantments_supreme",
+      "required_level": 3,
+      "chance": 0.6
+    }
+  ]
+}

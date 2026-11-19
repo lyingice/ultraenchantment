@@ -1,6 +1,7 @@
 package com.lyingice.ultraenchantment.starlight.logic;
 
 import com.lyingice.ultraenchantment.starlight.content.EvolutionData;
+import com.lyingice.ultraenchantment.starlight.content.TierDefinition;
 import com.lyingice.ultraenchantment.starlight.content.TreeNode;
 import com.lyingice.ultraenchantment.starlight.content.TreeDefinition;
 import com.lyingice.ultraenchantment.starlight.content.TreeEdge;
@@ -13,12 +14,15 @@ import java.util.Set;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -44,6 +48,7 @@ public final class EvolutionService {
     public static final String MSG_FAILURE_NO_DROP = "gui.ultraenchantment.starlight.failure.no_drop";
     public static final String MSG_UPGRADED = "gui.ultraenchantment.starlight.upgraded";
     public static final String MSG_NOT_ENOUGH_LEVELS = "gui.ultraenchantment.starlight.not_enough_levels";
+    public static final String MSG_NOT_ENOUGH_MATERIAL = "gui.ultraenchantment.starlight.not_enough_material";
     public static final String MSG_MAX_LEVEL = "gui.ultraenchantment.starlight.max_level";
     public static final String MSG_INVALID = "gui.ultraenchantment.starlight.invalid";
 
@@ -89,9 +94,24 @@ public final class EvolutionService {
         return holder == null ? 0 : holder.value().getMaxLevel();
     }
 
-    /** 阶级内升级的经验代价：越高越贵，但始终可预期。 */
-    public static int upgradeCost(int currentLevel) {
-        return 3 + Math.max(1, currentLevel) * 2;
+    /** 进化到目标节点的基础经验：阶级 {@code evolution_xp} 优先，没写才回落到边的 {@code cost_levels}。 */
+    public static int evolutionBaseXp(TreeEdge edge, TreeNode target) {
+        return TreeIndex.tier(target.tier()).evolutionXp().orElse(edge.costLevels());
+    }
+
+    /** 进化实际扣除的经验：基础经验按台面书架打折（满 15 书架减半）。 */
+    public static int evolutionXp(TreeEdge edge, TreeNode target, int shelves) {
+        return Bookshelves.apply(evolutionBaseXp(edge, target), shelves);
+    }
+
+    /** 阶级内升级的基础经验：等级越高越贵，阶级越高也越贵，但始终可预期。 */
+    public static int upgradeBaseCost(int currentLevel, int tierOrdinal) {
+        return 3 + Math.max(1, currentLevel) * 2 + 2 * Math.max(0, tierOrdinal);
+    }
+
+    /** 升级实际扣除的经验：同样吃书架折扣。 */
+    public static int upgradeCost(int currentLevel, int tierOrdinal, int shelves) {
+        return Bookshelves.apply(upgradeBaseCost(currentLevel, tierOrdinal), shelves);
     }
 
     // ── 进化 ────────────────────────────────────────────────────────────
@@ -99,7 +119,7 @@ public final class EvolutionService {
     /**
      * 尝试从当前节点走到 {@code targetNodeId}。
      *
-     * <p><b>顺序</b>：全量校验 → 扣经验/催化剂 → 掷骰 → 成功才改物品。
+     * <p><b>顺序</b>：全量校验 → 扣经验/材料 → 掷骰 → 成功才改物品。
      * 失败也扣代价（尝试本身有成本），但物品绝不损坏。
      */
     public static boolean attempt(ServerPlayer player, StarlightTableMenu menu,
@@ -127,7 +147,9 @@ public final class EvolutionService {
             message(player, ChatFormatting.RED, MSG_INVALID);
             return false;
         }
-        if (player.experienceLevel < edge.costLevels()) {
+        int shelves = Bookshelves.count(player.level(), menu.pos());
+        int xpCost = evolutionXp(edge, target, shelves);
+        if (player.experienceLevel < xpCost) {
             message(player, ChatFormatting.RED, MSG_NOT_ENOUGH_LEVELS);
             return false;
         }
@@ -137,11 +159,23 @@ public final class EvolutionService {
             return false;
         }
 
-        // 扣代价（成功失败都扣）。催化剂是「这次仪式」的材料，也一并消耗。
-        if (edge.costLevels() > 0) {
-            player.giveExperienceLevels(-edge.costLevels());
+        // 目标阶级的原材料：高阶 5 钻石 / 超级 2 下界合金锭 / 究极 1 下界合金块。
+        TierDefinition targetTier = TreeIndex.tier(target.tier());
+        TierDefinition.MaterialCost material = targetTier.evolutionCost().orElse(null);
+        Item materialItem = material == null ? null : BuiltInRegistries.ITEM.get(material.item());
+        if (material != null
+                && (materialItem == Items.AIR || !menu.hasMaterial(materialItem, material.count()))) {
+            message(player, ChatFormatting.RED, MSG_NOT_ENOUGH_MATERIAL);
+            return false;
         }
-        menu.consumeCatalyst();
+
+        // 扣代价（成功失败都扣）。原材料和等级一样，失败不退。
+        if (xpCost > 0) {
+            player.giveExperienceLevels(-xpCost);
+        }
+        if (material != null) {
+            menu.consumeMaterial(materialItem, material.count());
+        }
 
         boolean success = player.getRandom().nextFloat() < edge.chance();
         if (!success) {
@@ -157,7 +191,7 @@ public final class EvolutionService {
 
     /**
      * 进阶失败惩罚：当前节点附魔等级随机下降 {@code failureDropMin..failureDropMax} 级，
-     * 最低保留 1 级。失败也会消耗经验/催化剂（在调用前已扣）。
+     * 最低保留 1 级。失败也会消耗经验/材料（在调用前已扣）。
      */
     private static void applyFailurePenalty(ServerPlayer player, StarlightTableMenu menu,
                                             ItemStack item,
@@ -218,7 +252,8 @@ public final class EvolutionService {
             return false;
         }
 
-        int cost = upgradeCost(currentLevel);
+        int cost = upgradeCost(currentLevel, TreeIndex.tierOrdinal(node.tier()),
+                Bookshelves.count(player.level(), menu.pos()));
         if (player.experienceLevel < cost) {
             message(player, ChatFormatting.RED, MSG_NOT_ENOUGH_LEVELS);
             return false;

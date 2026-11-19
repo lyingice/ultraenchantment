@@ -1,5 +1,6 @@
 package com.lyingice.ultraenchantment.compat.kubejs;
 
+import com.lyingice.ultraenchantment.starlight.content.EvolutionData;
 import com.lyingice.ultraenchantment.starlight.content.TreeNode;
 import com.lyingice.ultraenchantment.starlight.content.TreeDefinition;
 import com.lyingice.ultraenchantment.starlight.content.TreeEdge;
@@ -31,13 +32,13 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * UltraEnchantment.level(stack)       // 3
  * UltraEnchantment.next(stack)        // ['ultraenchantment:blood_ultra']
  * UltraEnchantment.history(stack)     // ['ultraenchantment:root', ...]
- * UltraEnchantment.tierOfEnchantment('ultraenchantment:starlight/super_sharpness_blood')
+ * UltraEnchantment.tierOfEnchantment('ultraenchantment:integration/fancyenchantments/abyssal_maelstrom/super')
  * UltraEnchantment.tierColor('ultraenchantment:super')
  * UltraEnchantment.canEvolve(stack, 'ultraenchantment:blood')
  * UltraEnchantment.evolve(stack, 'ultraenchantment:blood')
  * }</pre>
  *
- * <p>{@code evolve} 是<b>脚本级直接进化</b>：不掷概率、不扣经验/催化剂，
+ * <p>{@code evolve} 是<b>脚本级直接进化</b>：不掷概率、不扣经验/材料，
  * 只校验当前节点→目标节点与前置等级。适合剧情、KubeJS 自定义仪式。
  */
 public final class StarlightKubeJS {
@@ -109,28 +110,65 @@ public final class StarlightKubeJS {
     }
 
     /**
-     * 造一本带阶段附魔的原版附魔书——封面由客户端 Mixin 按阶段阶级自动切换。
+     * 造一本阶段附魔书——封面由客户端 Mixin 按阶段阶级自动切换。
+     *
+     * <p>参数可以是数据包生成的<b>阶段附魔 id</b>
+     * （{@code ultraenchantment:integration/fancyenchantments/abyssal_maelstrom/super}），
+     * 也可以是<b>代码驱动阶段的节点 id</b>
+     * （{@code ultraenchantment:integration/jlme/lifesteal/super}）：
+     * 后者书里存原附魔，并用 {@code ultraenchantment:evolution} 组件记录节点。
      *
      * <pre>{@code
-     * event.player.give(UltraEnchantment.stageBook('ultraenchantment:starlight/super_sharpness_blood', 1))
+     * event.player.give(UltraEnchantment.stageBook('ultraenchantment:integration/jlme/lifesteal/super', 1))
      * }</pre>
      */
-    public static ItemStack stageBook(String enchantmentId, int level) {
+    public static ItemStack stageBook(String enchantmentOrNode, int level) {
         ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
         HolderLookup.RegistryLookup<Enchantment> enchants = enchants();
-        ResourceLocation id = ResourceLocation.tryParse(enchantmentId);
+        ResourceLocation id = ResourceLocation.tryParse(enchantmentOrNode);
         if (enchants == null || id == null) {
             return book;
         }
-        Holder<Enchantment> holder = enchants.get(
+
+        // ① 数据驱动的真实阶段附魔：直接写 stored_enchantments。
+        Holder<Enchantment> direct = enchants.get(
                 ResourceKey.create(Registries.ENCHANTMENT, id)).orElse(null);
-        if (holder == null) {
+        if (direct != null) {
+            setStored(book, direct, level);
             return book;
         }
+
+        // ② 代码驱动阶段：id 是树节点，不是附魔；书里保留原附魔 + evolution 组件。
+        ResourceLocation treeId = treeIdForNode(id);
+        TreeDefinition tree = treeId == null ? null : TreeIndex.tree(treeId).orElse(null);
+        TreeNode node = tree == null ? null : tree.node(id).orElse(null);
+        if (node == null) {
+            return book;
+        }
+        Holder<Enchantment> root = enchants.get(
+                ResourceKey.create(Registries.ENCHANTMENT, node.enchantment())).orElse(null);
+        if (root == null) {
+            return book;
+        }
+        setStored(book, root, level);
+        StarlightComponents.setEvolution(book, new EvolutionData(treeId, id, List.of()));
+        return book;
+    }
+
+    private static void setStored(ItemStack book, Holder<Enchantment> holder, int level) {
         ItemEnchantments.Mutable table = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
         table.set(holder, Mth.clamp(level, 1, 255));
         book.set(DataComponents.STORED_ENCHANTMENTS, table.toImmutable());
-        return book;
+    }
+
+    /** 节点 id = 树 id + '/' + 阶段名，树 id 本身可能有多段路径。 */
+    private static ResourceLocation treeIdForNode(ResourceLocation nodeId) {
+        String path = nodeId.getPath();
+        int slash = path.lastIndexOf('/');
+        if (slash <= 0) {
+            return null;
+        }
+        return ResourceLocation.fromNamespaceAndPath(nodeId.getNamespace(), path.substring(0, slash));
     }
 
     /** 脚本级直接进化；成功返回 true，物品被原地修改。 */

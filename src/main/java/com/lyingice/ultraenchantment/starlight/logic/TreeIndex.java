@@ -7,9 +7,13 @@ import com.lyingice.ultraenchantment.starlight.content.TreeNode;
 import com.lyingice.ultraenchantment.starlight.content.TreeDefinition;
 import com.lyingice.ultraenchantment.starlight.registry.StarlightComponents;
 import com.lyingice.ultraenchantment.starlight.registry.StarlightRegistries;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
@@ -116,12 +120,31 @@ public final class TreeIndex {
         return Optional.ofNullable(trees.get(treeId));
     }
 
+    /** 全部树的 id，按显示名排序。供图鉴这类只读界面稳定遍历。 */
+    public static List<ResourceLocation> treeIds() {
+        ensureReady();
+        return trees.keySet().stream()
+                .sorted(Comparator.comparing(id -> trees.get(id).display()))
+                .toList();
+    }
+
     /** 某件物品属于哪棵树：优先看进化履历，其次看它身上带的是不是某棵树的节点附魔。 */
     public static Optional<ResourceLocation> treeIdOf(ItemStack stack) {
+        return treeIdsOf(stack).stream().findFirst();
+    }
+
+    /**
+     * 物品身上<b>所有</b>可进化的树。
+     *
+     * <p>一把剑同时带锋利与抢夺时，两个谱系都能进阶；界面需要在它们之间切换。
+     * 顺序：进化履历所在的树优先，其余按物品上的附魔顺序。
+     */
+    public static List<ResourceLocation> treeIdsOf(ItemStack stack) {
         ensureReady();
+        Set<ResourceLocation> out = new LinkedHashSet<>();
         EvolutionData data = StarlightComponents.evolutionOf(stack);
         if (data != null && trees.containsKey(data.tree())) {
-            return Optional.of(data.tree());
+            out.add(data.tree());
         }
         for (Holder<Enchantment> holder : EnchantmentHelper.getEnchantmentsForCrafting(stack).keySet()) {
             ResourceLocation enchantmentId = holder.unwrapKey().map(ResourceKey::location).orElse(null);
@@ -130,10 +153,10 @@ public final class TreeIndex {
             }
             ResourceLocation treeId = treeByEnchantment.get(enchantmentId);
             if (treeId != null) {
-                return Optional.of(treeId);
+                out.add(treeId);
             }
         }
-        return Optional.empty();
+        return List.copyOf(out);
     }
 
     /** 阶级定义；索引里没有时返回一个白色兜底，保证界面不抛。 */

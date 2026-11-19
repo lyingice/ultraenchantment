@@ -2,5 +2,10 @@
   "ordinal": 1,
   "display": "tier.ultraenchantment.advanced",
   "color": 5227511,
-  "max_level": 5
+  "max_level": 5,
+  "evolution_cost": {
+    "item": "minecraft:diamond",
+    "count": 5
+  },
+  "evolution_xp": 6
 }
